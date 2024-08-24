@@ -15,11 +15,13 @@ void handle_make_move(int client_socket, std::string move) {
         close(client_socket);
         return;
     }
-
+    
     if (!act(move)) {
         std::string response = "HTTP/1.1 400 Bad Request\r\n"
-        "Content-Length: " + std::to_string(14 + move.size()) + "\r\n"
-        "\r\nIllegal move: " + move;
+        "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Content-Length: " + std::to_string(26 + move.size()) + "\r\n"
+        "\r\n{\"error\":\"Illegal move: " + move + "\"}";
         
         send(client_socket, response.c_str(), response.length(), 0);
         close(client_socket);
@@ -28,21 +30,23 @@ void handle_make_move(int client_socket, std::string move) {
 
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: 2\r\n"
+        "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n" 
         "\r\n"
-        "OK";
+        "{\"board\":\"" + get_board() + "\",\"isCheck\":" + std::to_string(is_check()) + "}";
 
     send(client_socket, response.c_str(), response.size(), 0);
     close(client_socket);
 }
 
 void handle_reset(int client_socket) {
+    std::cout << "reset" << std::endl;
     reset_engine();
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
         "Content-Length: 2\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
         "\r\n"
         "OK";
 
@@ -60,9 +64,9 @@ void handle_genmove(int client_socket) {
 
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: " + std::to_string(move.size()) + "\r\n"
-        "\r\n" + move;
+        "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "\r\n{\"move\":\"" + move + "\",\"board\":\"" + get_board() + "\",\"isCheck\":" + std::to_string(is_check()) + "}";
 
     send(client_socket, response.c_str(), response.size(), 0);
     close(client_socket);
@@ -101,7 +105,7 @@ void start_server(int port) {
     }
 
     std::cout << "Server is listening on port " << port << std::endl;
-
+    
     while (true) {
         int client_socket = accept(server_socket, nullptr, nullptr);
         if (client_socket == -1) {
@@ -128,6 +132,20 @@ void start_server(int port) {
             std::thread(handle_make_move, client_socket, move).detach();
         } else if (request.find("GET /reset") != std::string::npos) {
             std::thread(handle_reset, client_socket).detach();
+        } else if (request.find("GET /game") != std::string::npos) {
+            std::string response = "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Access-Control-Allow-Origin: *\r\n"
+            "Content-Length: " + std::to_string(get_game_state().length() + 19) + "\r\n\r\n" 
+            "{ \"gameState\": \"" + get_game_state() + "\" }"; 
+            
+            
+            send(client_socket, response.c_str(), response.length(), 0);
+            close(client_socket);
+        } else {
+            std::string response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+            send(client_socket, response.c_str(), response.length(), 0);
+            close(client_socket);
         }
     }
 

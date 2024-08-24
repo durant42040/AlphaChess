@@ -1,12 +1,11 @@
 import {createContext, useContext, useEffect, useState} from "react";
 import axios from "axios";
-import {isEqual, toSan} from "../utils.js";
-import {Chess} from "chess.js";
+import {isEqual, toMoveString, toBoard} from "../utils.js";
 
 const serverUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://stockfish-server.onrender.com'
-const chess = new Chess();
-const startingPositions = chess.board()
-const startingFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+const startingFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const startingPositions = toBoard('RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr');
 
 const ChessContext = createContext({
     board: [],
@@ -75,7 +74,7 @@ const ChessProvider = (props) => {
 
 
     const rematch = () => {
-        chess.reset()
+        axios.get(`${serverUrl}/reset`)
 
         setGame(game === 'w' ? 'b' : 'w')
         setBoard(startingPositions)
@@ -88,18 +87,18 @@ const ChessProvider = (props) => {
 
 
     const handleRevert = () => {
-        if (history.length === (1 + (game === 'b'))) return;
+        // if (history.length === (1 + (game === 'b'))) return;
 
-        playSound('move')
+        // playSound('move')
 
-        setBoard(history[history.length - history.length % 2 - 2 - (game === 'b')].board)
-        chess.load(history[history.length - history.length % 2 - 2 - (game === 'b')].fen)
+        // setBoard(history[history.length - history.length % 2 - 2 - (game === 'b')].board)
+        // chess.load(history[history.length - history.length % 2 - 2 - (game === 'b')].fen)
 
-        let newHistory = history
-        newHistory = newHistory.slice(0, history.length - history.length % 2 - 1 - (game === 'b'))
+        // let newHistory = history
+        // newHistory = newHistory.slice(0, history.length - history.length % 2 - 1 - (game === 'b'))
 
-        setHistory(newHistory)
-        setGameOver('No')
+        // setHistory(newHistory)
+        // setGameOver('No')
     }
 
 
@@ -107,47 +106,59 @@ const ChessProvider = (props) => {
         game !== '' && playSound('start')
     }, [game])
 
+    useEffect(() => {
+        axios.get(`${serverUrl}/reset`)
+    }, [])
+
 
     useEffect(() => {
         // player move
-        if (!positionFrom.length || !positionTo.length) return
-        try {
-            const move = chess.move(toSan(positionFrom, positionTo));
-            chess.isCheck() ? playSound('check') : move.captured ? playSound('capture') : playSound('move')
-        } catch (err) {
-            setPositionFrom([]);
-            setPositionTo([]);
-            return;
-        }
+        if (!positionFrom.length || !positionTo.length) return;
+        axios.get(`${serverUrl}/make_move?move=${toMoveString(positionFrom, positionTo)}`)
+            .then(res => {
+                const isCheck = res.data.isCheck;
+                const isCapture = board[positionTo[0]][positionTo[1]] !== null;
+                setBoard(toBoard(res.data.board));
+                isCheck ? playSound('check') : isCapture ? playSound('capture') : playSound('move');
+                setSide(side === 'w' ? 'b' : 'w');
+                setPositionFrom([]);
+                setPositionTo([]);
+            })
+            .catch(err => {
+                setPositionFrom([]);
+                setPositionTo([]);
+                throw new Error(err.response.data.error);
+            });
+        
 
-        setBoard(chess.board());
-        setHistory((prev) => [...prev, {board: chess.board(), fen: chess.fen()}])
-        setSide(side === 'w' ? 'b' : 'w')
-        setPositionFrom([]);
-        setPositionTo([]);
     }, [positionFrom, positionTo]);
 
 
     useEffect(() => {
-        if (chess.isCheckmate()) {
-            setGameOver('Checkmate')
-            playSound('checkmate')
-        }
-
-        if (chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition()) setGameOver('Draw')
+        axios.get(`${serverUrl}/game`).then(res => {
+            if (res.data.gameState === "checkmate") {
+                setGameOver('Checkmate')
+                playSound('checkmate')
+            } else if (res.data.gameState === "draw") {
+                setGameOver('Draw')
+            }
+        })
 
         // computer move
         if (gameOver !== 'No') return;
         if (side === game || !game) return;
 
-        axios.post(`${serverUrl}/analyze`, {position: chess.fen()}).then(res => {
-            const bestMove = res.data.results.split(' ')[1]
+        axios.get(`${serverUrl}/genmove`).then(res => {
+            const bestMoveSplit = res.data.move.split('');
+            const to = [8 - parseInt(bestMoveSplit[3]), bestMoveSplit[2].charCodeAt(0) - 'a'.charCodeAt(0)];
 
-            const move = chess.move(bestMove)
-            chess.isCheck() ? playSound('check') : move.captured ? playSound('capture') : playSound('move')
+            const isCheck = res.data.isCheck;
+            const isCapture = board[to[0]][to[1]] !== null;
+            setBoard(toBoard(res.data.board))
 
-            setHistory((prev) => [...prev, {board: chess.board(), fen: chess.fen()}])
-            setBoard(chess.board());
+            isCheck ? playSound('check') : isCapture ? playSound('capture') : playSound('move')
+
+            // setHistory((prev) => [...prev, {board: chess.board(), fen: chess.fen()}])
             setSide(side === 'w' ? 'b' : 'w')
         }).catch((err) => {
             console.error(err)

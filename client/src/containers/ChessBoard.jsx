@@ -4,7 +4,7 @@ import {useChess} from "../hooks/useChess.jsx";
 
 const ChessBoard = () => {
     const {board, game} = useChess();
-
+    
     return (
         <div>
             {board.map((e, i) => {

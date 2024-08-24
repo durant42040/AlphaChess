@@ -64,3 +64,44 @@ bool is_legal_move(Move move) {
 
     return board.generate_legal_moves(from).get(to) && board.our_pieces().get(from);
 }
+
+std::string get_game_state() {
+    switch (board.game_state_) {
+        case GameState::Playing:
+            return "playing";
+        case GameState::WhiteWin:
+            return "checkmate";
+        case GameState::BlackWin:
+            return "checkmate";
+        case GameState::Draw:
+            return "draw";
+    }
+}
+
+bool is_check() {
+    return board.is_player_in_check(board.player_);
+}
+
+std::string get_board() {
+    std::string board_str;
+    for (int i = 0; i < 64; i++) {
+        if (board.pawns_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'P' : 'p';
+        } else if (board.knights_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'N' : 'n';
+        } else if (board.bishops_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'B' : 'b';
+        } else if (board.rooks_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'R' : 'r';
+        } else if (board.queens_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'Q' : 'q';
+        } else if (board.kings_.get(i)) {
+            board_str += board.white_pieces_.get(i) ? 'K' : 'k';
+        } else {
+            board_str += '.';
+        }
+        
+    }
+    
+    return board_str;
+}
