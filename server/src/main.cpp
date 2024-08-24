@@ -6,8 +6,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "stockfish.h"
-
-std::vector<std::string> moves;
+#include "engine.h"
 
 void handle_make_move(int client_socket, std::string move) {
     if (move.empty()) {
@@ -17,7 +16,15 @@ void handle_make_move(int client_socket, std::string move) {
         return;
     }
 
-    moves.push_back(move);
+    if (!act(move)) {
+        std::string response = "HTTP/1.1 400 Bad Request\r\n"
+        "Content-Length: " + std::to_string(14 + move.size()) + "\r\n"
+        "\r\nIllegal move: " + move;
+        
+        send(client_socket, response.c_str(), response.length(), 0);
+        close(client_socket);
+        return;
+    }
 
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
@@ -31,7 +38,7 @@ void handle_make_move(int client_socket, std::string move) {
 }
 
 void handle_reset(int client_socket) {
-    moves.clear();
+    reset_engine();
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
@@ -44,8 +51,12 @@ void handle_reset(int client_socket) {
 }
 
 void handle_genmove(int client_socket) {
-    const std::string move = generate_move_stockfish(moves);
-    moves.push_back(move);
+    std::vector<std::string> moves_string;
+    for (const auto& move : moves) {
+        moves_string.push_back(move.to_string());
+    }
+    const std::string move = generate_move_stockfish(moves_string);
+    act(move);
 
     const std::string response = 
         "HTTP/1.1 200 OK\r\n"
@@ -77,6 +88,14 @@ void start_server(int port) {
 
     if (listen(server_socket, 10) == -1) {
         std::cerr << "Failed to listen on socket" << std::endl;
+        close(server_socket);
+        return;
+    }
+
+    try {
+        init_engine();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
         close(server_socket);
         return;
     }
