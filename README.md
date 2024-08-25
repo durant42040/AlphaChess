@@ -116,7 +116,7 @@ Bitboard one_step_moves = (from_mask >> 8) & ~all_pieces;
 Bitboard two_step_moves = ((one_step_moves & (0xFFULL << 40)) >> 8) & ~all_pieces;
 ```
 Capture moves can be generated with table lookups. For sliding pieces, a naive solution is to use for loops
-```
+``` C++
 for (int i = rank + 1; i < 8; i++) {
     moves |= (1ULL << (8 * i + file));
     if (all_pieces.bitboard_ & 1ULL << (8 * i + file)) break;
