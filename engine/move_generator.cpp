@@ -626,26 +626,26 @@ Bitboard generate_bishop_moves_slow(Square from, Bitboard all_pieces)
     int file = from.file_;
     int rank = from.rank_;
 
-    Bitboard validMoves(0);
+    Bitboard moves(0);
 
     for (int i = rank + 1, j = file + 1; i <= 7 && j <= 7; i++, j++) {
-        validMoves |= (1ULL << (8 * i + j));
+        moves |= (1ULL << (8 * i + j));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + j)) break;
     }
     for (int i = rank - 1, j = file + 1; i >= 0 && j <= 7; i--, j++) {
-        validMoves |= (1ULL << (8 * i + j));
+        moves |= (1ULL << (8 * i + j));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + j)) break;
     }
     for (int i = rank + 1, j = file - 1; i <= 7 && j >= 0; i++, j--) {
-        validMoves |= (1ULL << (8 * i + j));
+        moves |= (1ULL << (8 * i + j));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + j)) break;
     }
     for (int i = rank - 1, j = file - 1; i >= 0 && j >= 0; i--, j--) {
-        validMoves |= (1ULL << (8 * i + j));
+        moves |= (1ULL << (8 * i + j));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + j)) break;
     }
 
-    return validMoves;
+    return moves;
 }
 
 Bitboard generate_rook_moves_slow(Square from, Bitboard all_pieces)
@@ -653,26 +653,26 @@ Bitboard generate_rook_moves_slow(Square from, Bitboard all_pieces)
     int file = from.file_;
     int rank = from.rank_;
 
-    Bitboard validMoves(0);
+    Bitboard moves(0);
 
     for (int i = rank + 1; i < 8; i++) {
-        validMoves |= (1ULL << (8 * i + file));
+        moves |= (1ULL << (8 * i + file));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + file)) break;
     }
     for (int i = rank - 1; i >= 0; i--) {
-        validMoves |= (1ULL << (8 * i + file));
+        moves |= (1ULL << (8 * i + file));
         if (all_pieces.bitboard_ & 1ULL << (8 * i + file)) break;
     }
     for (int i = file + 1; i < 8; i++) {
-        validMoves |= (1ULL << (8 * rank + i));
+        moves |= (1ULL << (8 * rank + i));
         if (all_pieces.bitboard_ & 1ULL << (8 * rank + i)) break;
     }
     for (int i = file - 1; i >= 0; i--) {
-        validMoves |= (1ULL << (8 * rank + i));
+        moves |= (1ULL << (8 * rank + i));
         if (all_pieces.bitboard_ & 1ULL << (8 * rank + i)) break;
     }
 
-    return validMoves;
+    return moves;
 }
 
 Bitboard generate_bishop_moves(Square from, Bitboard all_pieces)

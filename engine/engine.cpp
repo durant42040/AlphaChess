@@ -1,8 +1,6 @@
 #include "chessboard.h"
 #include "engine.h"
 
-char promotion_pieces[4] = {'q', 'r', 'b', 'n'};
-
 std::vector<Move> moves;
 ChessBoard board;
 
@@ -36,9 +34,10 @@ std::vector<Move> get_legal_moves() {
 
         for (auto to : moves) {
             if (board.pawns_.get(from) && ((to.rank_ == 7) || (to.rank_ == 0))) {
-                for (int i = 0; i < 4; i++) {
-                    legal_moves.push_back(Move(from, to, promotion_pieces[i]));
-                }
+                legal_moves.push_back(Move(from, to, 'q'));
+                legal_moves.push_back(Move(from, to, 'r'));
+                legal_moves.push_back(Move(from, to, 'b'));
+                legal_moves.push_back(Move(from, to, 'n'));
             } else {
                 legal_moves.push_back(Move(from, to));
             }
@@ -75,6 +74,8 @@ std::string get_game_state() {
             return "checkmate";
         case GameState::Draw:
             return "draw";
+        default:
+            return "playing";
     }
 }
 
