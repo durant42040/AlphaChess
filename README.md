@@ -105,7 +105,7 @@ int count() const
 
 int getLSB() 
 {
-        return __builtin_ctzll(bitboard_);
+    return __builtin_ctzll(bitboard_);
 }
 ```
 Using bitboards as board representation thus allows for extremely fast board operations, even faster than basic arithmetic.
