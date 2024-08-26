@@ -79,8 +79,8 @@ public:
     inline int get_repetition_count() const
     {
         int repetitions = 0;
-        for (int i = position_history_.size() - 3; i >= 0; i -= 2) {
-            if (position_history_[i] == position_history_.back()) {
+        for (int i = position_hash_history_.size() - 3; i >= 0; i -= 2) {
+            if (position_hash_history_[i] == position_hash_history_.back()) {
                 repetitions++;
             }
         }
@@ -89,7 +89,7 @@ public:
 
     GameState game_state_;
     Player player_;
-    std::vector<uint64_t> position_history_;
+    std::vector<uint64_t> position_hash_history_;
     int fifty_move_rule_;
     int fullmove_number_;
     int castling_rights_;

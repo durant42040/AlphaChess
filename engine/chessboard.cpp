@@ -96,7 +96,7 @@ bool ChessBoard::act(Move move, bool update)
     black_pieces_.update(from, to);
     all_pieces_.update(from, to);
 
-    position_history_.push_back(generate_hash());
+    position_hash_history_.push_back(generate_hash());
     player_ = (player_ == Player::White)? Player::Black : Player::White;
 
     if (update) {
