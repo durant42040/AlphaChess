@@ -1,10 +1,10 @@
-import React from 'react';
-import {useChess} from "../hooks/useChess.jsx";
+import React from 'react'
+import { useChess } from '../hooks/useChess.jsx'
 
 const StartPage = () => {
-    const {setGame} = useChess();
+  const { setGame } = useChess()
 
-    return (
+  return (
         <div className='start'>
             <h1>AlphaChess</h1>
             <div>Choose Side</div>
@@ -14,7 +14,7 @@ const StartPage = () => {
                 <button className='button' onClick={() => setGame(Math.random() < 0.5 ? 'w' : 'b')}>Random</button>
             </div>
         </div>
-    );
-};
+  )
+}
 
-export default StartPage;
+export default StartPage
