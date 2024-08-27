@@ -18,9 +18,11 @@ uint64_t get_blocker(int index, Bitboard mask);
 
 void init_sliding_moves();
 
-Bitboard generate_white_pawn_moves(Square from, Bitboard all_pieces, Bitboard capture_pieces);
+Bitboard generate_white_pawn_moves(Square from, Bitboard all_pieces,
+                                   Bitboard capture_pieces);
 
-Bitboard generate_black_pawn_moves(Square from, Bitboard all_pieces, Bitboard capture_pieces);
+Bitboard generate_black_pawn_moves(Square from, Bitboard all_pieces,
+                                   Bitboard capture_pieces);
 
 Bitboard generate_knight_moves(Square from);
 

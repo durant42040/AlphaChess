@@ -1,30 +1,31 @@
 #include "stockfish.h"
-#include <iostream>
-#include <cstdio>
-#include <memory>
-#include <stdexcept>
 #include <array>
+#include <cstdio>
+#include <iostream>
+#include <memory>
 #include <sstream>
-#include <unistd.h>
+#include <stdexcept>
 #include <sys/socket.h>
+#include <unistd.h>
 
-std::string generate_move_stockfish(std::vector<std::string>& moves) {
+std::string generate_move_stockfish(std::vector<std::string> &moves) {
     std::string input = "position startpos moves";
-    for (const auto& move : moves) {
+    for (const auto &move : moves) {
         input += " " + move;
     }
-    
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("stockfish", "r+"), pclose);
+
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("stockfish", "r+"),
+                                                  pclose);
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
-    
+
     fprintf(pipe.get(), "%s\n", input.c_str());
     fflush(pipe.get());
-    
+
     fprintf(pipe.get(), "go depth 20\n");
     fflush(pipe.get());
-    
+
     std::array<char, 128> buffer;
     std::string result;
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {

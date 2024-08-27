@@ -1,5 +1,5 @@
-#include "chessboard.h"
 #include "engine.h"
+#include "chessboard.h"
 
 std::vector<Move> moves;
 ChessBoard board;
@@ -33,7 +33,8 @@ std::vector<Move> get_legal_moves() {
         Bitboard moves = board.generate_legal_moves(from);
 
         for (auto to : moves) {
-            if (board.pawns_.get(from) && ((to.rank_ == 7) || (to.rank_ == 0))) {
+            if (board.pawns_.get(from) &&
+                ((to.rank_ == 7) || (to.rank_ == 0))) {
                 legal_moves.push_back(Move(from, to, 'q'));
                 legal_moves.push_back(Move(from, to, 'r'));
                 legal_moves.push_back(Move(from, to, 'b'));
@@ -57,31 +58,31 @@ bool is_legal_move(Move move) {
     }
 
     // non-promotion move to promotion square is illegal:q
-    if (board.pawns_.get(from) && (to.rank_ == 7 || to.rank_ == 0) && move.promotion_ == '\0') {
+    if (board.pawns_.get(from) && (to.rank_ == 7 || to.rank_ == 0) &&
+        move.promotion_ == '\0') {
         return false;
     }
 
-    return board.generate_legal_moves(from).get(to) && board.our_pieces().get(from);
+    return board.generate_legal_moves(from).get(to) &&
+           board.our_pieces().get(from);
 }
 
 std::string get_game_state() {
     switch (board.game_state_) {
-        case GameState::Playing:
-            return "playing";
-        case GameState::WhiteWin:
-            return "checkmate";
-        case GameState::BlackWin:
-            return "checkmate";
-        case GameState::Draw:
-            return "draw";
-        default:
-            return "playing";
+    case GameState::Playing:
+        return "playing";
+    case GameState::WhiteWin:
+        return "checkmate";
+    case GameState::BlackWin:
+        return "checkmate";
+    case GameState::Draw:
+        return "draw";
+    default:
+        return "playing";
     }
 }
 
-bool is_check() {
-    return board.is_player_in_check(board.player_);
-}
+bool is_check() { return board.is_player_in_check(board.player_); }
 
 std::string get_board() {
     std::string board_str;
@@ -101,8 +102,7 @@ std::string get_board() {
         } else {
             board_str += '.';
         }
-        
     }
-    
+
     return board_str;
 }

@@ -3,10 +3,9 @@
 #include "move.h"
 #include "move_generator.h"
 #include "random.h"
-#include <sstream>
 #include <algorithm>
+#include <sstream>
 #include <string>
-
 
 uint64_t PieceKeys[2][6][64] = {0};
 uint64_t CastleKeys[4] = {0};
@@ -14,8 +13,7 @@ uint64_t EnPassantKeys[8] = {0};
 uint64_t whiteToMoveKey = 0;
 
 // generate key for position hash
-void init_keys()
-{
+void init_keys() {
     for (int i = 0; i < 8; i++) {
         EnPassantKeys[i] = randInt64();
     }
@@ -32,8 +30,7 @@ void init_keys()
     whiteToMoveKey = randInt64();
 }
 
-std::string ChessBoard::to_string() const
-{
+std::string ChessBoard::to_string() const {
     std::string board;
 
     for (int i = 0; i < 64; i++) {
@@ -76,8 +73,7 @@ std::string ChessBoard::to_string() const
     return result.str();
 }
 
-bool ChessBoard::act(Move move, bool update)
-{
+bool ChessBoard::act(Move move, bool update) {
     Square from = move.from_;
     Square to = move.to_;
     char promotion = move.promotion_;
@@ -97,7 +93,7 @@ bool ChessBoard::act(Move move, bool update)
     all_pieces_.update(from, to);
 
     position_hash_history_.push_back(generate_hash());
-    player_ = (player_ == Player::White)? Player::Black : Player::White;
+    player_ = (player_ == Player::White) ? Player::Black : Player::White;
 
     if (update) {
         update_game_state();
@@ -105,12 +101,10 @@ bool ChessBoard::act(Move move, bool update)
     }
     fullmove_number_++;
 
-
     return true;
 }
 
-void ChessBoard::check_en_passant(Square from, Square to)
-{
+void ChessBoard::check_en_passant(Square from, Square to) {
     // check if en passant is played
     if (pawns_.get(from) && en_passant_.get(to)) {
         // clear captured pawn
@@ -131,30 +125,40 @@ void ChessBoard::check_en_passant(Square from, Square to)
     }
 }
 
-void ChessBoard::check_promotion(char promotion, Square from)
-{
+void ChessBoard::check_promotion(char promotion, Square from) {
     if (promotion) {
         switch (promotion) {
-            case 'q': queens_.set(from); break;
-            case 'r': rooks_.set(from); break;
-            case 'b': bishops_.set(from); break;
-            case 'n': knights_.set(from); break;
-            default: std::cerr << "invalid promotion piece" << std::endl;
+        case 'q':
+            queens_.set(from);
+            break;
+        case 'r':
+            rooks_.set(from);
+            break;
+        case 'b':
+            bishops_.set(from);
+            break;
+        case 'n':
+            knights_.set(from);
+            break;
+        default:
+            std::cerr << "invalid promotion piece" << std::endl;
         }
         pawns_.clear(from);
     }
 }
 
-Bitboard ChessBoard::generate_moves(Square from) const
-{
-    Bitboard our_pieces = white_pieces_.get(from) ? white_pieces_ : black_pieces_;
+Bitboard ChessBoard::generate_moves(Square from) const {
+    Bitboard our_pieces =
+        white_pieces_.get(from) ? white_pieces_ : black_pieces_;
     Bitboard moves(0);
 
     if (pawns_.get(from)) {
         if (white_pieces_.get(from)) {
-            moves = generate_white_pawn_moves(from, all_pieces_, black_pieces_ | en_passant_);
+            moves = generate_white_pawn_moves(from, all_pieces_,
+                                              black_pieces_ | en_passant_);
         } else if (black_pieces_.get(from)) {
-            moves = generate_black_pawn_moves(from, all_pieces_, white_pieces_ | en_passant_);
+            moves = generate_black_pawn_moves(from, all_pieces_,
+                                              white_pieces_ | en_passant_);
         }
     } else if (knights_.get(from)) {
         moves = generate_knight_moves(from);
@@ -176,8 +180,7 @@ Bitboard ChessBoard::generate_moves(Square from) const
     return moves;
 }
 
-Bitboard ChessBoard::generate_legal_moves(Square from) const
-{
+Bitboard ChessBoard::generate_legal_moves(Square from) const {
     Bitboard moves = generate_moves(from);
     // add castling moves
     if (kings_.get(from)) {
@@ -191,7 +194,8 @@ Bitboard ChessBoard::generate_legal_moves(Square from) const
                 }
             }
 
-            // can castle if no squares occupied or attacked between king and rook, and castling rights are set
+            // can castle if no squares occupied or attacked between king and
+            // rook, and castling rights are set
             bool can_white_castle_kingside =
                 (all_black_moves & white_kingside_squares).empty() &&
                 (all_pieces_ & (white_kingside_squares & ~kings_)).empty() &&
@@ -218,7 +222,8 @@ Bitboard ChessBoard::generate_legal_moves(Square from) const
                 }
             }
 
-            // can castle if no squares occupied or attacked between king and rook, and castling rights are set
+            // can castle if no squares occupied or attacked between king and
+            // rook, and castling rights are set
             bool can_black_castle_kingside =
                 (all_white_moves & black_kingside_squares).empty() &&
                 (all_pieces_ & (black_kingside_squares & ~kings_)).empty() &&
@@ -249,8 +254,7 @@ Bitboard ChessBoard::generate_legal_moves(Square from) const
     return moves;
 }
 
-bool ChessBoard::is_player_in_check(Player player) const
-{
+bool ChessBoard::is_player_in_check(Player player) const {
     Bitboard their_pieces = this->their_pieces(player);
     Bitboard our_king = our_pieces(player) & kings_;
     Square our_king_position = Square(our_king.getLSB());
@@ -264,8 +268,7 @@ bool ChessBoard::is_player_in_check(Player player) const
     return false;
 }
 
-void ChessBoard::update_game_state()
-{
+void ChessBoard::update_game_state() {
     Bitboard all_moves = Bitboard(0);
     for (auto from : our_pieces()) {
         all_moves |= generate_legal_moves(from);
@@ -297,8 +300,7 @@ void ChessBoard::update_game_state()
     }
 }
 
-bool ChessBoard::has_mating_material() const
-{
+bool ChessBoard::has_mating_material() const {
     if (!pawns_.empty() || !rooks_.empty() || !queens_.empty()) {
         return true;
     }
@@ -308,15 +310,15 @@ bool ChessBoard::has_mating_material() const
     int num_white_knights = (knights_ & white_pieces_).count();
     int num_black_knights = (knights_ & black_pieces_).count();
 
-    if (num_white_bishops + num_white_knights > 1 || num_black_bishops + num_black_knights > 1) {
+    if (num_white_bishops + num_white_knights > 1 ||
+        num_black_bishops + num_black_knights > 1) {
         return true;
     }
 
     return false;
 }
 
-void ChessBoard::update_draw_condition(Square from, Square to)
-{
+void ChessBoard::update_draw_condition(Square from, Square to) {
     fifty_move_rule_++;
     // reset if pawn is moved or piece is captured
     if (pawns_.get(from) || all_pieces_.get(to)) {
@@ -324,8 +326,7 @@ void ChessBoard::update_draw_condition(Square from, Square to)
     }
 }
 
-void ChessBoard::castling(Square from, Square to)
-{
+void ChessBoard::castling(Square from, Square to) {
     // remove castling rights if king or rook is moved or captured
     if (from == 0 || to == 0) {
         castling_rights_ &= ~2;
@@ -367,8 +368,7 @@ void ChessBoard::castling(Square from, Square to)
     }
 }
 
-void ChessBoard::set_fen(std::string fen)
-{
+void ChessBoard::set_fen(std::string fen) {
     std::string board;
     std::istringstream fen_str(fen);
     fen_str >> board;
@@ -410,12 +410,14 @@ void ChessBoard::set_fen(std::string fen)
 
     // set player
     std::string player_string = "w";
-    if (!fen_str.eof()) fen_str >> player_string;
+    if (!fen_str.eof())
+        fen_str >> player_string;
     player_ = player_string == "w" ? Player::White : Player::Black;
 
     // set castling rights
     std::string castling_rights_string = "-";
-    if (!fen_str.eof()) fen_str >> castling_rights_string;
+    if (!fen_str.eof())
+        fen_str >> castling_rights_string;
     castling_rights_ = 0;
     for (char c : castling_rights_string) {
         if (c == 'K') {
@@ -431,17 +433,19 @@ void ChessBoard::set_fen(std::string fen)
 
     // set en passant square
     std::string en_passant_string = "-";
-    if (!fen_str.eof()) fen_str >> en_passant_string;
+    if (!fen_str.eof())
+        fen_str >> en_passant_string;
     if (en_passant_string != "-") {
         en_passant_.set(Square(en_passant_string));
     }
 
-    if (!fen_str.eof()) fen_str >> fifty_move_rule_;
-    if (!fen_str.eof()) fen_str >> fullmove_number_;
+    if (!fen_str.eof())
+        fen_str >> fifty_move_rule_;
+    if (!fen_str.eof())
+        fen_str >> fullmove_number_;
 }
 
-uint64_t ChessBoard::generate_hash() const
-{
+uint64_t ChessBoard::generate_hash() const {
     uint64_t hash = 0;
     for (auto i : white_pieces_) {
         if (pawns_.get(i)) {
@@ -496,8 +500,7 @@ uint64_t ChessBoard::generate_hash() const
     return hash;
 }
 
-std::vector<uint64_t> ChessBoard::get_position_info() const
-{
+std::vector<uint64_t> ChessBoard::get_position_info() const {
     std::vector<uint64_t> position;
     position.push_back((white_pieces_ & pawns_).bitboard_);
     position.push_back((black_pieces_ & pawns_).bitboard_);
@@ -526,4 +529,3 @@ std::vector<uint64_t> ChessBoard::get_position_info() const
 
     return position;
 }
-

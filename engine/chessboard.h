@@ -16,7 +16,8 @@ const uint64_t white_kingside_squares = 0x0000000000000070;
 const uint64_t white_queenside_squares = 0x000000000000001C;
 const uint64_t black_kingside_squares = 0x7000000000000000;
 const uint64_t black_queenside_squares = 0x1C00000000000000;
-const std::string starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string starting_fen =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 enum class GameState {
     Playing,
@@ -25,22 +26,15 @@ enum class GameState {
     Draw,
 };
 
-enum class Player {
-    White,
-    Black
-};
+enum class Player { White, Black };
 
 void init_keys();
 
 class ChessBoard {
-public:
-    ChessBoard() : game_state_(GameState::Playing)
-    {
-        set_fen(starting_fen);
-    }
+  public:
+    ChessBoard() : game_state_(GameState::Playing) { set_fen(starting_fen); }
 
-    ChessBoard(std::string fen) : game_state_(GameState::Playing)
-    {
+    ChessBoard(std::string fen) : game_state_(GameState::Playing) {
         set_fen(fen);
     }
 
@@ -60,24 +54,15 @@ public:
     void castling(Square from, Square to);
     void set_fen(std::string fen);
     uint64_t generate_hash() const;
-    inline Bitboard our_pieces(Player player) const
-    {
+    inline Bitboard our_pieces(Player player) const {
         return player == Player::White ? white_pieces_ : black_pieces_;
     }
-    inline Bitboard our_pieces() const
-    {
-        return our_pieces(player_);
-    }
-    inline Bitboard their_pieces(Player player) const
-    {
+    inline Bitboard our_pieces() const { return our_pieces(player_); }
+    inline Bitboard their_pieces(Player player) const {
         return player == Player::White ? black_pieces_ : white_pieces_;
     }
-    inline Bitboard their_pieces() const
-    {
-        return their_pieces(player_);
-    }
-    inline int get_repetition_count() const
-    {
+    inline Bitboard their_pieces() const { return their_pieces(player_); }
+    inline int get_repetition_count() const {
         int repetitions = 0;
         for (int i = position_hash_history_.size() - 3; i >= 0; i -= 2) {
             if (position_hash_history_[i] == position_hash_history_.back()) {
