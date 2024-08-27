@@ -34,5 +34,6 @@ jobs:
         uses: wearerequired/lint-action@v2
         with:
           eslint: true
+          eslint_dir: client/
           clang_format: true
           stylelint: true
