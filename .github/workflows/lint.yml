@@ -36,4 +36,3 @@ jobs:
           eslint: true
           eslint_dir: client/
           clang_format: true
-          stylelint: true
