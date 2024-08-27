@@ -28,7 +28,7 @@ jobs:
 
       # Install your linters here
       - name: Install ESlint
-        run: cd client && npm ci
+        run: cd client && npm init @eslint/config && npm ci
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
