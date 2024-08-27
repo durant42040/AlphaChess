@@ -27,6 +27,8 @@ jobs:
         uses: actions/checkout@v4
 
       # Install your linters here
+      - name: Install ESlint
+        run: cd client && npm ci
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
