@@ -1,0 +1,63 @@
+use axum::{Json, Router, extract::Query, http::StatusCode, routing::get};
+use serde::Deserialize;
+use serde_json::{Value, json};
+mod stockfish;
+
+#[derive(Deserialize)]
+struct MoveQuery {
+    r#move: String,
+}
+
+async fn genmove() -> Json<Value> {
+    let move_string = stockfish::generate_move();
+    engine::act(move_string.clone());
+    Json(
+        json!({ "move": move_string, "board": engine::get_board(), "isCheck": engine::is_check() }),
+    )
+}
+
+async fn make_move(Query(params): Query<MoveQuery>) -> (StatusCode, Json<Value>) {
+    let move_string = params.r#move;
+    if move_string.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Move is required" })),
+        );
+    }
+    if !engine::act(move_string.clone()) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Illegal move" })),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "board": engine::get_board(),
+            "isCheck": engine::is_check()
+        })),
+    )
+}
+
+async fn reset() -> StatusCode {
+    engine::reset();
+    StatusCode::OK
+}
+
+async fn game() -> Json<Value> {
+    Json(json!({ "gameState": engine::get_game_state() }))
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .route("/genmove", get(genmove))
+        .route("/make_move", get(make_move))
+        .route("/reset", get(reset))
+        .route("/game", get(game));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
+    println!("Server is running on port 4000");
+    axum::serve(listener, app).await.unwrap();
+}
