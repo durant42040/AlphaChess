@@ -8,7 +8,7 @@ struct MoveQuery {
     r#move: String,
 }
 
-async fn genmove() -> (StatusCode, Json<Value>) {
+async fn generate_move() -> (StatusCode, Json<Value>) {
     let move_string = match stockfish::generate_move() {
         Ok(move_string) => move_string,
         Err(_) => {
@@ -65,8 +65,8 @@ async fn game() -> Json<Value> {
 #[tokio::main]
 async fn main() {
     let app = Router::new()
-        .route("/genmove", get(genmove))
-        .route("/make_move", get(make_move))
+        .route("/generate", get(generate_move))
+        .route("/act", get(make_move))
         .route("/reset", get(reset))
         .route("/game", get(game));
 
