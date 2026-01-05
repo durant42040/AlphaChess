@@ -8,11 +8,24 @@ struct MoveQuery {
     r#move: String,
 }
 
-async fn genmove() -> Json<Value> {
-    let move_string = stockfish::generate_move();
+async fn genmove() -> (StatusCode, Json<Value>) {
+    let move_string = match stockfish::generate_move() {
+        Ok(move_string) => move_string,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to generate move" })),
+            );
+        }
+    };
+
     engine::act(move_string.clone());
-    Json(
-        json!({ "move": move_string, "board": engine::get_board(), "isCheck": engine::is_check() }),
+
+    (
+        StatusCode::OK,
+        Json(
+            json!({ "move": move_string, "board": engine::get_board(), "isCheck": engine::is_check() }),
+        ),
     )
 }
 
