@@ -7,8 +7,7 @@ use axum::{
 use engine::engine::Engine;
 use serde::Deserialize;
 use serde_json::{Value, json};
-
-mod stockfish;
+use stockfish::Stockfish;
 
 #[derive(Deserialize)]
 struct MoveQuery {
@@ -16,15 +15,14 @@ struct MoveQuery {
 }
 
 async fn generate_move(State(mut engine): State<Engine>) -> (StatusCode, Json<Value>) {
-    let move_string = match stockfish::generate_move() {
-        Ok(move_string) => move_string,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to generate move" })),
-            );
-        }
-    };
+    let mut stockfish = Stockfish::new("stockfish").unwrap();
+    let _ = stockfish.setup_for_new_game();
+
+    for r#move in engine.get_moves() {
+        stockfish.play_move(r#move.to_string().as_str()).unwrap();
+    }
+
+    let move_string = stockfish.go().unwrap().to_string();
 
     engine.act(move_string.clone());
 
@@ -74,7 +72,9 @@ async fn game(State(engine): State<Engine>) -> Json<Value> {
 
 #[tokio::main]
 async fn main() {
+    let port = 4000;
     let engine = Engine::new();
+
     let app = Router::new()
         .route("/generate", get(generate_move))
         .route("/act", get(make_move))
@@ -82,7 +82,9 @@ async fn main() {
         .route("/game", get(game))
         .with_state(engine);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
-    println!("Server is running on port 4000");
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
+    println!("Server is running on port {}", port);
     axum::serve(listener, app).await.unwrap();
 }
