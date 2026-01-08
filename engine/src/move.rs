@@ -8,18 +8,26 @@ pub struct Move {
 
 impl Move {
     pub fn new(from: Square, to: Square, promotion: char) -> Self {
-        Self { from, to, promotion: Some(promotion) }
+        Self {
+            from,
+            to,
+            promotion: Some(promotion),
+        }
     }
 
     pub fn from_string(&self, move_string: String) -> Self {
         let from_string = move_string.chars().take(2).collect();
         let to_string = move_string.chars().skip(2).take(2).collect();
         let promotion = move_string.chars().nth(4);
-        
+
         let from = Square::from_string(from_string);
         let to = Square::from_string(to_string);
 
-        Self { from, to, promotion }
+        Self {
+            from,
+            to,
+            promotion,
+        }
     }
 
     pub fn to_string(&self) -> String {

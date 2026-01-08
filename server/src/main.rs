@@ -30,7 +30,7 @@ impl IntoResponse for StockfishError {
     fn into_response(self) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", self.0),
+            format!("stockfish io error: {}", self.0),
         )
             .into_response()
     }
@@ -51,7 +51,8 @@ async fn generate_move(
     let mut engine = state.engine.lock().await;
     let mut stockfish = state.stockfish.lock().await;
 
-    let move_string = stockfish.go()?.to_string();
+    let stockfish_output = stockfish.go()?;
+    let move_string = stockfish_output.best_move();
     stockfish.play_move(&move_string)?;
 
     engine.act(move_string.clone());
@@ -78,6 +79,8 @@ async fn make_move(
             Json(json!({ "error": "Move is required" })),
         ));
     }
+
+    println!("making move: {}", move_string);
 
     if !engine.act(move_string.clone()) {
         return Ok((
@@ -110,6 +113,7 @@ async fn game(State(state): State<AppState>) -> Json<Value> {
 #[tokio::main]
 async fn main() {
     let port = 4000;
+
     let engine = Arc::new(Mutex::new(Engine::new()));
 
     let stockfish = Arc::new(Mutex::new(

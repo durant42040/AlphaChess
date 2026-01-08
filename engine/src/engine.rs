@@ -1,5 +1,5 @@
-use crate::r#move::Move;
 use crate::chessboard::ChessBoard;
+use crate::r#move::Move;
 
 pub struct Engine {
     board: ChessBoard,
@@ -22,23 +22,23 @@ impl Engine {
     pub fn act(&mut self, move_string: String) -> bool {
         true
     }
-    
+
     pub fn get_game_state(&self) -> String {
         "playing".to_string()
     }
-    
+
     pub fn is_check(&self) -> bool {
         false
     }
-    
+
     pub fn is_legal_move(&self, move_string: String) -> bool {
         true
     }
-    
+
     pub fn get_legal_moves(&self) -> Vec<String> {
         vec!["e2e4".to_string(), "e2e3".to_string()]
     }
-    
+
     pub fn get_board(&self) -> String {
         "RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr".to_string()
     }
@@ -47,4 +47,3 @@ impl Engine {
         self.moves.iter().map(|r#move| r#move.to_string()).collect()
     }
 }
-
