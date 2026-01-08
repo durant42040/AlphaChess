@@ -2,36 +2,61 @@ use axum::{
     Json, Router,
     extract::{Query, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::get,
 };
 use engine::engine::Engine;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use stockfish::Stockfish;
+use tokio::net::TcpListener;
 
 #[derive(Deserialize)]
 struct MoveQuery {
     r#move: String,
 }
 
-async fn generate_move(State(mut engine): State<Engine>) -> (StatusCode, Json<Value>) {
-    let mut stockfish = Stockfish::new("stockfish").unwrap();
+struct StockfishError(std::io::Error);
+
+impl IntoResponse for StockfishError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self.0),
+        )
+            .into_response()
+    }
+}
+
+impl<E> From<E> for StockfishError
+where
+    E: Into<std::io::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
+}
+
+async fn generate_move(
+    State(mut engine): State<Engine>,
+) -> Result<(StatusCode, Json<Value>), StockfishError> {
+    let mut stockfish = Stockfish::new("stockfish")?;
     let _ = stockfish.setup_for_new_game();
 
     for r#move in engine.get_moves() {
-        stockfish.play_move(r#move.to_string().as_str()).unwrap();
+        stockfish.play_move(r#move.to_string().as_str())?;
     }
 
-    let move_string = stockfish.go().unwrap().to_string();
+    let move_string = stockfish.go()?.to_string();
 
     engine.act(move_string.clone());
 
-    (
+    Ok((
         StatusCode::OK,
         Json(
             json!({ "move": move_string, "board": engine.get_board(), "isCheck": engine.is_check() }),
         ),
-    )
+    ))
 }
 
 async fn make_move(
@@ -82,9 +107,10 @@ async fn main() {
         .route("/game", get(game))
         .with_state(engine);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
         .unwrap();
+
     println!("Server is running on port {}", port);
     axum::serve(listener, app).await.unwrap();
 }
