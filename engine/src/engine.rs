@@ -1,7 +1,6 @@
 use crate::r#move::Move;
 use crate::chessboard::ChessBoard;
 
-#[derive(Clone)]
 pub struct Engine {
     board: ChessBoard,
     moves: Vec<Move>,

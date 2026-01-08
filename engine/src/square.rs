@@ -1,4 +1,4 @@
-#[derive(Clone, PartialEq)]
+#[derive(PartialEq)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
