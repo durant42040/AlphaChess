@@ -400,10 +400,6 @@ pub const KNIGHT_ATTACKS: [u64; 64] = [
     0x0020400000000000,
 ];
 
-// Mutable lookup tables (initialized at runtime)
-pub static mut BISHOP_TABLE: [[u64; 1024]; 64] = [[0; 1024]; 64];
-pub static mut ROOK_TABLE: [[u64; 4096]; 64] = [[0; 4096]; 64];
-
 pub const ROOK_MAGIC_NUMBERS: [u64; 64] = [
     0xa8002c000108020,
     0x6c00049b0002001,
@@ -538,13 +534,13 @@ pub const BISHOP_MAGIC_NUMBERS: [u64; 64] = [
     0x40102000a0a60140,
 ];
 
-pub const ROOK_SHIFT_BITS: [u32; 64] = [
+pub const ROOK_SHIFT_BITS: [u64; 64] = [
     12, 11, 11, 11, 11, 11, 11, 12, 11, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11, 12, 11, 11, 11, 11, 11, 11, 12,
 ];
 
-pub const BISHOP_SHIFT_BITS: [u32; 64] = [
+pub const BISHOP_SHIFT_BITS: [u64; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 7, 9, 9, 7, 5, 5,
     5, 5, 7, 9, 9, 7, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 6,
 ];

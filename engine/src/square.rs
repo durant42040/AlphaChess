@@ -28,6 +28,16 @@ impl fmt::Display for Square {
     }
 }
 
+impl From<u8> for Square {
+    fn from(square: u8) -> Self {
+        Self {
+            rank: square / 8,
+            file: square % 8,
+            square,
+        }
+    }
+}
+
 impl FromStr for Square {
     type Err = ();
 

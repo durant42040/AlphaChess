@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::bitboard::Bitboard;
 use crate::r#move::Move;
+use crate::move_generator::MoveGenerator;
 use crate::square::Square;
 
 #[derive(Default, Copy, Clone)]
@@ -37,6 +38,7 @@ pub enum Player {
 
 #[derive(Default)]
 pub struct ChessBoard {
+    move_generator: MoveGenerator,
     game_state: GameState,
     player: Player,
     position_hash_history: Vec<u64>,

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::chessboard::{ChessBoard, GameState};
+use crate::chessboard::ChessBoard;
 use crate::r#move::Move;
 
 pub struct Engine {
