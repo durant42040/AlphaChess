@@ -4,8 +4,8 @@ use crate::bitboard::Bitboard;
 use crate::r#move::Move;
 use crate::square::Square;
 
-#[derive(Default)]
-enum GameState {
+#[derive(Default, Copy, Clone)]
+pub enum GameState {
     #[default]
     Playing,
     WhiteWin,
@@ -13,8 +13,23 @@ enum GameState {
     Draw,
 }
 
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                GameState::Playing => "playing",
+                GameState::WhiteWin => "checkmate",
+                GameState::BlackWin => "checkmate",
+                GameState::Draw => "draw",
+            }
+        )
+    }
+}
+
 #[derive(Default)]
-enum Player {
+pub enum Player {
     #[default]
     White,
     Black,
@@ -139,6 +154,10 @@ impl ChessBoard {
             Player::Black => Player::White,
         };
     }
+
+    pub fn get_game_state(&self) -> GameState {
+        self.game_state.to_string()
+    }
 }
 
 impl fmt::Display for ChessBoard {
@@ -183,5 +202,30 @@ impl fmt::Display for ChessBoard {
         }
 
         write!(f, "   a b c d e f g h\n\n")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ChessBoard;
+
+    #[test]
+    fn test_chessboard_to_string() {
+        let board: ChessBoard = ChessBoard::new();
+        let board_string = format!("{}", board);
+
+        let expected = r#"8  r n b q k b n r
+7  p p p p p p p p
+6  . . . . . . . .
+5  . . . . . . . .
+4  . . . . . . . .
+3  . . . . . . . .
+2  P P P P P P P P
+1  R N B Q K B N R
+   a b c d e f g h
+
+"#;
+
+        assert_eq!(board_string, expected);
     }
 }

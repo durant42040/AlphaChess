@@ -39,3 +39,24 @@ impl FromStr for Square {
         Ok(Self::new(bytes[1] - b'1', bytes[0] - b'a'))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Square;
+
+    #[test]
+    fn test_square_new() {
+        let square = Square::new(0, 0);
+        let square_string = format!("{}", square);
+
+        assert_eq!(square_string, "a1");
+    }
+
+    #[test]
+    fn test_square_from_string() {
+        let square = "e4".parse::<Square>().unwrap();
+        let square_string = format!("{}", square);
+
+        assert_eq!(square_string, "e4");
+    }
+}

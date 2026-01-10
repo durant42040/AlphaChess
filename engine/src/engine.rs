@@ -1,4 +1,6 @@
-use crate::chessboard::ChessBoard;
+use std::fmt;
+
+use crate::chessboard::{ChessBoard, GameState};
 use crate::r#move::Move;
 
 pub struct Engine {
@@ -27,8 +29,8 @@ impl Engine {
         true
     }
 
-    pub fn get_game_state(&self) -> String {
-        "playing".to_string()
+    pub fn get_game_state(&self) -> &str {
+        self.board.get_game_state()
     }
 
     pub fn is_check(&self) -> bool {
@@ -42,8 +44,10 @@ impl Engine {
     pub fn get_legal_moves(&self) -> Vec<String> {
         vec!["e2e4".to_string(), "e2e3".to_string()]
     }
+}
 
-    pub fn get_board(&self) -> String {
-        "RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr".to_string()
+impl fmt::Display for Engine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.board)
     }
 }

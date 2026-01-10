@@ -60,7 +60,7 @@ async fn generate_move(
     Ok((
         StatusCode::OK,
         Json(
-            json!({ "move": move_string, "board": engine.get_board(), "isCheck": engine.is_check() }),
+            json!({ "move": move_string, "board": engine.to_string(), "isCheck": engine.is_check() }),
         ),
     ))
 }
@@ -93,7 +93,7 @@ async fn make_move(
     Ok((
         StatusCode::OK,
         Json(json!({
-            "board": engine.get_board(),
+            "board": engine.to_string(),
             "isCheck": engine.is_check()
         })),
     ))
