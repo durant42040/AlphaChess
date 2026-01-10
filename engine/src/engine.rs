@@ -34,7 +34,48 @@ impl Engine {
 
     pub fn generate_moves(&self, from: Square) -> Bitboard {
         let pieces = self.board.get_pieces();
-        let moves = Bitboard::default();
+        let our_pieces = if pieces.white_pieces.get_square(from) {
+            pieces.white_pieces
+        } else {
+            pieces.black_pieces
+        };
+
+        let mut moves = Bitboard::default();
+
+        if pieces.pawns.get_square(from) {
+            if pieces.white_pieces.get_square(from) {
+                moves = self.move_generator.generate_white_pawn_moves(
+                    from,
+                    pieces.all_pieces,
+                    pieces.black_pieces | pieces.en_passant,
+                );
+            } else {
+                moves = self.move_generator.generate_black_pawn_moves(
+                    from,
+                    pieces.all_pieces,
+                    pieces.white_pieces | pieces.en_passant,
+                );
+            }
+        } else if pieces.knights.get_square(from) {
+            moves = self.move_generator.generate_knight_moves(from);
+        } else if pieces.bishops.get_square(from) {
+            moves = self
+                .move_generator
+                .generate_bishop_moves(from, pieces.all_pieces);
+        } else if pieces.rooks.get_square(from) {
+            moves = self
+                .move_generator
+                .generate_rook_moves(from, pieces.all_pieces);
+        } else if pieces.queens.get_square(from) {
+            moves = self
+                .move_generator
+                .generate_queen_moves(from, pieces.all_pieces);
+        } else if pieces.kings.get_square(from) {
+            moves = self.move_generator.generate_king_moves(from);
+        }
+
+        moves &= !our_pieces;
+
         moves
     }
 

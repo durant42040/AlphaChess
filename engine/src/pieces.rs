@@ -12,6 +12,7 @@ pub struct Pieces {
     pub white_pieces: Bitboard,
     pub black_pieces: Bitboard,
     pub all_pieces: Bitboard,
+    pub en_passant: Bitboard,
 }
 
 impl Pieces {

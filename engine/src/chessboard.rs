@@ -1,6 +1,5 @@
 use std::fmt;
 
-use crate::bitboard::Bitboard;
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::pieces::Pieces;
@@ -14,7 +13,6 @@ pub struct ChessBoard {
     fifty_move_rule: u8,
     fullmove_number: u8,
     castling_rights: u8,
-    en_passant: Bitboard,
     pieces: Pieces,
 }
 
@@ -71,7 +69,7 @@ impl ChessBoard {
         let en_passant_str = parts.next().unwrap_or("-");
         if en_passant_str != "-" {
             let square = en_passant_str.parse::<Square>().unwrap();
-            chessboard.en_passant.set_square(square);
+            chessboard.pieces.en_passant.set_square(square);
         }
 
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
