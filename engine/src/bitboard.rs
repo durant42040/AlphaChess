@@ -7,6 +7,28 @@ pub struct Bitboard {
     pub bitboard: u64,
 }
 
+pub struct BitboardIter {
+    bitboard: u64,
+}
+
+impl Iterator for BitboardIter {
+    type Item = u8;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bitboard == 0 {
+            return None;
+        }
+
+        let lsb = self.bitboard & (!self.bitboard + 1);
+        let idx = lsb.trailing_zeros() as u8;
+
+        self.bitboard ^= lsb;
+
+        Some(idx)
+    }
+}
+
 impl Bitboard {
     pub fn get_square(&self, square: Square) -> bool {
         self.bitboard & (1 << square.square) != 0
@@ -60,6 +82,13 @@ impl Bitboard {
 
     pub fn count(&self) -> u8 {
         self.bitboard.count_ones() as u8
+    }
+
+    #[inline]
+    pub fn iter(self) -> BitboardIter {
+        BitboardIter {
+            bitboard: self.bitboard,
+        }
     }
 }
 
@@ -144,5 +173,23 @@ impl fmt::Display for Bitboard {
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_iterator() {
+        let mut bitboard = Bitboard::default();
+        let positions = [1, 4, 6, 7, 18, 43, 63];
+
+        for &pos in &positions {
+            bitboard.set(pos);
+        }
+
+        let result: Vec<u8> = bitboard.iter().collect();
+        assert_eq!(result, positions);
     }
 }

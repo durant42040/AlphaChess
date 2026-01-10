@@ -118,11 +118,11 @@ impl MoveGenerator {
     }
 
     pub fn generate_knight_moves(&self, from: Square) -> Bitboard {
-        KNIGHT_ATTACKS[from].into()
+        self.knight[from].into()
     }
 
     pub fn generate_king_moves(&self, from: Square) -> Bitboard {
-        KING_ATTACKS[from].into()
+        self.king[from].into()
     }
 
     fn generate_bishop_moves_slow(&self, from: Square, all_pieces: Bitboard) -> Bitboard {

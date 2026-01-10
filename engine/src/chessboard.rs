@@ -51,6 +51,10 @@ impl ChessBoard {
         }
     }
 
+    pub fn get_player(&self) -> Player {
+        self.player
+    }
+
     pub fn is_check(&self) -> bool {
         self.is_player_in_check(self.player)
     }
