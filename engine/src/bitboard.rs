@@ -66,6 +66,12 @@ impl Bitboard {
     }
 }
 
+impl Default for Bitboard {
+    fn default() -> Self {
+        Self::new(0)
+    }
+}
+
 impl BitAnd for Bitboard {
     type Output = Bitboard;
     #[inline]

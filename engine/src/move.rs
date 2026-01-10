@@ -1,5 +1,8 @@
+use std::{fmt, str::FromStr};
+
 use crate::square::Square;
 
+#[derive(Clone)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
@@ -14,27 +17,33 @@ impl Move {
             promotion: Some(promotion),
         }
     }
+}
 
-    pub fn from_string(&self, move_string: String) -> Self {
-        let from_string = move_string.chars().take(2).collect();
-        let to_string = move_string.chars().skip(2).take(2).collect();
+impl fmt::Display for Move {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.from, self.to)?;
+        if let Some(p) = self.promotion {
+            write!(f, "{}", p)?;
+        }
+        Ok(())
+    }
+}
+
+impl FromStr for Move {
+    type Err = ();
+
+    fn from_str(move_string: &str) -> Result<Self, ()> {
+        let from_string = &move_string[0..2];
+        let to_string = &move_string[2..4];
         let promotion = move_string.chars().nth(4);
 
-        let from = Square::from_string(from_string);
-        let to = Square::from_string(to_string);
+        let from = from_string.parse::<Square>().unwrap();
+        let to = to_string.parse::<Square>().unwrap();
 
-        Self {
+        Ok(Self {
             from,
             to,
             promotion,
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        let mut move_string = format!("{}{}", self.from.to_string(), self.to.to_string());
-        if self.promotion.is_some() {
-            move_string.push(self.promotion.unwrap());
-        }
-        move_string
+        })
     }
 }

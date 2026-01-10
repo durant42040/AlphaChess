@@ -3,23 +3,27 @@ use crate::r#move::Move;
 
 pub struct Engine {
     board: ChessBoard,
-    moves: Vec<Move>,
 }
 
 impl Engine {
     pub fn new() -> Self {
         Self {
             board: ChessBoard::new(),
-            moves: vec![],
         }
     }
 
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
-        self.moves.clear();
     }
 
     pub fn act(&mut self, move_string: String) -> bool {
+        let r#move = move_string.parse::<Move>().unwrap();
+
+        if !self.is_legal_move(r#move.clone()) {
+            return false;
+        }
+
+        self.board.act(r#move);
         true
     }
 
@@ -31,7 +35,7 @@ impl Engine {
         false
     }
 
-    pub fn is_legal_move(&self, move_string: String) -> bool {
+    pub fn is_legal_move(&self, r#move: Move) -> bool {
         true
     }
 
@@ -41,9 +45,5 @@ impl Engine {
 
     pub fn get_board(&self) -> String {
         "RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr".to_string()
-    }
-
-    pub fn get_moves(&self) -> Vec<String> {
-        self.moves.iter().map(|r#move| r#move.to_string()).collect()
     }
 }

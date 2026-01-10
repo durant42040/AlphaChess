@@ -1,20 +1,26 @@
 use std::fmt;
 
 use crate::bitboard::Bitboard;
+use crate::r#move::Move;
 use crate::square::Square;
 
+#[derive(Default)]
 enum GameState {
+    #[default]
     Playing,
     WhiteWin,
     BlackWin,
     Draw,
 }
 
+#[derive(Default)]
 enum Player {
+    #[default]
     White,
     Black,
 }
 
+#[derive(Default)]
 pub struct ChessBoard {
     game_state: GameState,
     player: Player,
@@ -43,17 +49,8 @@ impl ChessBoard {
     }
 
     pub fn from_fen(fen: &str) -> Self {
+        let mut chessboard = Self::default();
         let mut parts = fen.split_whitespace();
-
-        let mut all_pieces = Bitboard::new(0);
-        let mut white_pieces = Bitboard::new(0);
-        let mut black_pieces = Bitboard::new(0);
-        let mut pawns = Bitboard::new(0);
-        let mut knights = Bitboard::new(0);
-        let mut bishops = Bitboard::new(0);
-        let mut rooks = Bitboard::new(0);
-        let mut queens = Bitboard::new(0);
-        let mut kings = Bitboard::new(0);
 
         let board = parts.next().unwrap_or("");
         let mut rank = 7;
@@ -74,19 +71,19 @@ impl ChessBoard {
             }
 
             if c.is_uppercase() {
-                white_pieces.set(i);
+                chessboard.white_pieces.set(i);
             } else {
-                black_pieces.set(i);
+                chessboard.black_pieces.set(i);
             }
-            all_pieces.set(i);
+            chessboard.all_pieces.set(i);
 
             match c {
-                'k' | 'K' => kings.set(i),
-                'q' | 'Q' => queens.set(i),
-                'r' | 'R' => rooks.set(i),
-                'b' | 'B' => bishops.set(i),
-                'n' | 'N' => knights.set(i),
-                'p' | 'P' => pawns.set(i),
+                'k' | 'K' => chessboard.kings.set(i),
+                'q' | 'Q' => chessboard.queens.set(i),
+                'r' | 'R' => chessboard.rooks.set(i),
+                'b' | 'B' => chessboard.bishops.set(i),
+                'n' | 'N' => chessboard.knights.set(i),
+                'p' | 'P' => chessboard.pawns.set(i),
                 _ => {}
             }
 
@@ -94,57 +91,53 @@ impl ChessBoard {
         }
 
         let player_str = parts.next().unwrap_or("w");
-        let player = if player_str == "w" {
-            Player::White
-        } else {
-            Player::Black
-        };
+        if player_str == "b" {
+            chessboard.player = Player::Black;
+        }
 
         let castling_str = parts.next().unwrap_or("-");
-        let mut castling_rights = 0u8;
+        chessboard.castling_rights = 0u8;
         for c in castling_str.chars() {
             match c {
-                'K' => castling_rights |= 1,
-                'Q' => castling_rights |= 2,
-                'k' => castling_rights |= 4,
-                'q' => castling_rights |= 8,
+                'K' => chessboard.castling_rights |= 1,
+                'Q' => chessboard.castling_rights |= 2,
+                'k' => chessboard.castling_rights |= 4,
+                'q' => chessboard.castling_rights |= 8,
                 _ => {}
             }
         }
 
-        // Parse en passant square (fourth part)
         let en_passant_str = parts.next().unwrap_or("-");
-        let en_passant = if en_passant_str != "-" {
-            let square = Square::from_string(en_passant_str.to_string());
-            let mut ep_bitboard = Bitboard::new(0);
-            ep_bitboard.set_square(square);
-            ep_bitboard
-        } else {
-            Bitboard::new(0)
-        };
-
-        let fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
-
-        let fullmove_number = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(1);
-
-        Self {
-            game_state: GameState::Playing,
-            player,
-            position_hash_history: Vec::new(),
-            fifty_move_rule,
-            fullmove_number,
-            castling_rights,
-            en_passant,
-            all_pieces,
-            white_pieces,
-            black_pieces,
-            pawns,
-            knights,
-            bishops,
-            rooks,
-            queens,
-            kings,
+        if en_passant_str != "-" {
+            let square = en_passant_str.parse::<Square>().unwrap();
+            chessboard.en_passant.set_square(square);
         }
+
+        chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
+        chessboard.fullmove_number = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(1);
+
+        chessboard
+    }
+
+    pub fn act(&mut self, r#move: Move) {
+        let from = r#move.from;
+        let to = r#move.to;
+        let promotion = r#move.promotion;
+
+        self.pawns.update(from, to);
+        self.knights.update(from, to);
+        self.bishops.update(from, to);
+        self.rooks.update(from, to);
+        self.queens.update(from, to);
+        self.kings.update(from, to);
+        self.white_pieces.update(from, to);
+        self.black_pieces.update(from, to);
+        self.all_pieces.update(from, to);
+
+        self.player = match self.player {
+            Player::White => Player::Black,
+            Player::Black => Player::White,
+        };
     }
 }
 

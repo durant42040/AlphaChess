@@ -1,5 +1,5 @@
-mod bitboard;
-mod chessboard;
+pub mod bitboard;
+pub mod chessboard;
 pub mod engine;
-mod r#move;
-mod square;
+pub mod r#move;
+pub mod square;

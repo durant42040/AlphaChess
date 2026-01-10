@@ -1,0 +1,21 @@
+use engine::chessboard::ChessBoard;
+
+#[test]
+fn test_chessboard_to_string() {
+    let board: ChessBoard = ChessBoard::new();
+    let board_string = format!("{}", board);
+
+    let expected = r#"8  r n b q k b n r
+7  p p p p p p p p
+6  . . . . . . . .
+5  . . . . . . . .
+4  . . . . . . . .
+3  . . . . . . . .
+2  P P P P P P P P
+1  R N B Q K B N R
+   a b c d e f g h
+
+"#;
+
+    assert_eq!(board_string, expected);
+}
