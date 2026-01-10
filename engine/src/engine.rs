@@ -20,13 +20,7 @@ impl Engine {
 
     pub fn act(&mut self, move_string: String) -> bool {
         let r#move = move_string.parse::<Move>().unwrap();
-
-        if !self.is_legal_move(r#move.clone()) {
-            return false;
-        }
-
-        self.board.act(r#move);
-        true
+        return self.board.act(r#move);
     }
 
     pub fn get_game_state(&self) -> String {
@@ -35,10 +29,6 @@ impl Engine {
 
     pub fn is_check(&self) -> bool {
         false
-    }
-
-    pub fn is_legal_move(&self, r#move: Move) -> bool {
-        true
     }
 
     pub fn get_legal_moves(&self) -> Vec<String> {

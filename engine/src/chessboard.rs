@@ -134,7 +134,11 @@ impl ChessBoard {
         chessboard
     }
 
-    pub fn act(&mut self, r#move: Move) {
+    pub fn act(&mut self, r#move: Move) -> bool {
+        if !self.is_legal_move(r#move) {
+            return false;
+        }
+
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
@@ -153,6 +157,12 @@ impl ChessBoard {
             Player::White => Player::Black,
             Player::Black => Player::White,
         };
+
+        true
+    }
+
+    pub fn is_legal_move(&self, r#move: Move) -> bool {
+        todo!()
     }
 
     pub fn get_game_state(&self) -> String {
