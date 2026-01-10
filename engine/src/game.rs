@@ -24,9 +24,18 @@ impl fmt::Display for GameState {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq, Copy, Clone)]
 pub enum Player {
     #[default]
     White,
     Black,
+}
+
+impl Player {
+    pub fn switch(&self) -> Self {
+        match self {
+            Player::White => Player::Black,
+            Player::Black => Player::White,
+        }
+    }
 }

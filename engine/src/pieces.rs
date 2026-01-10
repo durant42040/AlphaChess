@@ -16,6 +16,37 @@ pub struct Pieces {
 }
 
 impl Pieces {
+    pub fn new() -> Self {
+        let mut pieces = Self::default();
+        pieces.set('R', 0);
+        pieces.set('N', 1);
+        pieces.set('B', 2);
+        pieces.set('Q', 3);
+        pieces.set('K', 4);
+        pieces.set('B', 5);
+        pieces.set('N', 6);
+        pieces.set('R', 7);
+
+        for square in 8..16 {
+            pieces.set('P', square);
+        }
+
+        for square in 48..56 {
+            pieces.set('p', square);
+        }
+
+        pieces.set('r', 56);
+        pieces.set('n', 57);
+        pieces.set('b', 58);
+        pieces.set('q', 59);
+        pieces.set('k', 60);
+        pieces.set('b', 61);
+        pieces.set('n', 62);
+        pieces.set('r', 63);
+
+        pieces
+    }
+
     pub fn update(&mut self, from: Square, to: Square) {
         self.pawns.update(from, to);
         self.knights.update(from, to);
@@ -47,7 +78,7 @@ impl Pieces {
         }
     }
 
-    pub fn get_char(&self, i: u8) -> char {
+    pub fn get(&self, i: u8) -> char {
         let mut c = '.';
         if self.pawns.get(i) {
             c = 'p';

@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::bitboard::Bitboard;
 use crate::chessboard::ChessBoard;
+use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
 use crate::square::Square;
@@ -9,6 +10,7 @@ use crate::square::Square;
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
+    game_state: GameState,
 }
 
 impl Engine {
@@ -16,11 +18,13 @@ impl Engine {
         Self {
             board: ChessBoard::new(),
             move_generator: MoveGenerator::new(),
+            game_state: GameState::Playing,
         }
     }
 
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
+        self.game_state = GameState::Playing;
     }
 
     pub fn act(&mut self, move_string: String) -> bool {
@@ -79,20 +83,26 @@ impl Engine {
         moves
     }
 
+    pub fn generate_legal_moves(&self, from: Square) -> Bitboard {
+        let moves = self.generate_moves(from);
+        todo!();
+        moves
+    }
+
     pub fn get_game_state(&self) -> String {
-        self.board.get_game_state()
+        self.game_state.to_string()
     }
 
     pub fn is_check(&self) -> bool {
-        false
-    }
-
-    pub fn get_legal_moves(&self) -> Vec<String> {
-        vec!["e2e4".to_string(), "e2e3".to_string()]
+        self.board.is_check()
     }
 
     pub fn is_legal_move(&self, r#move: Move) -> bool {
-        true
+        let from = r#move.from;
+        let to = r#move.to;
+        todo!();
+        self.generate_legal_moves(from).get_square(to)
+            && self.board.get_our_pieces().get_square(from)
     }
 }
 

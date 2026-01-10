@@ -1,81 +1,33 @@
 use std::fmt;
 
-use crate::game::{GameState, Player};
+use crate::bitboard::Bitboard;
+use crate::game::Player;
 use crate::r#move::Move;
 use crate::pieces::Pieces;
-use crate::square::Square;
 
 #[derive(Default)]
 pub struct ChessBoard {
-    game_state: GameState,
-    player: Player,
     position_hash_history: Vec<u64>,
     fifty_move_rule: u8,
     fullmove_number: u8,
     castling_rights: u8,
+    player: Player,
     pieces: Pieces,
 }
 
 impl ChessBoard {
     pub fn new() -> Self {
-        let starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        Self::from_fen(starting_fen)
-    }
+        let pieces = Pieces::new();
+        let player = Player::White;
 
-    pub fn from_fen(fen: &str) -> Self {
-        let mut chessboard = Self::default();
-        let mut parts = fen.split_whitespace();
-
-        let board = parts.next().unwrap_or("");
-        let mut rank = 7;
-        let mut file = 0;
-
-        for c in board.chars() {
-            let i: u8 = rank * 8 + file;
-
-            if c == '/' {
-                rank -= 1;
-                file = 0;
-                continue;
-            }
-
-            if c.is_ascii_digit() {
-                file += c.to_digit(10).unwrap() as u8;
-                continue;
-            }
-
-            chessboard.pieces.set(c, i);
-
-            file += 1;
+        Self {
+            position_hash_history: Vec::new(),
+            fifty_move_rule: 0,
+            fullmove_number: 1,
+            castling_rights: 0b1111,
+            player,
+            pieces,
         }
-
-        let player_str = parts.next().unwrap_or("w");
-        if player_str == "b" {
-            chessboard.player = Player::Black;
-        }
-
-        let castling_str = parts.next().unwrap_or("-");
-        chessboard.castling_rights = 0u8;
-        for c in castling_str.chars() {
-            match c {
-                'K' => chessboard.castling_rights |= 1,
-                'Q' => chessboard.castling_rights |= 2,
-                'k' => chessboard.castling_rights |= 4,
-                'q' => chessboard.castling_rights |= 8,
-                _ => {}
-            }
-        }
-
-        let en_passant_str = parts.next().unwrap_or("-");
-        if en_passant_str != "-" {
-            let square = en_passant_str.parse::<Square>().unwrap();
-            chessboard.pieces.en_passant.set_square(square);
-        }
-
-        chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
-        chessboard.fullmove_number = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(1);
-
-        chessboard
     }
 
     pub fn act(&mut self, r#move: Move) {
@@ -84,18 +36,27 @@ impl ChessBoard {
         let promotion = r#move.promotion;
 
         self.pieces.update(from, to);
-        self.player = match self.player {
-            Player::White => Player::Black,
-            Player::Black => Player::White,
-        };
-    }
-
-    pub fn get_game_state(&self) -> String {
-        self.game_state.to_string()
+        self.player = self.player.switch();
     }
 
     pub fn get_pieces(&self) -> Pieces {
         self.pieces
+    }
+
+    pub fn get_our_pieces(&self) -> Bitboard {
+        if self.player == Player::White {
+            self.pieces.white_pieces
+        } else {
+            self.pieces.black_pieces
+        }
+    }
+
+    pub fn is_check(&self) -> bool {
+        self.is_player_in_check(self.player)
+    }
+
+    pub fn is_player_in_check(&self, player: Player) -> bool {
+        todo!();
     }
 }
 
@@ -104,7 +65,7 @@ impl fmt::Display for ChessBoard {
         let mut board = String::new();
 
         for i in 0..64 {
-            let c = self.pieces.get_char(i);
+            let c = self.pieces.get(i);
 
             board.push(c);
 
