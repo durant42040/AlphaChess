@@ -1,44 +1,13 @@
 use std::fmt;
 
 use crate::bitboard::Bitboard;
+use crate::game::{GameState, Player};
 use crate::r#move::Move;
-use crate::move_generator::MoveGenerator;
+use crate::pieces::Pieces;
 use crate::square::Square;
-
-#[derive(Default, Copy, Clone)]
-pub enum GameState {
-    #[default]
-    Playing,
-    WhiteWin,
-    BlackWin,
-    Draw,
-}
-
-impl fmt::Display for GameState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                GameState::Playing => "playing",
-                GameState::WhiteWin => "checkmate",
-                GameState::BlackWin => "checkmate",
-                GameState::Draw => "draw",
-            }
-        )
-    }
-}
-
-#[derive(Default)]
-pub enum Player {
-    #[default]
-    White,
-    Black,
-}
 
 #[derive(Default)]
 pub struct ChessBoard {
-    move_generator: MoveGenerator,
     game_state: GameState,
     player: Player,
     position_hash_history: Vec<u64>,
@@ -46,17 +15,7 @@ pub struct ChessBoard {
     fullmove_number: u8,
     castling_rights: u8,
     en_passant: Bitboard,
-
-    all_pieces: Bitboard,
-    white_pieces: Bitboard,
-    black_pieces: Bitboard,
-
-    pawns: Bitboard,
-    knights: Bitboard,
-    bishops: Bitboard,
-    rooks: Bitboard,
-    queens: Bitboard,
-    kings: Bitboard,
+    pieces: Pieces,
 }
 
 impl ChessBoard {
@@ -87,22 +46,7 @@ impl ChessBoard {
                 continue;
             }
 
-            if c.is_uppercase() {
-                chessboard.white_pieces.set(i);
-            } else {
-                chessboard.black_pieces.set(i);
-            }
-            chessboard.all_pieces.set(i);
-
-            match c {
-                'k' | 'K' => chessboard.kings.set(i),
-                'q' | 'Q' => chessboard.queens.set(i),
-                'r' | 'R' => chessboard.rooks.set(i),
-                'b' | 'B' => chessboard.bishops.set(i),
-                'n' | 'N' => chessboard.knights.set(i),
-                'p' | 'P' => chessboard.pawns.set(i),
-                _ => {}
-            }
+            chessboard.pieces.set(c, i);
 
             file += 1;
         }
@@ -136,39 +80,24 @@ impl ChessBoard {
         chessboard
     }
 
-    pub fn act(&mut self, r#move: Move) -> bool {
-        if !self.is_legal_move(r#move) {
-            return false;
-        }
-
+    pub fn act(&mut self, r#move: Move) {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
 
-        self.pawns.update(from, to);
-        self.knights.update(from, to);
-        self.bishops.update(from, to);
-        self.rooks.update(from, to);
-        self.queens.update(from, to);
-        self.kings.update(from, to);
-        self.white_pieces.update(from, to);
-        self.black_pieces.update(from, to);
-        self.all_pieces.update(from, to);
-
+        self.pieces.update(from, to);
         self.player = match self.player {
             Player::White => Player::Black,
             Player::Black => Player::White,
         };
-
-        true
-    }
-
-    pub fn is_legal_move(&self, r#move: Move) -> bool {
-        todo!()
     }
 
     pub fn get_game_state(&self) -> String {
         self.game_state.to_string()
+    }
+
+    pub fn get_pieces(&self) -> Pieces {
+        self.pieces
     }
 }
 
@@ -177,27 +106,9 @@ impl fmt::Display for ChessBoard {
         let mut board = String::new();
 
         for i in 0..64 {
-            let mut piece_char = '.';
+            let c = self.pieces.get_char(i);
 
-            if self.pawns.get(i) {
-                piece_char = 'p';
-            } else if self.knights.get(i) {
-                piece_char = 'n';
-            } else if self.bishops.get(i) {
-                piece_char = 'b';
-            } else if self.rooks.get(i) {
-                piece_char = 'r';
-            } else if self.queens.get(i) {
-                piece_char = 'q';
-            } else if self.kings.get(i) {
-                piece_char = 'k';
-            }
-
-            if self.white_pieces.get(i) {
-                piece_char = piece_char.to_ascii_uppercase();
-            }
-
-            board.push(piece_char);
+            board.push(c);
 
             if i % 8 == 7 {
                 board.push('\n');
