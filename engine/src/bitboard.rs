@@ -2,15 +2,12 @@ use crate::square::Square;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, Shr};
 
+#[derive(Default, Copy, Clone)]
 pub struct Bitboard {
     pub bitboard: u64,
 }
 
 impl Bitboard {
-    pub fn new(board: u64) -> Self {
-        Self { bitboard: board }
-    }
-
     pub fn get_square(&self, square: Square) -> bool {
         self.bitboard & (1 << square.square) != 0
     }
@@ -66,9 +63,9 @@ impl Bitboard {
     }
 }
 
-impl Default for Bitboard {
-    fn default() -> Self {
-        Self::new(0)
+impl From<u64> for Bitboard {
+    fn from(x: u64) -> Self {
+        Self { bitboard: x }
     }
 }
 

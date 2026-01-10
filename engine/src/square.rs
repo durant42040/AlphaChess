@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, ops::Index, str::FromStr};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub struct Square {
@@ -37,6 +37,13 @@ impl FromStr for Square {
             return Err(());
         }
         Ok(Self::new(bytes[1] - b'1', bytes[0] - b'a'))
+    }
+}
+
+impl Index<Square> for [u64; 64] {
+    type Output = u64;
+    fn index(&self, sq: Square) -> &Self::Output {
+        &self[sq.square as usize]
     }
 }
 
