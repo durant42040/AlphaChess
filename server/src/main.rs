@@ -53,7 +53,7 @@ async fn generate_move(
 
     let stockfish_output = stockfish.go()?;
     let move_string = stockfish_output.best_move();
-    stockfish.play_move(&move_string)?;
+    stockfish.play_move(move_string)?;
 
     engine.act(move_string.clone());
 
