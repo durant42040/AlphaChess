@@ -155,7 +155,7 @@ impl ChessBoard {
         };
     }
 
-    pub fn get_game_state(&self) -> GameState {
+    pub fn get_game_state(&self) -> String {
         self.game_state.to_string()
     }
 }

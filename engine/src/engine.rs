@@ -29,7 +29,7 @@ impl Engine {
         true
     }
 
-    pub fn get_game_state(&self) -> &str {
+    pub fn get_game_state(&self) -> String {
         self.board.get_game_state()
     }
 
