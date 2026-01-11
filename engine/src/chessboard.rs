@@ -36,7 +36,17 @@ impl ChessBoard {
         let to = r#move.to;
         let promotion = r#move.promotion;
 
+        self.fifty_move_rule += 1;
+        if self.pieces.pawns.get_square(from) || self.pieces.all_pieces.get_square(to) {
+            self.fifty_move_rule = 0;
+        }
+
+        self.pieces.promote(promotion, to);
+        self.pieces.update_en_passant(from, to);
+
+        todo!("castling");
         self.pieces.update(from, to);
+        todo!("hash update");
         self.player = self.player.switch();
     }
 
@@ -52,16 +62,18 @@ impl ChessBoard {
         }
     }
 
-    pub fn get_their_pieces(&self) -> Bitboard {
-        if self.player == Player::White {
-            self.pieces.black_pieces
-        } else {
-            self.pieces.white_pieces
-        }
-    }
-
     pub fn get_player(&self) -> Player {
         self.player
+    }
+
+    pub fn check_draw_condition(&mut self) -> bool {
+        !self.pieces.has_mating_material()
+            || self.fifty_move_rule == 100
+            || self.get_repetition_count() >= 2
+    }
+
+    pub fn get_repetition_count(&self) -> u8 {
+        todo!()
     }
 }
 

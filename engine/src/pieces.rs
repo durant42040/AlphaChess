@@ -100,4 +100,54 @@ impl Pieces {
 
         c
     }
+
+    pub fn has_mating_material(&self) -> bool {
+        if !self.pawns.empty() || !self.rooks.empty() || !self.queens.empty() {
+            return true;
+        }
+
+        let num_white_bishops = (self.bishops & self.white_pieces).count();
+        let num_black_bishops = (self.bishops & self.black_pieces).count();
+        let num_white_knights = (self.knights & self.white_pieces).count();
+        let num_black_knights = (self.knights & self.black_pieces).count();
+
+        num_white_bishops + num_white_knights > 1 || num_black_bishops + num_black_knights > 1
+    }
+
+    pub fn promote(&mut self, promotion: Option<char>, to: Square) {
+        if promotion.is_none() {
+            return;
+        }
+        let promotion = promotion.unwrap();
+        match promotion {
+            'q' => self.queens.set_square(to),
+            'r' => self.rooks.set_square(to),
+            'b' => self.bishops.set_square(to),
+            'n' => self.knights.set_square(to),
+            _ => {}
+        }
+        self.pawns.clear_square(to);
+    }
+
+    pub fn update_en_passant(&mut self, from: Square, to: Square) {
+        if self.pawns.get_square(from) && self.en_passant.get_square(to) {
+            let captured_square = if self.white_pieces.get_square(from) {
+                to.square - 8
+            } else {
+                to.square + 8
+            };
+            self.pawns.clear(captured_square);
+            self.all_pieces.clear(captured_square);
+            if self.white_pieces.get_square(from) {
+                self.black_pieces.clear(captured_square);
+            } else {
+                self.white_pieces.clear(captured_square);
+            }
+        }
+
+        self.en_passant.reset();
+        if self.pawns.get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
+            self.en_passant.set((from.square + to.square) / 2);
+        }
+    }
 }

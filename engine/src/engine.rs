@@ -33,6 +33,7 @@ impl Engine {
             return false;
         }
         self.board.act(r#move);
+        self.update_game_state();
         true
     }
 
@@ -144,6 +145,7 @@ impl Engine {
                 self.game_state = GameState::Draw;
             }
         }
+        self.board.check_draw_condition();
         todo!();
     }
 }
