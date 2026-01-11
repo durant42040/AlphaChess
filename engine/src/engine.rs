@@ -94,7 +94,30 @@ impl Engine {
     }
 
     pub fn is_check(&self) -> bool {
-        self.board.is_check()
+        self.is_player_in_check(self.board.get_player())
+    }
+
+    pub fn is_player_in_check(&self, player: Player) -> bool {
+        let pieces = self.board.get_pieces();
+        let their_pieces = if player == Player::White {
+            pieces.black_pieces
+        } else {
+            pieces.white_pieces
+        };
+        let our_king = if player == Player::White {
+            pieces.white_pieces & pieces.kings
+        } else {
+            pieces.black_pieces & pieces.kings
+        };
+        let our_king_position = our_king.get_lsb();
+
+        for from in their_pieces.iter() {
+            let moves = self.generate_moves(Square::from(from));
+            if moves.get(our_king_position) {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn is_legal_move(&self, r#move: Move) -> bool {

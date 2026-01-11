@@ -57,6 +57,13 @@ impl Index<Square> for [u64; 64] {
     }
 }
 
+impl Index<Square> for Vec<Vec<u64>> {
+    type Output = Vec<u64>;
+    fn index(&self, s: Square) -> &Self::Output {
+        &self[s.square as usize]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Square;

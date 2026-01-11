@@ -4,6 +4,7 @@ use crate::bitboard::Bitboard;
 use crate::game::Player;
 use crate::r#move::Move;
 use crate::pieces::Pieces;
+use crate::square::Square;
 
 #[derive(Default)]
 pub struct ChessBoard {
@@ -51,16 +52,16 @@ impl ChessBoard {
         }
     }
 
+    pub fn get_their_pieces(&self) -> Bitboard {
+        if self.player == Player::White {
+            self.pieces.black_pieces
+        } else {
+            self.pieces.white_pieces
+        }
+    }
+
     pub fn get_player(&self) -> Player {
         self.player
-    }
-
-    pub fn is_check(&self) -> bool {
-        self.is_player_in_check(self.player)
-    }
-
-    pub fn is_player_in_check(&self, player: Player) -> bool {
-        todo!();
     }
 }
 

@@ -118,11 +118,11 @@ impl MoveGenerator {
     }
 
     pub fn generate_knight_moves(&self, from: Square) -> Bitboard {
-        self.knight[from].into()
+        Bitboard::from(self.knight[from])
     }
 
     pub fn generate_king_moves(&self, from: Square) -> Bitboard {
-        self.king[from].into()
+        Bitboard::from(self.king[from])
     }
 
     fn generate_bishop_moves_slow(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
@@ -153,7 +153,7 @@ impl MoveGenerator {
         let key = ((blockers.wrapping_mul(BISHOP_MAGIC_NUMBERS[from]))
             >> (64 - BISHOP_SHIFT_BITS[from])) as usize;
 
-        Bitboard::from(self.bishop[from.square as usize][key])
+        Bitboard::from(self.bishop[from][key])
     }
 
     pub fn generate_rook_moves(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
@@ -161,7 +161,7 @@ impl MoveGenerator {
         let key = ((blockers.wrapping_mul(ROOK_MAGIC_NUMBERS[from]))
             >> (64 - ROOK_SHIFT_BITS[from])) as usize;
 
-        Bitboard::from(self.rook[from.square as usize][key])
+        Bitboard::from(self.rook[from][key])
     }
 
     pub fn generate_queen_moves(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
