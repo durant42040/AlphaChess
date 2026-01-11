@@ -10,11 +10,11 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn new(from: Square, to: Square, promotion: char) -> Self {
+    pub fn new(from: Square, to: Square, promotion: Option<char>) -> Self {
         Self {
             from,
             to,
-            promotion: Some(promotion),
+            promotion,
         }
     }
 }
@@ -57,7 +57,7 @@ mod tests {
     fn test_move() {
         let from = Square::new(1, 4);
         let to = Square::new(3, 4);
-        let r#move = Move::new(from, to, 'q');
+        let r#move = Move::new(from, to, Some('q'));
         let move_string = format!("{}", r#move);
 
         assert_eq!(r#move.from, from);

@@ -64,6 +64,13 @@ impl Index<Square> for Vec<Vec<u64>> {
     }
 }
 
+impl PartialEq<u8> for Square {
+    #[inline]
+    fn eq(&self, other: &u8) -> bool {
+        self.square == *other
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Square;

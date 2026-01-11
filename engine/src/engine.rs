@@ -2,9 +2,14 @@ use std::fmt;
 
 use crate::bitboard::Bitboard;
 use crate::chessboard::ChessBoard;
+use crate::constants::{
+    BLACK_KINGSIDE_SQUARES, BLACK_QUEENSIDE_SQUARES, WHITE_KINGSIDE_SQUARES,
+    WHITE_QUEENSIDE_SQUARES,
+};
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
+use crate::pieces::Pieces;
 use crate::square::Square;
 
 pub struct Engine {
@@ -37,8 +42,12 @@ impl Engine {
         true
     }
 
+    pub fn get_pieces(&self) -> Pieces {
+        self.board.get_pieces()
+    }
+
     pub fn generate_moves(&self, from: Square) -> Bitboard {
-        let pieces = self.board.get_pieces();
+        let pieces = self.get_pieces();
         let our_pieces = if pieces.white_pieces.get_square(from) {
             pieces.white_pieces
         } else {
@@ -84,10 +93,90 @@ impl Engine {
         moves
     }
 
-    pub fn generate_legal_moves(&self, from: Square) -> Bitboard {
-        let moves = self.generate_moves(from);
-        todo!();
-        moves
+    pub fn generate_castling_moves(&self, from: Square) -> Bitboard {
+        let pieces = self.get_pieces();
+        let mut castling_moves = Bitboard::default();
+
+        match from.square {
+            4 => {
+                // White king's castle
+                let mut attacked = Bitboard::default();
+                for idx in pieces.black_pieces.iter() {
+                    attacked |= self.generate_moves(Square::from(idx));
+                    if pieces.pawns.get(idx) {
+                        attacked.set(idx + 7);
+                        attacked.set(idx + 9);
+                    }
+                }
+                let can_kingside = (attacked & Bitboard::from(WHITE_KINGSIDE_SQUARES)).empty()
+                    && (pieces.all_pieces & Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
+                        .empty()
+                    && (self.board.get_castling_rights() & 1) != 0;
+                let can_queenside = (attacked & Bitboard::from(WHITE_QUEENSIDE_SQUARES)).empty()
+                    && (pieces.all_pieces
+                        & Bitboard::from(WHITE_QUEENSIDE_SQUARES)
+                        & !pieces.kings)
+                        .empty()
+                    && (self.board.get_castling_rights() & 2) != 0;
+                if can_kingside {
+                    castling_moves.set(6);
+                }
+                if can_queenside {
+                    castling_moves.set(2);
+                }
+            }
+            60 => {
+                // Black king's castle
+                let mut attacked = Bitboard::default();
+                for idx in pieces.white_pieces.iter() {
+                    attacked |= self.generate_moves(Square::from(idx));
+                    if pieces.pawns.get(idx) {
+                        attacked.set(idx.wrapping_sub(7));
+                        attacked.set(idx.wrapping_sub(9));
+                    }
+                }
+                let can_kingside = (attacked & Bitboard::from(BLACK_KINGSIDE_SQUARES)).empty()
+                    && (pieces.all_pieces & Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
+                        .empty()
+                    && (self.board.get_castling_rights() & 4) != 0;
+                let can_queenside = (attacked & Bitboard::from(BLACK_QUEENSIDE_SQUARES)).empty()
+                    && (pieces.all_pieces
+                        & Bitboard::from(BLACK_QUEENSIDE_SQUARES)
+                        & !pieces.kings)
+                        .empty()
+                    && (self.board.get_castling_rights() & 8) != 0;
+                if can_kingside {
+                    castling_moves.set(62);
+                }
+                if can_queenside {
+                    castling_moves.set(58);
+                }
+            }
+            _ => {}
+        }
+
+        castling_moves
+    }
+
+    pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
+        let mut legal_moves = self.generate_moves(from);
+
+        if self.get_pieces().kings.get_square(from) {
+            legal_moves |= self.generate_castling_moves(from);
+        }
+
+        // remove moves that would put our king in check
+        // e.g. pins, illegal king moves
+        let temp_board = self.board.clone();
+        for to in legal_moves.iter() {
+            self.board.act(Move::new(from, to.into(), None));
+            if self.is_check() {
+                legal_moves.clear(to);
+            }
+            self.board = temp_board.clone();
+        }
+
+        legal_moves
     }
 
     pub fn get_game_state(&self) -> String {
@@ -99,7 +188,7 @@ impl Engine {
     }
 
     pub fn is_player_in_check(&self, player: Player) -> bool {
-        let pieces = self.board.get_pieces();
+        let pieces = self.get_pieces();
         let their_pieces = if player == Player::White {
             pieces.black_pieces
         } else {
@@ -121,7 +210,7 @@ impl Engine {
         false
     }
 
-    pub fn is_legal_move(&self, r#move: Move) -> bool {
+    pub fn is_legal_move(&mut self, r#move: Move) -> bool {
         let from = r#move.from;
         let to = r#move.to;
 
@@ -130,7 +219,7 @@ impl Engine {
             return false;
         }
 
-        let is_pawn = self.board.get_pieces().pawns.get_square(from);
+        let is_pawn = self.get_pieces().pawns.get_square(from);
 
         // promotion from non-pawn piece is illegal
         if !is_pawn && r#move.promotion.is_some() {

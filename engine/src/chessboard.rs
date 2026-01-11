@@ -6,9 +6,8 @@ use crate::r#move::Move;
 use crate::pieces::Pieces;
 use crate::square::Square;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ChessBoard {
-    position_hash_history: Vec<u64>,
     fifty_move_rule: u8,
     castling_rights: u8,
     player: Player,
@@ -21,7 +20,6 @@ impl ChessBoard {
         let player = Player::White;
 
         Self {
-            position_hash_history: Vec::new(),
             fifty_move_rule: 0,
             castling_rights: 0b1111,
             player,
@@ -41,10 +39,9 @@ impl ChessBoard {
 
         self.pieces.promote(promotion, to);
         self.pieces.update_en_passant(from, to);
+        self.castle(from, to);
 
-        todo!("castling");
         self.pieces.update(from, to);
-        todo!("hash update");
         self.player = self.player.switch();
     }
 
@@ -64,10 +61,11 @@ impl ChessBoard {
         self.player
     }
 
-    pub fn update_castling_rights(&mut self, from: Square, to: Square) {
-        let from = from.square;
-        let to = to.square;
+    pub fn get_castling_rights(&self) -> u8 {
+        self.castling_rights
+    }
 
+    pub fn castle(&mut self, from: Square, to: Square) {
         // remove castling rights if king or rook is moved or captured
         if from == 0 || to == 0 {
             self.castling_rights &= !2;
@@ -84,7 +82,7 @@ impl ChessBoard {
         }
 
         // move rook if castling
-        if self.pieces.kings.get(from) && (from as i8 - to as i8).abs() == 2 {
+        if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
             if from == 4 {
                 if to == 2 {
                     self.pieces.rooks.update(0, 3);

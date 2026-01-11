@@ -544,3 +544,8 @@ pub const BISHOP_SHIFT_BITS: [u64; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 7, 9, 9, 7, 5, 5,
     5, 5, 7, 9, 9, 7, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 6,
 ];
+
+pub const WHITE_KINGSIDE_SQUARES: u64 = 0x0000000000000070;
+pub const WHITE_QUEENSIDE_SQUARES: u64 = 0x000000000000001C;
+pub const BLACK_KINGSIDE_SQUARES: u64 = 0x7000000000000000;
+pub const BLACK_QUEENSIDE_SQUARES: u64 = 0x1C00000000000000;
