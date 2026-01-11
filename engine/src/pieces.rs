@@ -48,15 +48,15 @@ impl Pieces {
     }
 
     pub fn update(&mut self, from: Square, to: Square) {
-        self.pawns.update(from, to);
-        self.knights.update(from, to);
-        self.bishops.update(from, to);
-        self.rooks.update(from, to);
-        self.queens.update(from, to);
-        self.kings.update(from, to);
-        self.white_pieces.update(from, to);
-        self.black_pieces.update(from, to);
-        self.all_pieces.update(from, to);
+        self.pawns.update_square(from, to);
+        self.knights.update_square(from, to);
+        self.bishops.update_square(from, to);
+        self.rooks.update_square(from, to);
+        self.queens.update_square(from, to);
+        self.kings.update_square(from, to);
+        self.white_pieces.update_square(from, to);
+        self.black_pieces.update_square(from, to);
+        self.all_pieces.update_square(from, to);
     }
 
     pub fn set(&mut self, c: char, i: u8) {

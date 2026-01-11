@@ -10,7 +10,6 @@ use crate::square::Square;
 pub struct ChessBoard {
     position_hash_history: Vec<u64>,
     fifty_move_rule: u8,
-    fullmove_number: u8,
     castling_rights: u8,
     player: Player,
     pieces: Pieces,
@@ -24,7 +23,6 @@ impl ChessBoard {
         Self {
             position_hash_history: Vec::new(),
             fifty_move_rule: 0,
-            fullmove_number: 1,
             castling_rights: 0b1111,
             player,
             pieces,
@@ -66,7 +64,52 @@ impl ChessBoard {
         self.player
     }
 
-    pub fn check_draw_condition(&mut self) -> bool {
+    pub fn update_castling_rights(&mut self, from: Square, to: Square) {
+        let from = from.square;
+        let to = to.square;
+
+        // remove castling rights if king or rook is moved or captured
+        if from == 0 || to == 0 {
+            self.castling_rights &= !2;
+        } else if from == 7 || to == 7 {
+            self.castling_rights &= !1;
+        } else if from == 4 || to == 4 {
+            self.castling_rights &= !3;
+        } else if from == 56 || to == 56 {
+            self.castling_rights &= !8;
+        } else if from == 60 || to == 60 {
+            self.castling_rights &= !12;
+        } else if from == 63 || to == 63 {
+            self.castling_rights &= !4;
+        }
+
+        // move rook if castling
+        if self.pieces.kings.get(from) && (from as i8 - to as i8).abs() == 2 {
+            if from == 4 {
+                if to == 2 {
+                    self.pieces.rooks.update(0, 3);
+                    self.pieces.white_pieces.update(0, 3);
+                    self.pieces.all_pieces.update(0, 3);
+                } else if to == 6 {
+                    self.pieces.rooks.update(7, 5);
+                    self.pieces.white_pieces.update(7, 5);
+                    self.pieces.all_pieces.update(7, 5);
+                }
+            }
+        } else if from == 60 {
+            if to == 58 {
+                self.pieces.rooks.update(56, 59);
+                self.pieces.black_pieces.update(56, 59);
+                self.pieces.all_pieces.update(56, 59);
+            } else if to == 62 {
+                self.pieces.rooks.update(63, 61);
+                self.pieces.black_pieces.update(63, 61);
+                self.pieces.all_pieces.update(63, 61);
+            }
+        }
+    }
+
+    pub fn is_draw(&self) -> bool {
         !self.pieces.has_mating_material()
             || self.fifty_move_rule == 100
             || self.get_repetition_count() >= 2

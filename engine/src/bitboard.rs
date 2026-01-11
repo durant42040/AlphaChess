@@ -40,7 +40,15 @@ impl Bitboard {
         self.bitboard == 0
     }
 
-    pub fn update(&mut self, from: Square, to: Square) {
+    pub fn update(&mut self, from: u8, to: u8) {
+        self.clear(to);
+        if self.get(from) {
+            self.clear(from);
+            self.set(to);
+        }
+    }
+
+    pub fn update_square(&mut self, from: Square, to: Square) {
         self.clear_square(to);
         if self.get_square(from) {
             self.clear_square(from);

@@ -124,9 +124,25 @@ impl Engine {
     pub fn is_legal_move(&self, r#move: Move) -> bool {
         let from = r#move.from;
         let to = r#move.to;
-        todo!();
+
+        // move from our pieces
+        if !self.board.get_our_pieces().get_square(from) {
+            return false;
+        }
+
+        let is_pawn = self.board.get_pieces().pawns.get_square(from);
+
+        // promotion from non-pawn piece is illegal
+        if !is_pawn && r#move.promotion.is_some() {
+            return false;
+        }
+
+        // non-promotion move to promotion square is illegal
+        if is_pawn && (to.rank == 7 || to.rank == 0) && r#move.promotion.is_none() {
+            return false;
+        }
+
         self.generate_legal_moves(from).get_square(to)
-            && self.board.get_our_pieces().get_square(from)
     }
 
     pub fn update_game_state(&mut self) {
@@ -136,17 +152,21 @@ impl Engine {
         }
         if moves.empty() {
             if self.is_check() {
+                // checkmate
                 if self.board.get_player() == Player::White {
                     self.game_state = GameState::BlackWin;
                 } else {
                     self.game_state = GameState::WhiteWin;
                 }
             } else {
+                // stalemate
                 self.game_state = GameState::Draw;
             }
         }
-        self.board.check_draw_condition();
-        todo!();
+        // insufficient material, 50-move rule, three-fold repetition
+        if self.board.is_draw() {
+            self.game_state = GameState::Draw;
+        }
     }
 }
 
