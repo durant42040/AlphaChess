@@ -27,6 +27,10 @@ impl ChessBoard {
         }
     }
 
+    pub fn load_from_fen(fen: String) -> Self {
+        todo!()
+    }
+
     pub fn act(&mut self, r#move: Move) {
         let from = r#move.from;
         let to = r#move.to;
@@ -114,7 +118,7 @@ impl ChessBoard {
     }
 
     pub fn get_repetition_count(&self) -> u8 {
-        todo!()
+        0
     }
 }
 

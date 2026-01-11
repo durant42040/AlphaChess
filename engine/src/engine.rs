@@ -27,6 +27,11 @@ impl Engine {
         }
     }
 
+    pub fn load_from_fen(&mut self, fen: String) {
+        self.board = ChessBoard::load_from_fen(fen);
+        self.game_state = GameState::Playing;
+    }
+
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
         self.game_state = GameState::Playing;
@@ -100,19 +105,20 @@ impl Engine {
         match from.square {
             4 => {
                 // White king's castle
-                let mut attacked = Bitboard::default();
+                let mut black_attacks = Bitboard::default();
                 for idx in pieces.black_pieces.iter() {
-                    attacked |= self.generate_moves(Square::from(idx));
+                    black_attacks |= self.generate_moves(Square::from(idx));
                     if pieces.pawns.get(idx) {
-                        attacked.set(idx + 7);
-                        attacked.set(idx + 9);
+                        black_attacks.set(idx - 7);
+                        black_attacks.set(idx - 9);
                     }
                 }
-                let can_kingside = (attacked & Bitboard::from(WHITE_KINGSIDE_SQUARES)).empty()
+                let can_kingside = (black_attacks & Bitboard::from(WHITE_KINGSIDE_SQUARES)).empty()
                     && (pieces.all_pieces & Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
                         .empty()
                     && (self.board.get_castling_rights() & 1) != 0;
-                let can_queenside = (attacked & Bitboard::from(WHITE_QUEENSIDE_SQUARES)).empty()
+                let can_queenside = (black_attacks & Bitboard::from(WHITE_QUEENSIDE_SQUARES))
+                    .empty()
                     && (pieces.all_pieces
                         & Bitboard::from(WHITE_QUEENSIDE_SQUARES)
                         & !pieces.kings)
@@ -127,19 +133,20 @@ impl Engine {
             }
             60 => {
                 // Black king's castle
-                let mut attacked = Bitboard::default();
+                let mut white_attacks = Bitboard::default();
                 for idx in pieces.white_pieces.iter() {
-                    attacked |= self.generate_moves(Square::from(idx));
+                    white_attacks |= self.generate_moves(Square::from(idx));
                     if pieces.pawns.get(idx) {
-                        attacked.set(idx.wrapping_sub(7));
-                        attacked.set(idx.wrapping_sub(9));
+                        white_attacks.set(idx + 7);
+                        white_attacks.set(idx + 9);
                     }
                 }
-                let can_kingside = (attacked & Bitboard::from(BLACK_KINGSIDE_SQUARES)).empty()
+                let can_kingside = (white_attacks & Bitboard::from(BLACK_KINGSIDE_SQUARES)).empty()
                     && (pieces.all_pieces & Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
                         .empty()
                     && (self.board.get_castling_rights() & 4) != 0;
-                let can_queenside = (attacked & Bitboard::from(BLACK_QUEENSIDE_SQUARES)).empty()
+                let can_queenside = (white_attacks & Bitboard::from(BLACK_QUEENSIDE_SQUARES))
+                    .empty()
                     && (pieces.all_pieces
                         & Bitboard::from(BLACK_QUEENSIDE_SQUARES)
                         & !pieces.kings)
@@ -170,7 +177,7 @@ impl Engine {
         let temp_board = self.board.clone();
         for to in legal_moves.iter() {
             self.board.act(Move::new(from, to.into(), None));
-            if self.is_check() {
+            if self.is_player_in_check(self.board.get_player().switch()) {
                 legal_moves.clear(to);
             }
             self.board = temp_board.clone();
@@ -237,8 +244,9 @@ impl Engine {
     pub fn update_game_state(&mut self) {
         let mut moves = Bitboard::default();
         for from in self.board.get_our_pieces().iter() {
-            moves |= self.generate_moves(Square::from(from));
+            moves |= self.generate_legal_moves(Square::from(from));
         }
+
         if moves.empty() {
             if self.is_check() {
                 // checkmate
