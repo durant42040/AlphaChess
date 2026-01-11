@@ -1,7 +1,7 @@
 use crate::bitboard::Bitboard;
 use crate::square::Square;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Pieces {
     pub pawns: Bitboard,
     pub knights: Bitboard,
@@ -114,19 +114,20 @@ impl Pieces {
         num_white_bishops + num_white_knights > 1 || num_black_bishops + num_black_knights > 1
     }
 
-    pub fn promote(&mut self, promotion: Option<char>, to: Square) {
+    pub fn promote(&mut self, promotion: Option<char>, from: Square) {
         if promotion.is_none() {
             return;
         }
         let promotion = promotion.unwrap();
+
         match promotion {
-            'q' => self.queens.set_square(to),
-            'r' => self.rooks.set_square(to),
-            'b' => self.bishops.set_square(to),
-            'n' => self.knights.set_square(to),
+            'q' => self.queens.set_square(from),
+            'r' => self.rooks.set_square(from),
+            'b' => self.bishops.set_square(from),
+            'n' => self.knights.set_square(from),
             _ => {}
         }
-        self.pawns.clear_square(to);
+        self.pawns.clear_square(from);
     }
 
     pub fn update_en_passant(&mut self, from: Square, to: Square) {

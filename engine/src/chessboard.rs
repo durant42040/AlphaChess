@@ -6,7 +6,7 @@ use crate::r#move::Move;
 use crate::pieces::Pieces;
 use crate::square::Square;
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct ChessBoard {
     fifty_move_rule: u8,
     castling_rights: u8,
@@ -28,7 +28,58 @@ impl ChessBoard {
     }
 
     pub fn load_from_fen(fen: String) -> Self {
-        todo!()
+        let mut chessboard = Self::default();
+        let mut parts = fen.split_whitespace();
+
+        let board = parts.next().unwrap_or("");
+        let mut rank = 7;
+        let mut file = 0;
+
+        for c in board.chars() {
+            let i: u8 = rank * 8 + file;
+
+            if c == '/' {
+                rank -= 1;
+                file = 0;
+                continue;
+            }
+
+            if c.is_ascii_digit() {
+                file += c.to_digit(10).unwrap() as u8;
+                continue;
+            }
+
+            chessboard.pieces.set(c, i);
+
+            file += 1;
+        }
+
+        let player_str = parts.next().unwrap_or("w");
+        if player_str == "b" {
+            chessboard.player = Player::Black;
+        }
+
+        let castling_str = parts.next().unwrap_or("-");
+        chessboard.castling_rights = 0u8;
+        for c in castling_str.chars() {
+            match c {
+                'K' => chessboard.castling_rights |= 1,
+                'Q' => chessboard.castling_rights |= 2,
+                'k' => chessboard.castling_rights |= 4,
+                'q' => chessboard.castling_rights |= 8,
+                _ => {}
+            }
+        }
+
+        let en_passant_str = parts.next().unwrap_or("-");
+        if en_passant_str != "-" {
+            let square = en_passant_str.parse::<Square>().unwrap();
+            chessboard.pieces.en_passant.set_square(square);
+        }
+
+        chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
+
+        chessboard
     }
 
     pub fn act(&mut self, r#move: Move) {
@@ -41,7 +92,7 @@ impl ChessBoard {
             self.fifty_move_rule = 0;
         }
 
-        self.pieces.promote(promotion, to);
+        self.pieces.promote(promotion, from);
         self.pieces.update_en_passant(from, to);
         self.castle(from, to);
 
@@ -171,5 +222,15 @@ mod tests {
 "#;
 
         assert_eq!(board_string, expected);
+    }
+
+    #[test]
+    fn test_load_from_fen() {
+        let board_from_fen = ChessBoard::load_from_fen(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+        );
+        let new_board = ChessBoard::new();
+
+        assert_eq!(board_from_fen, new_board);
     }
 }

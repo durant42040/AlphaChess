@@ -24,7 +24,7 @@ impl fmt::Display for GameState {
     }
 }
 
-#[derive(Default, PartialEq, Eq, Copy, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Player {
     #[default]
     White,

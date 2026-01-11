@@ -113,3 +113,30 @@ fn test_en_passant() {
     make_move(&mut engine, "e5f6");
     assert_game_state(&engine, "playing");
 }
+
+#[test]
+fn test_en_passant_pin() {
+    let mut engine = Engine::new();
+
+    engine.load_from_fen("4k3/3pr3/8/4P3/8/8/8/4K3 b - d6 0 1".to_string());
+    make_move(&mut engine, "d7d5");
+    assert_invalid_move(&mut engine, "e5d6");
+}
+
+#[test]
+fn test_promotion() {
+    let mut engine = Engine::new();
+    engine.load_from_fen("8/3P4/8/6K1/8/8/8/1k6 w - - 0 1".to_string());
+
+    assert_invalid_move(&mut engine, "d7d8");
+    make_move(&mut engine, "d7d8q");
+    assert_game_state(&engine, "playing");
+}
+
+#[test]
+fn test_insufficient_material() {
+    let mut engine = Engine::new();
+    engine.load_from_fen("8/3P4/8/6K1/8/8/8/nk6 w - - 0 1".to_string());
+    make_move(&mut engine, "d7d8n");
+    assert_game_state(&engine, "draw");
+}
