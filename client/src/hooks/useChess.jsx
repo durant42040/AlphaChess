@@ -105,7 +105,7 @@ const ChessProvider = (props) => {
   useEffect(() => {
     // player move
     if (!positionFrom.length || !positionTo.length) return
-    axios.get(`${serverUrl}/make_move?move=${toMoveString(positionFrom, positionTo)}`)
+    axios.get(`${serverUrl}/act?move=${toMoveString(positionFrom, positionTo)}`)
       .then(res => {
         const isCheck = res.data.isCheck
         const isCapture = board[positionTo[0]][positionTo[1]] !== null
@@ -136,7 +136,7 @@ const ChessProvider = (props) => {
     if (gameOver !== 'No') return
     if (side === game || !game) return
 
-    axios.get(`${serverUrl}/genmove`).then(res => {
+    axios.get(`${serverUrl}/generate`).then(res => {
       const bestMoveSplit = res.data.move.split('')
       const to = [8 - parseInt(bestMoveSplit[3]), bestMoveSplit[2].charCodeAt(0) - 'a'.charCodeAt(0)]
 
