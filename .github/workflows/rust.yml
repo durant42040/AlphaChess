@@ -9,16 +9,20 @@ jobs:
   engine-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
       - name: Build and clippy check
         run: cargo clippy --manifest-path ./engine/Cargo.toml
       - name: fmt check
-        run: cargo fmt --manifest-path ./engine/Cargo.toml
+        run: cargo fmt --manifest-path ./engine/Cargo.toml -- --check
       - name: Run test
         run: cargo test --test '*' --manifest-path ./engine/Cargo.toml
   server-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
       - name: Build and clippy check
         run: cargo clippy --manifest-path ./server/Cargo.toml
       - name: fmt check
-        run: cargo fmt --manifest-path ./server/Cargo.toml
+        run: cargo fmt --manifest-path ./server/Cargo.toml -- --check
