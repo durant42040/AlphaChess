@@ -1,11 +1,10 @@
-use std::collections::VecDeque;
 use std::fmt;
 
 use crate::bitboard::Bitboard;
 use crate::chessboard::ChessBoard;
 use crate::constants::{
-    BLACK_KINGSIDE_SQUARES, BLACK_QUEENSIDE_SQUARES, WHITE_KINGSIDE_SQUARES,
-    WHITE_QUEENSIDE_SQUARES,
+    BLACK_KINGSIDE_SQUARES, BLACK_QUEENSIDE_ATTACKED, BLACK_QUEENSIDE_SQUARES,
+    WHITE_KINGSIDE_SQUARES, WHITE_QUEENSIDE_ATTACKED, WHITE_QUEENSIDE_SQUARES,
 };
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
@@ -108,17 +107,24 @@ impl Engine {
                 // White king's castle
                 let mut black_attacks = Bitboard::default();
                 for idx in pieces.black_pieces.iter() {
-                    black_attacks |= self.generate_moves(Square::from(idx));
+                    let square = Square::from(idx);
+                    black_attacks |= self.generate_moves(square);
                     if pieces.pawns.get(idx) {
-                        black_attacks.set(idx - 7);
-                        black_attacks.set(idx - 9);
+                        if square.rank > 0 && square.file > 0 {
+                            let target = Square::new(square.rank - 1, square.file - 1);
+                            black_attacks.set_square(target);
+                        }
+                        if square.rank > 0 && square.file < 7 {
+                            let target = Square::new(square.rank - 1, square.file + 1);
+                            black_attacks.set_square(target);
+                        }
                     }
                 }
                 let can_kingside = (black_attacks & Bitboard::from(WHITE_KINGSIDE_SQUARES)).empty()
                     && (pieces.all_pieces & Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
                         .empty()
                     && (self.board.get_castling_rights() & 1) != 0;
-                let can_queenside = (black_attacks & Bitboard::from(WHITE_QUEENSIDE_SQUARES))
+                let can_queenside = (black_attacks & Bitboard::from(WHITE_QUEENSIDE_ATTACKED))
                     .empty()
                     && (pieces.all_pieces
                         & Bitboard::from(WHITE_QUEENSIDE_SQUARES)
@@ -136,17 +142,24 @@ impl Engine {
                 // Black king's castle
                 let mut white_attacks = Bitboard::default();
                 for idx in pieces.white_pieces.iter() {
-                    white_attacks |= self.generate_moves(Square::from(idx));
+                    let square = Square::from(idx);
+                    white_attacks |= self.generate_moves(square);
                     if pieces.pawns.get(idx) {
-                        white_attacks.set(idx + 7);
-                        white_attacks.set(idx + 9);
+                        if square.rank < 7 && square.file > 0 {
+                            let target = Square::new(square.rank + 1, square.file - 1);
+                            white_attacks.set_square(target);
+                        }
+                        if square.rank < 7 && square.file < 7 {
+                            let target = Square::new(square.rank + 1, square.file + 1);
+                            white_attacks.set_square(target);
+                        }
                     }
                 }
                 let can_kingside = (white_attacks & Bitboard::from(BLACK_KINGSIDE_SQUARES)).empty()
                     && (pieces.all_pieces & Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
                         .empty()
                     && (self.board.get_castling_rights() & 4) != 0;
-                let can_queenside = (white_attacks & Bitboard::from(BLACK_QUEENSIDE_SQUARES))
+                let can_queenside = (white_attacks & Bitboard::from(BLACK_QUEENSIDE_ATTACKED))
                     .empty()
                     && (pieces.all_pieces
                         & Bitboard::from(BLACK_QUEENSIDE_SQUARES)
@@ -301,46 +314,32 @@ impl fmt::Display for Engine {
     }
 }
 
-trait Perft {
-    fn perft(&mut self, depth: u8) -> Vec<u64>;
+pub trait Perft {
+    fn perft(&mut self, depth: u8) -> u64;
 }
 
 impl Perft for Engine {
-    fn perft(&mut self, depth: u8) -> Vec<u64> {
-        let mut nodes = vec![0u64; depth as usize];
-        let mut queue = VecDeque::new();
-        queue.push_back((self.board.clone(), depth));
+    fn perft(&mut self, depth: u8) -> u64 {
+        if depth == 0 {
+            return 1;
+        }
+        if self.get_game_state() != "playing" {
+            return 0;
+        }
 
-        while !queue.is_empty() {
-            let (board, d) = queue.pop_front().unwrap();
-            nodes[(depth - d) as usize] += 1;
-            if d == 1 {
-                continue;
-            }
+        let moves = self.generate_all_legal_moves();
+        let mut nodes = 0u64;
 
-            self.board = board.clone();
-            let moves = self.generate_all_legal_moves();
-            for r#move in moves {
-                self.act(r#move.to_string());
-                queue.push_back((self.board.clone(), d - 1));
-                self.board = board.clone();
-            }
+        let temp_board = self.board.clone();
+        for r#move in moves {
+            self.board.act(r#move);
+            self.update_game_state();
+            let ans = self.perft(depth - 1);
+            nodes += ans;
+            self.board = temp_board.clone();
+            self.game_state = GameState::Playing;
         }
 
         nodes
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_perft() {
-//         let results = vec![1, 20, 400, 8902, 197281, 4865609];
-
-//         let mut engine = Engine::new();
-//         let nodes = engine.perft(6);
-//         assert_eq!(nodes, results);
-//     }
-// }

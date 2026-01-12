@@ -1,0 +1,24 @@
+name: Engine CI
+
+on: [push, pull_request]
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  engine-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and clippy check
+        run: cargo clippy --manifest-path ./engine/Cargo.toml
+      - name: fmt check
+        run: cargo fmt --manifest-path ./engine/Cargo.toml
+      - name: Run test
+        run: cargo test --test '*' --manifest-path ./engine/Cargo.toml
+  server-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and clippy check
+        run: cargo clippy --manifest-path ./server/Cargo.toml
+      - name: fmt check
+        run: cargo fmt --manifest-path ./server/Cargo.toml

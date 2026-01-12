@@ -135,7 +135,6 @@ impl ChessBoard {
         } else if from == 63 || to == 63 {
             self.castling_rights &= !4;
         }
-
         // move rook if castling
         if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
             if from == 4 {
@@ -148,16 +147,16 @@ impl ChessBoard {
                     self.pieces.white_pieces.update(7, 5);
                     self.pieces.all_pieces.update(7, 5);
                 }
-            }
-        } else if from == 60 {
-            if to == 58 {
-                self.pieces.rooks.update(56, 59);
-                self.pieces.black_pieces.update(56, 59);
-                self.pieces.all_pieces.update(56, 59);
-            } else if to == 62 {
-                self.pieces.rooks.update(63, 61);
-                self.pieces.black_pieces.update(63, 61);
-                self.pieces.all_pieces.update(63, 61);
+            } else if from == 60 {
+                if to == 58 {
+                    self.pieces.rooks.update(56, 59);
+                    self.pieces.black_pieces.update(56, 59);
+                    self.pieces.all_pieces.update(56, 59);
+                } else if to == 62 {
+                    self.pieces.rooks.update(63, 61);
+                    self.pieces.black_pieces.update(63, 61);
+                    self.pieces.all_pieces.update(63, 61);
+                }
             }
         }
     }
