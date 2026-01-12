@@ -12,6 +12,7 @@ use std::sync::Arc;
 use stockfish::Stockfish;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
+use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Deserialize)]
 struct MoveQuery {
@@ -53,14 +54,16 @@ async fn generate_move(
 
     let stockfish_output = stockfish.go()?;
     let move_string = stockfish_output.best_move();
+
     stockfish.play_move(move_string)?;
 
     engine.act(move_string.clone());
+    println!("{}", engine);
 
     Ok((
         StatusCode::OK,
         Json(
-            json!({ "move": move_string, "board": engine.to_string(), "isCheck": engine.is_check() }),
+            json!({ "move": move_string, "board": engine.to_board_string(), "isCheck": engine.is_check() }),
         ),
     ))
 }
@@ -80,8 +83,6 @@ async fn make_move(
         ));
     }
 
-    println!("making move: {}", move_string);
-
     if !engine.act(move_string.clone()) {
         return Ok((
             StatusCode::BAD_REQUEST,
@@ -89,11 +90,12 @@ async fn make_move(
         ));
     }
     stockfish.play_move(&move_string)?;
+    println!("{}", engine);
 
     Ok((
         StatusCode::OK,
         Json(json!({
-            "board": engine.to_string(),
+            "board": engine.to_board_string(),
             "isCheck": engine.is_check()
         })),
     ))
@@ -101,6 +103,13 @@ async fn make_move(
 
 async fn reset(State(state): State<AppState>) -> StatusCode {
     let mut engine = state.engine.lock().await;
+    let mut stockfish = state.stockfish.lock().await;
+    stockfish.setup_for_new_game().unwrap();
+    stockfish
+        .set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        .unwrap();
+    stockfish.set_depth(20);
+
     engine.reset();
     StatusCode::OK
 }
@@ -124,11 +133,17 @@ async fn main() {
 
     let app_state = AppState { engine, stockfish };
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let app = Router::new()
         .route("/generate", get(generate_move))
         .route("/act", get(make_move))
         .route("/reset", get(reset))
         .route("/game", get(game))
+        .layer(cors)
         .with_state(app_state);
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))

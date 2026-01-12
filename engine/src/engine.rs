@@ -300,6 +300,17 @@ impl Engine {
             self.game_state = GameState::Draw;
         }
     }
+
+    pub fn to_board_string(&self) -> String {
+        let mut board_str = String::with_capacity(64);
+        let pieces = self.get_pieces();
+
+        for i in 0..64 {
+            board_str.push(pieces.get(i));
+        }
+
+        board_str
+    }
 }
 
 impl Default for Engine {

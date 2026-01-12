@@ -33,12 +33,17 @@ impl FromStr for Move {
     type Err = ();
 
     fn from_str(move_string: &str) -> Result<Self, ()> {
+        // Move string must be at least 4 characters (e.g., "e2e4")
+        if move_string.len() < 4 {
+            return Err(());
+        }
+
         let from_string = &move_string[0..2];
         let to_string = &move_string[2..4];
         let promotion = move_string.chars().nth(4);
 
-        let from = from_string.parse::<Square>().unwrap();
-        let to = to_string.parse::<Square>().unwrap();
+        let from = from_string.parse::<Square>()?;
+        let to = to_string.parse::<Square>()?;
 
         Ok(Self {
             from,
