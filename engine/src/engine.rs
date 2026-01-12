@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt;
 
 use crate::bitboard::Bitboard;
@@ -47,11 +48,11 @@ impl Engine {
         true
     }
 
-    pub fn get_pieces(&self) -> Pieces {
+    fn get_pieces(&self) -> Pieces {
         self.board.get_pieces()
     }
 
-    pub fn generate_moves(&self, from: Square) -> Bitboard {
+    fn generate_moves(&self, from: Square) -> Bitboard {
         let pieces = self.get_pieces();
         let our_pieces = if pieces.white_pieces.get_square(from) {
             pieces.white_pieces
@@ -98,7 +99,7 @@ impl Engine {
         moves
     }
 
-    pub fn generate_castling_moves(&self, from: Square) -> Bitboard {
+    fn generate_castling_moves(&self, from: Square) -> Bitboard {
         let pieces = self.get_pieces();
         let mut castling_moves = Bitboard::default();
 
@@ -168,7 +169,7 @@ impl Engine {
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
 
-        if self.get_pieces().kings.get_square(from) {
+        if self.get_pieces().kings.get_square(from) && (from == 4 || from == 60) {
             legal_moves |= self.generate_castling_moves(from);
         }
 
@@ -186,6 +187,27 @@ impl Engine {
         legal_moves
     }
 
+    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
+        let mut all_legal_moves = Vec::new();
+        for from in self.board.get_our_pieces().iter() {
+            let moves = self.generate_legal_moves(Square::from(from));
+            for to in moves.iter() {
+                let from = Square::from(from);
+                let to = Square::from(to);
+                if self.get_pieces().pawns.get_square(from) && (to.rank == 7 || to.rank == 0) {
+                    all_legal_moves.push(Move::new(from, to, Some('q')));
+                    all_legal_moves.push(Move::new(from, to, Some('r')));
+                    all_legal_moves.push(Move::new(from, to, Some('b')));
+                    all_legal_moves.push(Move::new(from, to, Some('n')));
+                } else {
+                    all_legal_moves.push(Move::new(from, to, None));
+                }
+            }
+        }
+
+        all_legal_moves
+    }
+
     pub fn get_game_state(&self) -> String {
         self.game_state.to_string()
     }
@@ -194,7 +216,7 @@ impl Engine {
         self.is_player_in_check(self.board.get_player())
     }
 
-    pub fn is_player_in_check(&self, player: Player) -> bool {
+    fn is_player_in_check(&self, player: Player) -> bool {
         let pieces = self.get_pieces();
         let their_pieces = if player == Player::White {
             pieces.black_pieces
@@ -241,7 +263,7 @@ impl Engine {
         self.generate_legal_moves(from).get_square(to)
     }
 
-    pub fn update_game_state(&mut self) {
+    fn update_game_state(&mut self) {
         let mut moves = Bitboard::default();
         for from in self.board.get_our_pieces().iter() {
             moves |= self.generate_legal_moves(Square::from(from));
@@ -278,3 +300,47 @@ impl fmt::Display for Engine {
         write!(f, "{}", self.board)
     }
 }
+
+trait Perft {
+    fn perft(&mut self, depth: u8) -> Vec<u64>;
+}
+
+impl Perft for Engine {
+    fn perft(&mut self, depth: u8) -> Vec<u64> {
+        let mut nodes = vec![0u64; depth as usize];
+        let mut queue = VecDeque::new();
+        queue.push_back((self.board.clone(), depth));
+
+        while !queue.is_empty() {
+            let (board, d) = queue.pop_front().unwrap();
+            nodes[(depth - d) as usize] += 1;
+            if d == 1 {
+                continue;
+            }
+
+            self.board = board.clone();
+            let moves = self.generate_all_legal_moves();
+            for r#move in moves {
+                self.act(r#move.to_string());
+                queue.push_back((self.board.clone(), d - 1));
+                self.board = board.clone();
+            }
+        }
+
+        nodes
+    }
+}
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+
+//     #[test]
+//     fn test_perft() {
+//         let results = vec![1, 20, 400, 8902, 197281, 4865609];
+
+//         let mut engine = Engine::new();
+//         let nodes = engine.perft(6);
+//         assert_eq!(nodes, results);
+//     }
+// }
