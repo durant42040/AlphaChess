@@ -2,7 +2,7 @@ use engine::engine::Engine;
 use engine::engine::Perft;
 
 #[test]
-fn test_starting_perft() {
+fn test_perft_starting() {
     let results = vec![20, 400, 8902, 197281, 4865609];
 
     let mut engine = Engine::new();
@@ -14,7 +14,7 @@ fn test_starting_perft() {
 }
 
 #[test]
-fn test_kiwipete_perft() {
+fn test_perft_kiwipete() {
     let results = vec![48, 2039, 97862, 4085603];
 
     let mut engine = Engine::new();
