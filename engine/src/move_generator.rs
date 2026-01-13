@@ -169,6 +169,12 @@ impl MoveGenerator {
     }
 }
 
+impl Default for MoveGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

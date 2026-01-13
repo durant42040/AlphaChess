@@ -194,7 +194,7 @@ impl Engine {
             if self.is_player_in_check(self.board.get_player().switch()) {
                 legal_moves.clear(to);
             }
-            self.board.undo(r#move.clone());
+            self.board.undo(r#move);
         }
 
         legal_moves
