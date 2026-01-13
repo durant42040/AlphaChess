@@ -341,13 +341,11 @@ impl Perft for Engine {
         let moves = self.generate_all_legal_moves();
         let mut nodes = 0u64;
 
-        let temp_board = self.board.clone();
         for r#move in moves {
             self.board.act(r#move);
             self.update_game_state();
-            let ans = self.perft(depth - 1);
-            nodes += ans;
-            self.board = temp_board.clone();
+            nodes += self.perft(depth - 1);
+            self.board.undo(r#move);
             self.game_state = GameState::Playing;
         }
 
