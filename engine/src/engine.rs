@@ -9,7 +9,7 @@ use crate::constants::{
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
-use crate::pieces::Pieces;
+use crate::pieces::{Piece, Pieces};
 use crate::square::Square;
 
 pub struct Engine {
@@ -188,13 +188,13 @@ impl Engine {
 
         // remove moves that would put our king in check
         // e.g. pins, illegal king moves
-        let temp_board = self.board.clone();
         for to in legal_moves.iter() {
-            self.board.act(Move::new(from, to.into(), None));
+            let r#move = Move::new(from, to.into(), None);
+            self.board.act(r#move);
             if self.is_player_in_check(self.board.get_player().switch()) {
                 legal_moves.clear(to);
             }
-            self.board = temp_board.clone();
+            self.board.undo(r#move);
         }
 
         legal_moves
@@ -208,10 +208,10 @@ impl Engine {
                 let from = Square::from(from);
                 let to = Square::from(to);
                 if self.get_pieces().pawns.get_square(from) && (to.rank == 7 || to.rank == 0) {
-                    all_legal_moves.push(Move::new(from, to, Some('q')));
-                    all_legal_moves.push(Move::new(from, to, Some('r')));
-                    all_legal_moves.push(Move::new(from, to, Some('b')));
-                    all_legal_moves.push(Move::new(from, to, Some('n')));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Queen)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Rook)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Bishop)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Knight)));
                 } else {
                     all_legal_moves.push(Move::new(from, to, None));
                 }
@@ -306,7 +306,7 @@ impl Engine {
         let pieces = self.get_pieces();
 
         for i in 0..64 {
-            board_str.push(pieces.get(i));
+            board_str.push(pieces.get_char(i));
         }
 
         board_str
@@ -341,13 +341,11 @@ impl Perft for Engine {
         let moves = self.generate_all_legal_moves();
         let mut nodes = 0u64;
 
-        let temp_board = self.board.clone();
         for r#move in moves {
             self.board.act(r#move);
             self.update_game_state();
-            let ans = self.perft(depth - 1);
-            nodes += ans;
-            self.board = temp_board.clone();
+            nodes += self.perft(depth - 1);
+            self.board.undo(r#move);
             self.game_state = GameState::Playing;
         }
 

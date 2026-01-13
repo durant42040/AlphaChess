@@ -3,8 +3,16 @@ use std::fmt;
 use crate::bitboard::Bitboard;
 use crate::game::Player;
 use crate::r#move::Move;
-use crate::pieces::Pieces;
+use crate::pieces::{Piece, Pieces};
 use crate::square::Square;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct State {
+    pub captured_piece: Option<(Piece, bool)>,
+    pub prev_en_passant: Bitboard,
+    pub prev_castling_rights: u8,
+    pub prev_fifty_move_rule: u8,
+}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct ChessBoard {
@@ -12,11 +20,13 @@ pub struct ChessBoard {
     castling_rights: u8,
     player: Player,
     pieces: Pieces,
+    state_history: Vec<State>,
 }
 
 impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
+        let state_history = Vec::with_capacity(100);
         let player = Player::White;
 
         Self {
@@ -24,6 +34,7 @@ impl ChessBoard {
             castling_rights: 0b1111,
             player,
             pieces,
+            state_history,
         }
     }
 
@@ -49,7 +60,9 @@ impl ChessBoard {
                 continue;
             }
 
-            chessboard.pieces.set(c, i);
+            if let Some((piece, is_white)) = Piece::from_char(c) {
+                chessboard.pieces.set(piece, is_white, i);
+            }
 
             file += 1;
         }
@@ -87,6 +100,13 @@ impl ChessBoard {
         let to = r#move.to;
         let promotion = r#move.promotion;
 
+        self.state_history.push(State {
+            captured_piece: self.pieces.get_piece(to.square),
+            prev_en_passant: self.pieces.en_passant,
+            prev_castling_rights: self.castling_rights,
+            prev_fifty_move_rule: self.fifty_move_rule,
+        });
+
         self.fifty_move_rule += 1;
         if self.pieces.pawns.get_square(from) || self.pieces.all_pieces.get_square(to) {
             self.fifty_move_rule = 0;
@@ -98,6 +118,37 @@ impl ChessBoard {
 
         self.pieces.update(from, to);
         self.player = self.player.switch();
+    }
+
+    pub fn undo(&mut self, r#move: Move) {
+        let from = r#move.from;
+        let to = r#move.to;
+        let promotion = r#move.promotion;
+        if promotion.is_some() {
+            self.pieces.undo_promote(to);
+        }
+
+        self.pieces.update(to, from);
+        if let Some((piece, is_white)) = self.state_history.last().unwrap().captured_piece {
+            self.pieces.set(piece, is_white, to.square);
+        }
+        self.undo_castle(from, to);
+        let state = self.state_history.last().unwrap();
+
+        if state.prev_en_passant.get_square(to) && self.pieces.pawns.get_square(from) {
+            let captured_square = Square::new(from.rank, to.file);
+            self.pieces.set(
+                Piece::Pawn,
+                self.player == Player::White,
+                captured_square.square,
+            );
+        }
+
+        self.pieces.en_passant = state.prev_en_passant;
+        self.castling_rights = state.prev_castling_rights;
+        self.fifty_move_rule = state.prev_fifty_move_rule;
+        self.player = self.player.switch();
+        self.state_history.pop();
     }
 
     pub fn get_pieces(&self) -> Pieces {
@@ -161,6 +212,32 @@ impl ChessBoard {
         }
     }
 
+    fn undo_castle(&mut self, from: Square, to: Square) {
+        if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
+            if from == 4 {
+                if to == 2 {
+                    self.pieces.rooks.update(3, 0);
+                    self.pieces.white_pieces.update(3, 0);
+                    self.pieces.all_pieces.update(3, 0);
+                } else if to == 6 {
+                    self.pieces.rooks.update(5, 7);
+                    self.pieces.white_pieces.update(5, 7);
+                    self.pieces.all_pieces.update(5, 7);
+                }
+            } else if from == 60 {
+                if to == 58 {
+                    self.pieces.rooks.update(59, 56);
+                    self.pieces.black_pieces.update(59, 56);
+                    self.pieces.all_pieces.update(59, 56);
+                } else if to == 62 {
+                    self.pieces.rooks.update(61, 63);
+                    self.pieces.black_pieces.update(61, 63);
+                    self.pieces.all_pieces.update(61, 63);
+                }
+            }
+        }
+    }
+
     pub fn is_draw(&self) -> bool {
         !self.pieces.has_mating_material()
             || self.fifty_move_rule == 100
@@ -177,7 +254,7 @@ impl fmt::Display for ChessBoard {
         let mut board = String::new();
 
         for i in 0..64 {
-            let c = self.pieces.get(i);
+            let c = self.pieces.get_char(i);
 
             board.push(c);
 
