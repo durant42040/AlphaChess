@@ -1,9 +1,9 @@
-mod bitboard;
-mod chessboard;
+pub mod bitboard;
+pub mod chessboard;
 mod constants;
 pub mod engine;
 mod game;
-mod r#move;
-mod move_generator;
-mod pieces;
-mod square;
+pub mod r#move;
+pub mod move_generator;
+pub mod pieces;
+pub mod square;

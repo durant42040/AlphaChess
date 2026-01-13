@@ -1,16 +1,17 @@
 use std::{fmt, str::FromStr};
 
+use crate::pieces::Piece;
 use crate::square::Square;
 
 #[derive(Clone, Copy)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
-    pub promotion: Option<char>,
+    pub promotion: Option<Piece>,
 }
 
 impl Move {
-    pub fn new(from: Square, to: Square, promotion: Option<char>) -> Self {
+    pub fn new(from: Square, to: Square, promotion: Option<Piece>) -> Self {
         Self {
             from,
             to,
@@ -23,7 +24,7 @@ impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.from, self.to)?;
         if let Some(p) = self.promotion {
-            write!(f, "{}", p)?;
+            write!(f, "{}", p.to_promotion_char())?;
         }
         Ok(())
     }
@@ -40,7 +41,8 @@ impl FromStr for Move {
 
         let from_string = &move_string[0..2];
         let to_string = &move_string[2..4];
-        let promotion = move_string.chars().nth(4);
+        let promotion_char = move_string.chars().nth(4);
+        let promotion = promotion_char.and_then(Piece::from_promotion_char);
 
         let from = from_string.parse::<Square>()?;
         let to = to_string.parse::<Square>()?;
@@ -56,18 +58,19 @@ impl FromStr for Move {
 #[cfg(test)]
 mod tests {
     use super::Move;
+    use crate::pieces::Piece;
     use crate::square::Square;
 
     #[test]
     fn test_move() {
         let from = Square::new(1, 4);
         let to = Square::new(3, 4);
-        let r#move = Move::new(from, to, Some('q'));
+        let r#move = Move::new(from, to, Some(Piece::Queen));
         let move_string = format!("{}", r#move);
 
         assert_eq!(r#move.from, from);
         assert_eq!(r#move.to, to);
-        assert_eq!(r#move.promotion, Some('q'));
+        assert_eq!(r#move.promotion, Some(Piece::Queen));
         assert_eq!(move_string, "e2e4q");
     }
 
@@ -89,7 +92,7 @@ mod tests {
 
         assert_eq!(r#move.from, "e7".parse::<Square>().unwrap());
         assert_eq!(r#move.to, "e8".parse::<Square>().unwrap());
-        assert_eq!(r#move.promotion, Some('q'));
+        assert_eq!(r#move.promotion, Some(Piece::Queen));
         assert_eq!(move_string, "e7e8q");
     }
 }

@@ -9,7 +9,7 @@ use crate::constants::{
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
-use crate::pieces::Pieces;
+use crate::pieces::{Piece, Pieces};
 use crate::square::Square;
 
 pub struct Engine {
@@ -208,10 +208,10 @@ impl Engine {
                 let from = Square::from(from);
                 let to = Square::from(to);
                 if self.get_pieces().pawns.get_square(from) && (to.rank == 7 || to.rank == 0) {
-                    all_legal_moves.push(Move::new(from, to, Some('q')));
-                    all_legal_moves.push(Move::new(from, to, Some('r')));
-                    all_legal_moves.push(Move::new(from, to, Some('b')));
-                    all_legal_moves.push(Move::new(from, to, Some('n')));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Queen)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Rook)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Bishop)));
+                    all_legal_moves.push(Move::new(from, to, Some(Piece::Knight)));
                 } else {
                     all_legal_moves.push(Move::new(from, to, None));
                 }
@@ -306,7 +306,7 @@ impl Engine {
         let pieces = self.get_pieces();
 
         for i in 0..64 {
-            board_str.push(pieces.get(i));
+            board_str.push(pieces.get_char(i));
         }
 
         board_str
