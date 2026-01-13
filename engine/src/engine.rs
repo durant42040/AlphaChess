@@ -188,13 +188,13 @@ impl Engine {
 
         // remove moves that would put our king in check
         // e.g. pins, illegal king moves
-        let temp_board = self.board.clone();
         for to in legal_moves.iter() {
-            self.board.act(Move::new(from, to.into(), None));
+            let r#move = Move::new(from, to.into(), None);
+            self.board.act(r#move);
             if self.is_player_in_check(self.board.get_player().switch()) {
                 legal_moves.clear(to);
             }
-            self.board = temp_board.clone();
+            self.board.undo(r#move.clone());
         }
 
         legal_moves

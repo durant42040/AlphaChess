@@ -118,7 +118,7 @@ impl ChessBoard {
         self.player = self.player.switch();
     }
 
-    fn undo(&mut self, r#move: Move) {
+    pub fn undo(&mut self, r#move: Move) {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
@@ -132,7 +132,7 @@ impl ChessBoard {
         }
         self.undo_castle(from, to);
 
-        if self.state_info.prev_en_passant.get_square(to) {
+        if self.state_info.prev_en_passant.get_square(to) && self.pieces.pawns.get_square(from) {
             let captured_square = Square::new(from.rank, to.file);
             self.pieces.set(
                 Piece::Pawn,

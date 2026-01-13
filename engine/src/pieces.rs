@@ -238,6 +238,4 @@ impl Pieces {
             self.en_passant.set((from.square + to.square) / 2);
         }
     }
-
-    pub fn undo_en_passant(&mut self, from: Square, to: Square) {}
 }
