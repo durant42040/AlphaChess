@@ -117,7 +117,7 @@ impl ChessBoard {
         self.castle(from, to);
 
         self.pieces.update(from, to);
-        self.player = self.player.switch();
+        self.switch_player();
     }
 
     pub fn undo(&mut self, r#move: Move) {
@@ -144,7 +144,7 @@ impl ChessBoard {
         self.pieces.en_passant = state.prev_en_passant;
         self.castling_rights = state.prev_castling_rights;
         self.fifty_move_rule = state.prev_fifty_move_rule;
-        self.player = self.player.switch();
+        self.switch_player();
         self.state_history.pop();
     }
 
@@ -160,8 +160,20 @@ impl ChessBoard {
         }
     }
 
+    pub fn get_their_pieces(&self) -> Bitboard {
+        if self.player == Player::White {
+            self.pieces.black_pieces
+        } else {
+            self.pieces.white_pieces
+        }
+    }
+
     pub fn get_player(&self) -> Player {
         self.player
+    }
+
+    pub fn switch_player(&mut self) {
+        self.player = self.player.switch();
     }
 
     pub fn get_castling_rights(&self) -> u8 {

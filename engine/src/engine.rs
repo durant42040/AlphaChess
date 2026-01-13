@@ -3,8 +3,8 @@ use std::fmt;
 use crate::bitboard::Bitboard;
 use crate::chessboard::ChessBoard;
 use crate::constants::{
-    BLACK_KINGSIDE_SQUARES, BLACK_QUEENSIDE_ATTACKED, BLACK_QUEENSIDE_SQUARES,
-    WHITE_KINGSIDE_SQUARES, WHITE_QUEENSIDE_ATTACKED, WHITE_QUEENSIDE_SQUARES,
+    BLACK_KINGSIDE_SQUARES, BLACK_PAWN_CAPTURES, BLACK_QUEENSIDE_ATTACKED, BLACK_QUEENSIDE_SQUARES,
+    WHITE_KINGSIDE_SQUARES, WHITE_PAWN_CAPTURES, WHITE_QUEENSIDE_ATTACKED, WHITE_QUEENSIDE_SQUARES,
 };
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
@@ -120,16 +120,17 @@ impl Engine {
                         }
                     }
                 }
-                let can_kingside = (black_attacks & Bitboard::from(WHITE_KINGSIDE_SQUARES)).empty()
-                    && (pieces.all_pieces & Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
-                        .empty()
+                let can_kingside = !black_attacks
+                    .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES))
+                    && !pieces
+                        .all_pieces
+                        .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 1) != 0;
-                let can_queenside = (black_attacks & Bitboard::from(WHITE_QUEENSIDE_ATTACKED))
-                    .empty()
-                    && (pieces.all_pieces
-                        & Bitboard::from(WHITE_QUEENSIDE_SQUARES)
-                        & !pieces.kings)
-                        .empty()
+                let can_queenside = !black_attacks
+                    .intersects(Bitboard::from(WHITE_QUEENSIDE_ATTACKED))
+                    && !pieces
+                        .all_pieces
+                        .intersects(Bitboard::from(WHITE_QUEENSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 2) != 0;
                 if can_kingside {
                     castling_moves.set(6);
@@ -155,16 +156,17 @@ impl Engine {
                         }
                     }
                 }
-                let can_kingside = (white_attacks & Bitboard::from(BLACK_KINGSIDE_SQUARES)).empty()
-                    && (pieces.all_pieces & Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
-                        .empty()
+                let can_kingside = !white_attacks
+                    .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES))
+                    && !pieces
+                        .all_pieces
+                        .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 4) != 0;
-                let can_queenside = (white_attacks & Bitboard::from(BLACK_QUEENSIDE_ATTACKED))
-                    .empty()
-                    && (pieces.all_pieces
-                        & Bitboard::from(BLACK_QUEENSIDE_SQUARES)
-                        & !pieces.kings)
-                        .empty()
+                let can_queenside = !white_attacks
+                    .intersects(Bitboard::from(BLACK_QUEENSIDE_ATTACKED))
+                    && !pieces
+                        .all_pieces
+                        .intersects(Bitboard::from(BLACK_QUEENSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 8) != 0;
                 if can_kingside {
                     castling_moves.set(62);
@@ -191,9 +193,11 @@ impl Engine {
         for to in legal_moves.iter() {
             let r#move = Move::new(from, to.into(), None);
             self.board.act(r#move);
-            if self.is_player_in_check(self.board.get_player().switch()) {
+            self.board.switch_player();
+            if self.is_check() {
                 legal_moves.clear(to);
             }
+            self.board.switch_player();
             self.board.undo(r#move);
         }
 
@@ -225,31 +229,73 @@ impl Engine {
         self.game_state.to_string()
     }
 
-    pub fn is_check(&self) -> bool {
-        self.is_player_in_check(self.board.get_player())
-    }
-
-    fn is_player_in_check(&self, player: Player) -> bool {
+    /// Checks if the given square is under attack by the opponent.
+    pub fn is_under_attack(&self, square: Square) -> bool {
         let pieces = self.get_pieces();
-        let their_pieces = if player == Player::White {
-            pieces.black_pieces
-        } else {
-            pieces.white_pieces
-        };
-        let our_king = if player == Player::White {
-            pieces.white_pieces & pieces.kings
-        } else {
-            pieces.black_pieces & pieces.kings
-        };
-        let our_king_position = our_king.get_lsb();
+        let their_pieces = self.board.get_their_pieces();
 
-        for from in their_pieces.iter() {
-            let moves = self.generate_moves(Square::from(from));
-            if moves.get(our_king_position) {
+        let their_king = pieces.kings & their_pieces;
+        if self
+            .move_generator
+            .generate_king_moves(square)
+            .intersects(their_king)
+        {
+            return true;
+        }
+
+        let their_rooks = pieces.rooks & their_pieces;
+        if self
+            .move_generator
+            .generate_rook_moves(square, pieces.all_pieces)
+            .intersects(their_rooks)
+        {
+            return true;
+        }
+
+        let their_bishops = pieces.bishops & their_pieces;
+        if self
+            .move_generator
+            .generate_bishop_moves(square, pieces.all_pieces)
+            .intersects(their_bishops)
+        {
+            return true;
+        }
+
+        let their_queen = pieces.queens & their_pieces;
+        if self
+            .move_generator
+            .generate_queen_moves(square, pieces.all_pieces)
+            .intersects(their_queen)
+        {
+            return true;
+        }
+
+        let their_knights = pieces.knights & their_pieces;
+        if self
+            .move_generator
+            .generate_knight_moves(square)
+            .intersects(their_knights)
+        {
+            return true;
+        }
+
+        let their_pawns = pieces.pawns & their_pieces;
+        if self.board.get_player() == Player::White {
+            if Bitboard::from(WHITE_PAWN_CAPTURES[square]).intersects(their_pawns) {
+                return true;
+            }
+        } else {
+            if Bitboard::from(BLACK_PAWN_CAPTURES[square]).intersects(their_pawns) {
                 return true;
             }
         }
+
         false
+    }
+
+    pub fn is_check(&self) -> bool {
+        let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
+        self.is_under_attack(Square::from(our_king.get_lsb()))
     }
 
     pub fn is_legal_move(&mut self, r#move: Move) -> bool {

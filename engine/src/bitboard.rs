@@ -40,6 +40,10 @@ impl Bitboard {
         self.bitboard == 0
     }
 
+    pub fn intersects(&self, other: Bitboard) -> bool {
+        self.bitboard & other.bitboard != 0
+    }
+
     pub fn update(&mut self, from: u8, to: u8) {
         self.clear(to);
         if self.get(from) {
