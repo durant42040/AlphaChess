@@ -3,12 +3,12 @@ use std::fmt;
 use crate::bitboard::Bitboard;
 use crate::game::Player;
 use crate::r#move::Move;
-use crate::pieces::{Piece, Pieces};
+use crate::pieces::{Color, Piece, Pieces};
 use crate::square::Square;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
-    pub captured_piece: Option<(Piece, bool)>,
+    pub captured_piece: Option<(Piece, Color)>,
     pub prev_en_passant: Bitboard,
     pub prev_castling_rights: u8,
     pub prev_fifty_move_rule: u8,
@@ -60,8 +60,8 @@ impl ChessBoard {
                 continue;
             }
 
-            if let Some((piece, is_white)) = Piece::from_char(c) {
-                chessboard.pieces.set(piece, is_white, i);
+            if let Some((piece, color)) = Piece::from_char(c) {
+                chessboard.pieces.set(piece, color, i);
             }
 
             file += 1;
@@ -129,19 +129,16 @@ impl ChessBoard {
         }
 
         self.pieces.update(to, from);
-        if let Some((piece, is_white)) = self.state_history.last().unwrap().captured_piece {
-            self.pieces.set(piece, is_white, to.square);
+        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece {
+            self.pieces.set(piece, color, to.square);
         }
         self.undo_castle(from, to);
         let state = self.state_history.last().unwrap();
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns.get_square(from) {
             let captured_square = Square::new(from.rank, to.file);
-            self.pieces.set(
-                Piece::Pawn,
-                self.player == Player::White,
-                captured_square.square,
-            );
+            self.pieces
+                .set(Piece::Pawn, self.player.to_color(), captured_square.square);
         }
 
         self.pieces.en_passant = state.prev_en_passant;

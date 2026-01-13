@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::pieces::Color;
+
 #[derive(Default, Copy, Clone)]
 pub enum GameState {
     #[default]
@@ -36,6 +38,13 @@ impl Player {
         match self {
             Player::White => Player::Black,
             Player::Black => Player::White,
+        }
+    }
+
+    pub fn to_color(&self) -> Color {
+        match self {
+            Player::White => Color::White,
+            Player::Black => Color::Black,
         }
     }
 }

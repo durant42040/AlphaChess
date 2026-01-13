@@ -1,6 +1,34 @@
 use crate::bitboard::Bitboard;
 use crate::square::Square;
 
+/// Represents the color of a chess piece.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Color {
+    #[default]
+    White,
+    Black,
+}
+
+impl Color {
+    /// Convert a boolean to Color (true = White, false = Black).
+    pub fn from_bool(is_white: bool) -> Self {
+        if is_white { Color::White } else { Color::Black }
+    }
+
+    /// Convert Color to boolean (White = true, Black = false).
+    pub fn to_bool(self) -> bool {
+        matches!(self, Color::White)
+    }
+
+    /// Get the opposite color.
+    pub fn opposite(self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
+
 /// Represents the type of a chess piece (color is handled separately).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Piece {
@@ -13,9 +41,13 @@ pub enum Piece {
 }
 
 impl Piece {
-    /// Create a `(Piece, is_white)` pair from a FEN board character.
-    pub fn from_char(c: char) -> Option<(Self, bool)> {
-        let is_white = c.is_uppercase();
+    /// Create a `(Piece, Color)` pair from a FEN board character.
+    pub fn from_char(c: char) -> Option<(Self, Color)> {
+        let color = if c.is_uppercase() {
+            Color::White
+        } else {
+            Color::Black
+        };
         let piece = match c.to_ascii_lowercase() {
             'p' => Piece::Pawn,
             'n' => Piece::Knight,
@@ -26,11 +58,11 @@ impl Piece {
             _ => return None,
         };
 
-        Some((piece, is_white))
+        Some((piece, color))
     }
 
     /// Convert this piece type and color into a FEN board character.
-    pub fn to_char(self, is_white: bool) -> char {
+    pub fn to_char(self, color: Color) -> char {
         let base = match self {
             Piece::Pawn => 'p',
             Piece::Knight => 'n',
@@ -40,10 +72,9 @@ impl Piece {
             Piece::King => 'k',
         };
 
-        if is_white {
-            base.to_ascii_uppercase()
-        } else {
-            base
+        match color {
+            Color::White => base.to_ascii_uppercase(),
+            Color::Black => base,
         }
     }
 
@@ -90,34 +121,34 @@ impl Pieces {
         let mut pieces = Self::default();
 
         // White back rank
-        pieces.set(Piece::Rook, true, 0);
-        pieces.set(Piece::Knight, true, 1);
-        pieces.set(Piece::Bishop, true, 2);
-        pieces.set(Piece::Queen, true, 3);
-        pieces.set(Piece::King, true, 4);
-        pieces.set(Piece::Bishop, true, 5);
-        pieces.set(Piece::Knight, true, 6);
-        pieces.set(Piece::Rook, true, 7);
+        pieces.set(Piece::Rook, Color::White, 0);
+        pieces.set(Piece::Knight, Color::White, 1);
+        pieces.set(Piece::Bishop, Color::White, 2);
+        pieces.set(Piece::Queen, Color::White, 3);
+        pieces.set(Piece::King, Color::White, 4);
+        pieces.set(Piece::Bishop, Color::White, 5);
+        pieces.set(Piece::Knight, Color::White, 6);
+        pieces.set(Piece::Rook, Color::White, 7);
 
         // White pawns
         for square in 8..16 {
-            pieces.set(Piece::Pawn, true, square);
+            pieces.set(Piece::Pawn, Color::White, square);
         }
 
         // Black pawns
         for square in 48..56 {
-            pieces.set(Piece::Pawn, false, square);
+            pieces.set(Piece::Pawn, Color::Black, square);
         }
 
         // Black back rank
-        pieces.set(Piece::Rook, false, 56);
-        pieces.set(Piece::Knight, false, 57);
-        pieces.set(Piece::Bishop, false, 58);
-        pieces.set(Piece::Queen, false, 59);
-        pieces.set(Piece::King, false, 60);
-        pieces.set(Piece::Bishop, false, 61);
-        pieces.set(Piece::Knight, false, 62);
-        pieces.set(Piece::Rook, false, 63);
+        pieces.set(Piece::Rook, Color::Black, 56);
+        pieces.set(Piece::Knight, Color::Black, 57);
+        pieces.set(Piece::Bishop, Color::Black, 58);
+        pieces.set(Piece::Queen, Color::Black, 59);
+        pieces.set(Piece::King, Color::Black, 60);
+        pieces.set(Piece::Bishop, Color::Black, 61);
+        pieces.set(Piece::Knight, Color::Black, 62);
+        pieces.set(Piece::Rook, Color::Black, 63);
 
         pieces
     }
@@ -135,11 +166,10 @@ impl Pieces {
     }
 
     /// Set the given piece type and color on square `i`.
-    pub fn set(&mut self, piece: Piece, is_white: bool, i: u8) {
-        if is_white {
-            self.white_pieces.set(i);
-        } else {
-            self.black_pieces.set(i);
+    pub fn set(&mut self, piece: Piece, color: Color, i: u8) {
+        match color {
+            Color::White => self.white_pieces.set(i),
+            Color::Black => self.black_pieces.set(i),
         }
         self.all_pieces.set(i);
 
@@ -153,8 +183,8 @@ impl Pieces {
         }
     }
 
-    /// Get the `(Piece, is_white)` at index `i`, if any.
-    pub fn get_piece(&self, i: u8) -> Option<(Piece, bool)> {
+    /// Get the `(Piece, Color)` at index `i`, if any.
+    pub fn get_piece(&self, i: u8) -> Option<(Piece, Color)> {
         let piece = if self.pawns.get(i) {
             Piece::Pawn
         } else if self.knights.get(i) {
@@ -171,14 +201,18 @@ impl Pieces {
             return None;
         };
 
-        let is_white = self.white_pieces.get(i);
-        Some((piece, is_white))
+        let color = if self.white_pieces.get(i) {
+            Color::White
+        } else {
+            Color::Black
+        };
+        Some((piece, color))
     }
 
     /// Convenience helper to get a FEN-style character for the board display.
     pub fn get_char(&self, i: u8) -> char {
-        if let Some((piece, is_white)) = self.get_piece(i) {
-            piece.to_char(is_white)
+        if let Some((piece, color)) = self.get_piece(i) {
+            piece.to_char(color)
         } else {
             '.'
         }
@@ -226,10 +260,14 @@ impl Pieces {
             let captured_square = Square::new(from.rank, to.file);
             self.pawns.clear_square(captured_square);
             self.all_pieces.clear_square(captured_square);
-            if self.white_pieces.get_square(from) {
-                self.black_pieces.clear_square(captured_square);
+            let capturing_color = if self.white_pieces.get_square(from) {
+                Color::White
             } else {
-                self.white_pieces.clear_square(captured_square);
+                Color::Black
+            };
+            match capturing_color {
+                Color::White => self.black_pieces.clear_square(captured_square),
+                Color::Black => self.white_pieces.clear_square(captured_square),
             }
         }
 
