@@ -284,10 +284,8 @@ impl Engine {
             if Bitboard::from(WHITE_PAWN_CAPTURES[square]).intersects(their_pawns) {
                 return true;
             }
-        } else {
-            if Bitboard::from(BLACK_PAWN_CAPTURES[square]).intersects(their_pawns) {
-                return true;
-            }
+        } else if Bitboard::from(BLACK_PAWN_CAPTURES[square]).intersects(their_pawns) {
+            return true;
         }
 
         false
