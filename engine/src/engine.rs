@@ -105,33 +105,32 @@ impl Engine {
         match from.square {
             4 => {
                 // White king's castle
-                let mut black_attacks = Bitboard::default();
-                for idx in pieces.black_pieces.iter() {
-                    let square = Square::from(idx);
-                    black_attacks |= self.generate_moves(square);
-                    if pieces.pawns.get(idx) {
-                        if square.rank > 0 && square.file > 0 {
-                            let target = Square::new(square.rank - 1, square.file - 1);
-                            black_attacks.set_square(target);
-                        }
-                        if square.rank > 0 && square.file < 7 {
-                            let target = Square::new(square.rank - 1, square.file + 1);
-                            black_attacks.set_square(target);
-                        }
+                let mut is_kingside_attacked = false;
+                for idx in Bitboard::from(WHITE_KINGSIDE_SQUARES).iter() {
+                    if self.is_under_attack(Square::from(idx)) {
+                        is_kingside_attacked = true;
+                        break;
                     }
                 }
-                let can_kingside = !black_attacks
-                    .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES))
+                let can_kingside = !is_kingside_attacked
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 1) != 0;
-                let can_queenside = !black_attacks
-                    .intersects(Bitboard::from(WHITE_QUEENSIDE_ATTACKED))
+
+                let mut is_queenside_attacked = false;
+                for idx in Bitboard::from(WHITE_QUEENSIDE_ATTACKED).iter() {
+                    if self.is_under_attack(Square::from(idx)) {
+                        is_queenside_attacked = true;
+                        break;
+                    }
+                }
+                let can_queenside = !is_queenside_attacked
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(WHITE_QUEENSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 2) != 0;
+
                 if can_kingside {
                     castling_moves.set(6);
                 }
@@ -141,33 +140,32 @@ impl Engine {
             }
             60 => {
                 // Black king's castle
-                let mut white_attacks = Bitboard::default();
-                for idx in pieces.white_pieces.iter() {
-                    let square = Square::from(idx);
-                    white_attacks |= self.generate_moves(square);
-                    if pieces.pawns.get(idx) {
-                        if square.rank < 7 && square.file > 0 {
-                            let target = Square::new(square.rank + 1, square.file - 1);
-                            white_attacks.set_square(target);
-                        }
-                        if square.rank < 7 && square.file < 7 {
-                            let target = Square::new(square.rank + 1, square.file + 1);
-                            white_attacks.set_square(target);
-                        }
+                let mut is_kingside_attacked = false;
+                for idx in Bitboard::from(BLACK_KINGSIDE_SQUARES).iter() {
+                    if self.is_under_attack(Square::from(idx)) {
+                        is_kingside_attacked = true;
+                        break;
                     }
                 }
-                let can_kingside = !white_attacks
-                    .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES))
+                let can_kingside = !is_kingside_attacked
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 4) != 0;
-                let can_queenside = !white_attacks
-                    .intersects(Bitboard::from(BLACK_QUEENSIDE_ATTACKED))
+
+                let mut is_queenside_attacked = false;
+                for idx in Bitboard::from(BLACK_QUEENSIDE_ATTACKED).iter() {
+                    if self.is_under_attack(Square::from(idx)) {
+                        is_queenside_attacked = true;
+                        break;
+                    }
+                }
+                let can_queenside = !is_queenside_attacked
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(BLACK_QUEENSIDE_SQUARES) & !pieces.kings)
                     && (self.board.get_castling_rights() & 8) != 0;
+
                 if can_kingside {
                     castling_moves.set(62);
                 }
