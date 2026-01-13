@@ -41,7 +41,7 @@ impl Player {
         }
     }
 
-    pub fn to_color(&self) -> Color {
+    pub fn to_color(self) -> Color {
         match self {
             Player::White => Color::White,
             Player::Black => Color::Black,
