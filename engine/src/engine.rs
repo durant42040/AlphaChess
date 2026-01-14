@@ -319,26 +319,29 @@ impl Engine {
     }
 
     fn update_game_state(&mut self) {
-        let mut moves = Bitboard::default();
-        for from in self.board.get_our_pieces().iter() {
-            moves |= self.generate_legal_moves(Square::from(from));
-        }
-
-        if moves.empty() {
-            if self.is_check() {
-                // checkmate
-                if self.board.get_player() == Player::White {
-                    self.game_state = GameState::BlackWin;
-                } else {
-                    self.game_state = GameState::WhiteWin;
-                }
-            } else {
-                // stalemate
-                self.game_state = GameState::Draw;
-            }
-        }
         // insufficient material, 50-move rule, three-fold repetition
         if self.board.is_draw() {
+            self.game_state = GameState::Draw;
+            return;
+        }
+
+        // if there are legal moves, continue playing
+        for from in self.board.get_our_pieces().iter() {
+            if !self.generate_legal_moves(Square::from(from)).empty() {
+                return;
+            }
+        }
+
+        // if there are no legal moves, check for checkmate or stalemate
+        if self.is_check() {
+            // checkmate
+            if self.board.get_player() == Player::White {
+                self.game_state = GameState::BlackWin;
+            } else {
+                self.game_state = GameState::WhiteWin;
+            }
+        } else {
+            // stalemate
             self.game_state = GameState::Draw;
         }
     }
