@@ -1,4 +1,4 @@
-use engine::engine::Engine;
+use engine::{bitboard::Bitboard, engine::Engine};
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {
@@ -139,4 +139,11 @@ fn test_insufficient_material() {
     engine.load_from_fen("8/3P4/8/6K1/8/8/8/nk6 w - - 0 1".to_string());
     make_move(&mut engine, "d7d8n");
     assert_game_state(&engine, "draw");
+}
+
+#[test]
+fn test_pinned_pieces() {
+    let mut engine = Engine::new();
+    engine.load_from_fen("3r4/6k1/8/1b1N4/2n5/3KN1qr/2BQ4/1b1q4 w - - 0 1".to_string());
+    assert_eq!(engine.find_pinned_pieces(), Bitboard::from(0x800100C00));
 }

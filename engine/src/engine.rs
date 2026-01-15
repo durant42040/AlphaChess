@@ -20,6 +20,8 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Self {
+        Bitboard::init();
+
         Self {
             board: ChessBoard::new(),
             move_generator: MoveGenerator::new(),
@@ -230,7 +232,7 @@ impl Engine {
     /// Checks if the given square is under attack by the opponent.
     pub fn is_under_attack(&self, square: Square) -> bool {
         let pieces = self.get_pieces();
-        let their_pieces = self.board.get_their_pieces();
+        let their_pieces: Bitboard = self.board.get_their_pieces();
 
         let their_king = pieces.kings & their_pieces;
         if self
@@ -355,6 +357,35 @@ impl Engine {
         }
 
         board_str
+    }
+
+    pub fn find_pinned_pieces(&self) -> Bitboard {
+        let mut pinned_pieces = Bitboard::default();
+        let pieces = self.get_pieces();
+        let our_pieces: Bitboard = self.board.get_our_pieces();
+        let their_pieces: Bitboard = self.board.get_their_pieces();
+        let our_king = Square::from((our_pieces & pieces.kings).get_lsb());
+
+        let rook_rays = self
+            .move_generator
+            .generate_rook_moves(our_king, Bitboard::default());
+        let bishop_rays = self
+            .move_generator
+            .generate_bishop_moves(our_king, Bitboard::default());
+
+        let mut snipers = their_pieces
+            & ((pieces.queens | pieces.rooks) & rook_rays
+                | (pieces.queens | pieces.bishops) & bishop_rays);
+
+        while !snipers.empty() {
+            let sniper = Square::from(snipers.pop_lsb());
+            let blockers = pieces.all_pieces & Bitboard::between(our_king, sniper);
+            if blockers.count() == 1 && our_pieces.intersects(blockers) {
+                pinned_pieces |= blockers;
+            }
+        }
+
+        pinned_pieces
     }
 }
 

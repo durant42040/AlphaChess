@@ -241,7 +241,6 @@ impl Pieces {
             Piece::Rook => self.rooks.set_square(from),
             Piece::Bishop => self.bishops.set_square(from),
             Piece::Knight => self.knights.set_square(from),
-            // Pawns and kings are never valid promotion targets.
             Piece::Pawn | Piece::King => {}
         }
         self.pawns.clear_square(from);

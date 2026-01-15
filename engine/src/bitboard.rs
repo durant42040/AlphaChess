@@ -1,6 +1,9 @@
 use crate::square::Square;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, Shr};
+use std::sync::OnceLock;
+
+static BETWEEN_BITBOARD: OnceLock<[[Bitboard; 64]; 64]> = OnceLock::new();
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Bitboard {
@@ -79,6 +82,75 @@ impl Bitboard {
         BitboardIter {
             bitboard: self.bitboard,
         }
+    }
+
+    fn init_between_table() -> [[Bitboard; 64]; 64] {
+        let mut table = [[Bitboard::default(); 64]; 64];
+
+        #[allow(clippy::needless_range_loop)]
+        for sq1 in 0..64 {
+            for sq2 in 0..64 {
+                if sq1 == sq2 {
+                    table[sq1][sq2] = Bitboard::default();
+                    continue;
+                }
+
+                let s1 = Square::from(sq1 as u8);
+                let s2 = Square::from(sq2 as u8);
+
+                let rank1 = s1.rank;
+                let file1 = s1.file;
+                let rank2 = s2.rank;
+                let file2 = s2.file;
+
+                let mut between = Bitboard::default();
+
+                if rank1 == rank2 {
+                    let start_file = file1.min(file2);
+                    let end_file = file1.max(file2);
+                    for file in (start_file + 1)..end_file {
+                        between.set_square(Square::new(rank1, file));
+                    }
+                } else if file1 == file2 {
+                    let start_rank = rank1.min(rank2);
+                    let end_rank = rank1.max(rank2);
+                    for rank in (start_rank + 1)..end_rank {
+                        between.set_square(Square::new(rank, file1));
+                    }
+                } else {
+                    let rank_diff = rank1 as i8 - rank2 as i8;
+                    let file_diff = file1 as i8 - file2 as i8;
+
+                    if rank_diff.abs() == file_diff.abs() {
+                        let rank_step = if rank1 < rank2 { 1 } else { -1 };
+                        let file_step = if file1 < file2 { 1 } else { -1 };
+
+                        let mut current_rank = rank1 as i8 + rank_step;
+                        let mut current_file = file1 as i8 + file_step;
+                        let target_rank = rank2 as i8;
+
+                        while current_rank != target_rank {
+                            between.set_square(Square::new(current_rank as u8, current_file as u8));
+                            current_rank += rank_step;
+                            current_file += file_step;
+                        }
+                    }
+                }
+
+                table[sq1][sq2] = between;
+            }
+        }
+
+        table
+    }
+
+    pub fn init() {
+        BETWEEN_BITBOARD.get_or_init(Bitboard::init_between_table);
+    }
+
+    pub fn between(sq1: Square, sq2: Square) -> Bitboard {
+        let table = BETWEEN_BITBOARD.get_or_init(Bitboard::init_between_table);
+        table[sq1.square as usize][sq2.square as usize]
     }
 }
 
@@ -203,5 +275,20 @@ mod tests {
 
         let result: Vec<u8> = bitboard.iter().collect();
         assert_eq!(result, positions);
+    }
+
+    #[test]
+    fn test_between_vertical() {
+        let sq1 = Square::from(0);
+        let sq2 = Square::from(63);
+        let between = Bitboard::between(sq1, sq2);
+        assert!(
+            between.get(9)
+                && between.get(18)
+                && between.get(27)
+                && between.get(36)
+                && between.get(45)
+                && between.get(54)
+        );
     }
 }
