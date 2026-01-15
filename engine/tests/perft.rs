@@ -1,5 +1,4 @@
-use engine::engine::Engine;
-use engine::engine::Perft;
+use engine::engine::{Engine, Perft};
 
 #[test]
 fn test_perft_starting() {

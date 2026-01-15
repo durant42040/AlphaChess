@@ -93,7 +93,7 @@ impl MoveGenerator {
         all_pieces: Bitboard,
         capture_pieces: Bitboard,
     ) -> Bitboard {
-        let from_mask = Bitboard::from(1 << from.square);
+        let from_mask = Bitboard::from(from);
 
         let one_step_moves = (from_mask << 8) & !all_pieces;
         let two_step_moves = ((one_step_moves & (0xFF << 16).into()) << 8) & !all_pieces;
@@ -108,7 +108,7 @@ impl MoveGenerator {
         all_pieces: Bitboard,
         capture_pieces: Bitboard,
     ) -> Bitboard {
-        let from_mask = Bitboard::from(1 << from.square);
+        let from_mask = Bitboard::from(from);
 
         let one_step_moves = (from_mask >> 8) & !all_pieces;
         let two_step_moves = ((one_step_moves & (0xFF << 40).into()) >> 8) & !all_pieces;

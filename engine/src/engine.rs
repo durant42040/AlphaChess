@@ -183,19 +183,56 @@ impl Engine {
 
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
+        let pieces = self.get_pieces();
 
-        if self.get_pieces().kings.get_square(from) && (from == 4 || from == 60) {
-            legal_moves |= self.generate_castling_moves(from);
+        // King moves
+        if pieces.kings.get_square(from) {
+            for to in legal_moves.iter() {
+                if self.is_under_attack(Square::from(to)) {
+                    legal_moves.clear(to);
+                }
+            }
+            if from == 4 || from == 60 {
+                legal_moves |= self.generate_castling_moves(from);
+            }
+            return legal_moves;
         }
 
-        // remove moves that would put our king in check
-        // e.g. pins, illegal king moves
-        for to in legal_moves.iter() {
-            let r#move = Move::new(from, to.into(), None);
+        let (pinned_pieces, snipers) = self.find_pinned_pieces();
+        if self.is_check() {
+            // if in double check, no legal non-king moves
+            if self.is_double_check() {
+                return Bitboard::default();
+            }
+
+            // pinned pieces cannot resolve check
+            if pinned_pieces.get_square(from) {
+                return Bitboard::default();
+            }
+
+            let our_king = Square::from(self.board.get_our_pieces() & self.get_pieces().kings);
+            let sniper = Square::from(snipers);
+            // if not double check, a piece can block the check or capture
+            legal_moves &= Bitboard::between(sniper, our_king) | Bitboard::from(sniper);
+        }
+
+        if pinned_pieces.get_square(from) {
+            // if a piece is pinned, only the moves that are along the pin ray are legal
+            let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
+            legal_moves &= Bitboard::ray(from, Square::from(our_king));
+        }
+
+        // is en passant legal?
+        if pieces.pawns.get_square(from)
+            && !pieces.en_passant.empty()
+            && legal_moves.intersects(pieces.en_passant)
+        {
+            let to = Square::from(pieces.en_passant);
+            let r#move = Move::new(from, to, None);
             self.board.act(r#move);
             self.board.switch_player();
             if self.is_check() {
-                legal_moves.clear(to);
+                legal_moves.clear(to.square);
             }
             self.board.switch_player();
             self.board.undo(r#move);
@@ -293,7 +330,11 @@ impl Engine {
 
     pub fn is_check(&self) -> bool {
         let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
-        self.is_under_attack(Square::from(our_king.get_lsb()))
+        self.is_under_attack(Square::from(our_king))
+    }
+
+    fn is_double_check(&self) -> bool {
+        todo!()
     }
 
     pub fn is_legal_move(&mut self, r#move: Move) -> bool {
@@ -359,12 +400,12 @@ impl Engine {
         board_str
     }
 
-    pub fn find_pinned_pieces(&self) -> Bitboard {
+    pub fn find_pinned_pieces(&self) -> (Bitboard, Bitboard) {
         let mut pinned_pieces = Bitboard::default();
         let pieces = self.get_pieces();
         let our_pieces: Bitboard = self.board.get_our_pieces();
         let their_pieces: Bitboard = self.board.get_their_pieces();
-        let our_king = Square::from((our_pieces & pieces.kings).get_lsb());
+        let our_king = Square::from(our_pieces & pieces.kings);
 
         let rook_rays = self
             .move_generator
@@ -376,16 +417,18 @@ impl Engine {
         let mut snipers = their_pieces
             & ((pieces.queens | pieces.rooks) & rook_rays
                 | (pieces.queens | pieces.bishops) & bishop_rays);
+        let mut snipers_found = Bitboard::default();
 
         while !snipers.empty() {
-            let sniper = Square::from(snipers.pop_lsb());
-            let blockers = pieces.all_pieces & Bitboard::between(our_king, sniper);
+            let sniper = snipers.pop_lsb();
+            let blockers = pieces.all_pieces & Bitboard::between(Square::from(sniper), our_king);
             if blockers.count() == 1 && our_pieces.intersects(blockers) {
                 pinned_pieces |= blockers;
+                snipers_found.set(sniper);
             }
         }
 
-        pinned_pieces
+        (pinned_pieces, snipers_found)
     }
 }
 

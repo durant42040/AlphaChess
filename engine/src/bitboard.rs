@@ -4,6 +4,7 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, Shr};
 use std::sync::OnceLock;
 
 static BETWEEN_BITBOARD: OnceLock<[[Bitboard; 64]; 64]> = OnceLock::new();
+static RAY_BITBOARD: OnceLock<[[Bitboard; 64]; 64]> = OnceLock::new();
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Bitboard {
@@ -144,12 +145,76 @@ impl Bitboard {
         table
     }
 
+    fn init_ray_table() -> [[Bitboard; 64]; 64] {
+        let mut table = [[Bitboard::default(); 64]; 64];
+
+        #[allow(clippy::needless_range_loop)]
+        for sq1 in 0..64 {
+            for sq2 in 0..64 {
+                let s1 = Square::from(sq1 as u8);
+                let s2 = Square::from(sq2 as u8);
+
+                let rank1 = s1.rank;
+                let file1 = s1.file;
+                let rank2 = s2.rank;
+                let file2 = s2.file;
+
+                let mut ray = Bitboard::default();
+
+                if rank1 == rank2 {
+                    for file in 0..8 {
+                        ray.set_square(Square::new(rank1, file));
+                    }
+                } else if file1 == file2 {
+                    for rank in 0..8 {
+                        ray.set_square(Square::new(rank, file1));
+                    }
+                } else {
+                    let rank_diff = rank1 as i8 - rank2 as i8;
+                    let file_diff = file1 as i8 - file2 as i8;
+
+                    if rank_diff.abs() == file_diff.abs() {
+                        let rank_step = if rank1 < rank2 { 1 } else { -1 };
+                        let file_step = if file1 < file2 { 1 } else { -1 };
+
+                        let mut current_rank = rank1 as i8;
+                        let mut current_file = file1 as i8;
+
+                        while current_rank - rank_step >= 0
+                            && (0..8).contains(&(current_rank - rank_step))
+                            && (0..8).contains(&(current_file - file_step))
+                        {
+                            current_rank -= rank_step;
+                            current_file -= file_step;
+                        }
+
+                        while (0..8).contains(&current_rank) && (0..8).contains(&current_file) {
+                            ray.set_square(Square::new(current_rank as u8, current_file as u8));
+                            current_rank += rank_step;
+                            current_file += file_step;
+                        }
+                    }
+                }
+
+                table[sq1][sq2] = ray;
+            }
+        }
+
+        table
+    }
+
     pub fn init() {
         BETWEEN_BITBOARD.get_or_init(Bitboard::init_between_table);
+        RAY_BITBOARD.get_or_init(Bitboard::init_ray_table);
     }
 
     pub fn between(sq1: Square, sq2: Square) -> Bitboard {
         let table = BETWEEN_BITBOARD.get_or_init(Bitboard::init_between_table);
+        table[sq1.square as usize][sq2.square as usize]
+    }
+
+    pub fn ray(sq1: Square, sq2: Square) -> Bitboard {
+        let table = RAY_BITBOARD.get_or_init(Bitboard::init_ray_table);
         table[sq1.square as usize][sq2.square as usize]
     }
 }
@@ -157,6 +222,21 @@ impl Bitboard {
 impl From<u64> for Bitboard {
     fn from(x: u64) -> Self {
         Self { bitboard: x }
+    }
+}
+
+impl From<Square> for Bitboard {
+    fn from(square: Square) -> Self {
+        Self {
+            bitboard: 1 << square.square,
+        }
+    }
+}
+
+impl From<Bitboard> for Square {
+    fn from(bitboard: Bitboard) -> Self {
+        debug_assert!(bitboard.count() == 1,);
+        Square::from(bitboard.get_lsb())
     }
 }
 
@@ -278,10 +358,11 @@ mod tests {
     }
 
     #[test]
-    fn test_between_vertical() {
+    fn test_between_diagonal() {
         let sq1 = Square::from(0);
         let sq2 = Square::from(63);
         let between = Bitboard::between(sq1, sq2);
+        println!("{}", between);
         assert!(
             between.get(9)
                 && between.get(18)
@@ -290,5 +371,62 @@ mod tests {
                 && between.get(45)
                 && between.get(54)
         );
+    }
+
+    #[test]
+    fn test_ray_horizontal() {
+        let e4 = "e4".parse::<Square>().unwrap();
+        let f4 = "f4".parse::<Square>().unwrap();
+        let ray = Bitboard::ray(e4, f4);
+
+        for file in 0..8 {
+            let square = Square::new(3, file);
+            assert!(
+                ray.get_square(square),
+                "Square {} should be on the ray",
+                square
+            );
+        }
+        assert_eq!(ray.count(), 8, "Ray should contain all 8 squares on rank 4");
+    }
+
+    #[test]
+    fn test_ray_vertical() {
+        let e4 = "e4".parse::<Square>().unwrap();
+        let e5 = "e5".parse::<Square>().unwrap();
+        let ray = Bitboard::ray(e4, e5);
+
+        for rank in 0..8 {
+            let square = Square::new(rank, 4);
+            assert!(
+                ray.get_square(square),
+                "Square {} should be on the ray",
+                square
+            );
+        }
+        assert_eq!(ray.count(), 8, "Ray should contain all 8 squares on file e");
+    }
+
+    #[test]
+    fn test_ray_same_square() {
+        let sq = Square::from(20);
+        let ray = Bitboard::ray(sq, sq);
+        assert!(ray.get_square(sq), "Ray should contain the square itself");
+    }
+
+    #[test]
+    fn test_square_to_bitboard() {
+        let sq = Square::from(20);
+        let bb: Bitboard = sq.into();
+        assert!(bb.get(20));
+        assert_eq!(bb.count(), 1);
+    }
+
+    #[test]
+    fn test_bitboard_to_square() {
+        let mut bb = Bitboard::default();
+        bb.set(42);
+        let sq: Square = bb.into();
+        assert_eq!(sq.square, 42);
     }
 }
