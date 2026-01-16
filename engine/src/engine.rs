@@ -204,22 +204,24 @@ impl Engine {
         }
 
         // is en passant legal?
+        let mut en_passant_legal = false;
         if pieces.pawns.get_square(from)
             && !pieces.en_passant.empty()
             && legal_moves.intersects(pieces.en_passant)
         {
-            for to in legal_moves.iter() {
-                let r#move = Move::new(from, to.into(), None);
-                self.board.act(r#move);
-                self.board.switch_player();
-                if self.is_check() {
-                    legal_moves.clear(to);
-                }
-                self.board.switch_player();
-                self.board.undo(r#move);
+            let to = Square::from(pieces.en_passant);
+            let r#move = Move::new(from, to, None);
+            self.board.act(r#move);
+            self.board.switch_player();
+            if self.is_check() {
+                legal_moves.clear_square(to);
+            } else {
+                en_passant_legal = true;
             }
-            return legal_moves;
+            self.board.switch_player();
+            self.board.undo(r#move);
         }
+
         let (pinned_pieces, attack_lines) = self.find_pinned_pieces();
         let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
         let attacks = self.generate_attacks(Square::from(our_king));
@@ -240,6 +242,10 @@ impl Engine {
 
             // if not double check, non-king move must block the check or capture
             legal_moves &= attack_lines | attacks;
+
+            if en_passant_legal {
+                legal_moves |= pieces.en_passant;
+            }
 
             return legal_moves;
         }
@@ -512,8 +518,8 @@ impl Perft for Engine {
         for r#move in moves {
             self.board.act(r#move);
             self.update_game_state();
-
-            nodes += self.perft(depth - 1);
+            let ans = self.perft(depth - 1);
+            nodes += ans;
             self.board.undo(r#move);
             self.game_state = GameState::Playing;
         }
