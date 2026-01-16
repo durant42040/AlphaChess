@@ -144,9 +144,13 @@ fn test_insufficient_material() {
 #[test]
 fn test_pinned_pieces() {
     let mut engine = Engine::new();
-    engine.load_from_fen("3r4/3r2k1/8/1b1N4/2n5/3KN1qr/2BQ4/1b1q4 w - - 0 1".to_string());
+    engine.load_from_fen("3r4/3r2kb/8/1b1N4/2n5/1r1KN1qr/2BQ4/1b1q4 w - - 0 1".to_string());
     assert_eq!(
         engine.find_pinned_pieces(),
-        (Bitboard::from(0x800100C00), Bitboard::from(0x800000040000A))
+        (
+            Bitboard::from(0x800100C00),
+            Bitboard::from(0x80402010060000),
+            2
+        )
     );
 }
