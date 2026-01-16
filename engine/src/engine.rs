@@ -188,9 +188,14 @@ impl Engine {
         // King moves
         if pieces.kings.get_square(from) {
             for to in legal_moves.iter() {
-                if self.is_under_attack(Square::from(to)) {
+                let r#move = Move::new(from, to.into(), None);
+                self.board.act(r#move);
+                self.board.switch_player();
+                if self.is_check() {
                     legal_moves.clear(to);
                 }
+                self.board.switch_player();
+                self.board.undo(r#move);
             }
             if from == 4 || from == 60 {
                 legal_moves |= self.generate_castling_moves(from);
@@ -198,11 +203,32 @@ impl Engine {
             return legal_moves;
         }
 
-        let (pinned_pieces, attack_lines, num_checks) = self.find_pinned_pieces();
-        if self.is_check() {
-            // if in double check, no legal non-king moves
-            debug_assert!(num_checks == 2 || num_checks == 1);
+        // is en passant legal?
+        if pieces.pawns.get_square(from)
+            && !pieces.en_passant.empty()
+            && legal_moves.intersects(pieces.en_passant)
+        {
+            for to in legal_moves.iter() {
+                let r#move = Move::new(from, to.into(), None);
+                self.board.act(r#move);
+                self.board.switch_player();
+                if self.is_check() {
+                    legal_moves.clear(to);
+                }
+                self.board.switch_player();
+                self.board.undo(r#move);
+            }
+            return legal_moves;
+        }
+        let (pinned_pieces, attack_lines) = self.find_pinned_pieces();
+        let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
+        let attacks = self.generate_attacks(Square::from(our_king));
+        let num_checks = attacks.count();
 
+        if num_checks > 0 {
+            debug_assert!(num_checks <= 2);
+
+            // if in double check, no legal non-king moves
             if num_checks == 2 {
                 return Bitboard::default();
             }
@@ -212,36 +238,16 @@ impl Engine {
                 return Bitboard::default();
             }
 
-            // if not double check and check is from sliding piece, block the check or capture
-            if !attack_lines.empty() {
-                legal_moves &= attack_lines;
-            }
+            // if not double check, non-king move must block the check or capture
+            legal_moves &= attack_lines | attacks;
 
             return legal_moves;
         }
-
-        debug_assert!(num_checks == 0);
 
         if pinned_pieces.get_square(from) {
             // if a piece is pinned, only the moves that are along the pin ray are legal
             let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
             legal_moves &= Bitboard::ray(from, Square::from(our_king));
-        }
-
-        // is en passant legal?
-        if pieces.pawns.get_square(from)
-            && !pieces.en_passant.empty()
-            && legal_moves.intersects(pieces.en_passant)
-        {
-            let to = Square::from(pieces.en_passant);
-            let r#move = Move::new(from, to, None);
-            self.board.act(r#move);
-            self.board.switch_player();
-            if self.is_check() {
-                legal_moves.clear(to.square);
-            }
-            self.board.switch_player();
-            self.board.undo(r#move);
         }
 
         legal_moves
@@ -334,6 +340,45 @@ impl Engine {
         false
     }
 
+    pub fn generate_attacks(&self, square: Square) -> Bitboard {
+        let pieces = self.get_pieces();
+        let their_pieces: Bitboard = self.board.get_their_pieces();
+        let mut attacks = Bitboard::default();
+
+        let their_king = pieces.kings & their_pieces;
+        attacks |= self.move_generator.generate_king_moves(square) & their_king;
+
+        let their_rooks = pieces.rooks & their_pieces;
+        attacks |= self
+            .move_generator
+            .generate_rook_moves(square, pieces.all_pieces)
+            & their_rooks;
+
+        let their_bishops = pieces.bishops & their_pieces;
+        attacks |= self
+            .move_generator
+            .generate_bishop_moves(square, pieces.all_pieces)
+            & their_bishops;
+
+        let their_queens = pieces.queens & their_pieces;
+        attacks |= self
+            .move_generator
+            .generate_queen_moves(square, pieces.all_pieces)
+            & their_queens;
+
+        let their_knights = pieces.knights & their_pieces;
+        attacks |= self.move_generator.generate_knight_moves(square) & their_knights;
+
+        let their_pawns = pieces.pawns & their_pieces;
+        if self.board.get_player() == Player::White {
+            attacks |= Bitboard::from(WHITE_PAWN_CAPTURES[square]) & their_pawns;
+        } else {
+            attacks |= Bitboard::from(BLACK_PAWN_CAPTURES[square]) & their_pawns;
+        }
+
+        attacks
+    }
+
     pub fn is_check(&self) -> bool {
         let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
         self.is_under_attack(Square::from(our_king))
@@ -402,7 +447,7 @@ impl Engine {
         board_str
     }
 
-    pub fn find_pinned_pieces(&self) -> (Bitboard, Bitboard, u8) {
+    pub fn find_pinned_pieces(&self) -> (Bitboard, Bitboard) {
         let mut pinned_pieces = Bitboard::default();
         let pieces = self.get_pieces();
         let our_pieces: Bitboard = self.board.get_our_pieces();
@@ -421,20 +466,18 @@ impl Engine {
                 | (pieces.queens | pieces.bishops) & bishop_rays);
 
         let mut attack_lines = Bitboard::default();
-        let mut num_attack_lines = 0;
         while !snipers.empty() {
             let sniper = snipers.pop_lsb();
             let blockers = pieces.all_pieces & Bitboard::between(Square::from(sniper), our_king);
             if blockers.count() == 1 && our_pieces.intersects(blockers) {
                 pinned_pieces |= blockers;
             } else if blockers.count() == 0 {
+                // If no blockers, this is a check from a sliding piece
                 attack_lines |= Bitboard::between(Square::from(sniper), our_king);
-                attack_lines |= Bitboard::from(Square::from(sniper));
-                num_attack_lines += 1;
             }
         }
 
-        (pinned_pieces, attack_lines, num_attack_lines)
+        (pinned_pieces, attack_lines)
     }
 }
 
@@ -469,6 +512,7 @@ impl Perft for Engine {
         for r#move in moves {
             self.board.act(r#move);
             self.update_game_state();
+
             nodes += self.perft(depth - 1);
             self.board.undo(r#move);
             self.game_state = GameState::Playing;

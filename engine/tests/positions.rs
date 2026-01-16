@@ -150,7 +150,6 @@ fn test_pinned_pieces() {
         (
             Bitboard::from(0x800100C00),
             Bitboard::from(0x80402010060000),
-            2
         )
     );
 }
