@@ -100,6 +100,9 @@ impl ChessBoard {
         let to = r#move.to;
         let promotion = r#move.promotion;
 
+        // king must not be captured
+        debug_assert!(!self.pieces.kings.get_square(to));
+
         self.state_history.push(State {
             captured_piece: self.pieces.get_piece(to.square),
             prev_en_passant: self.pieces.en_passant,

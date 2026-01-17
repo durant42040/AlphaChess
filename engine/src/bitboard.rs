@@ -235,7 +235,7 @@ impl From<Square> for Bitboard {
 
 impl From<Bitboard> for Square {
     fn from(bitboard: Bitboard) -> Self {
-        debug_assert!(bitboard.count() == 1,);
+        debug_assert!(bitboard.count() == 1);
         Square::from(bitboard.get_lsb())
     }
 }
