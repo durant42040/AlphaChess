@@ -191,7 +191,7 @@ impl Engine {
                 let r#move = Move::new(from, to.into(), None);
                 self.board.act(r#move);
                 self.board.switch_player();
-                if self.is_check() {
+                if self.is_under_attack(to.into()) {
                     legal_moves.clear(to);
                 }
                 self.board.switch_player();
@@ -286,103 +286,34 @@ impl Engine {
 
     /// Checks if the given square is under attack by the opponent.
     pub fn is_under_attack(&self, square: Square) -> bool {
-        let pieces = self.get_pieces();
-        let their_pieces: Bitboard = self.board.get_their_pieces();
-
-        let their_king = pieces.kings & their_pieces;
-        if self
-            .move_generator
-            .generate_king_moves(square)
-            .intersects(their_king)
-        {
-            return true;
-        }
-
-        let their_rooks = pieces.rooks & their_pieces;
-        if self
-            .move_generator
-            .generate_rook_moves(square, pieces.all_pieces)
-            .intersects(their_rooks)
-        {
-            return true;
-        }
-
-        let their_bishops = pieces.bishops & their_pieces;
-        if self
-            .move_generator
-            .generate_bishop_moves(square, pieces.all_pieces)
-            .intersects(their_bishops)
-        {
-            return true;
-        }
-
-        let their_queen = pieces.queens & their_pieces;
-        if self
-            .move_generator
-            .generate_queen_moves(square, pieces.all_pieces)
-            .intersects(their_queen)
-        {
-            return true;
-        }
-
-        let their_knights = pieces.knights & their_pieces;
-        if self
-            .move_generator
-            .generate_knight_moves(square)
-            .intersects(their_knights)
-        {
-            return true;
-        }
-
-        let their_pawns = pieces.pawns & their_pieces;
-        if self.board.get_player() == Player::White {
-            if Bitboard::from(WHITE_PAWN_CAPTURES[square]).intersects(their_pawns) {
-                return true;
-            }
-        } else if Bitboard::from(BLACK_PAWN_CAPTURES[square]).intersects(their_pawns) {
-            return true;
-        }
-
-        false
+        self.generate_attacks(square).count() > 0
     }
 
+    /// returns all attackers to the given square
     pub fn generate_attacks(&self, square: Square) -> Bitboard {
         let pieces = self.get_pieces();
-        let their_pieces: Bitboard = self.board.get_their_pieces();
-        let mut attacks = Bitboard::default();
-
-        let their_king = pieces.kings & their_pieces;
-        attacks |= self.move_generator.generate_king_moves(square) & their_king;
-
-        let their_rooks = pieces.rooks & their_pieces;
-        attacks |= self
-            .move_generator
-            .generate_rook_moves(square, pieces.all_pieces)
-            & their_rooks;
-
-        let their_bishops = pieces.bishops & their_pieces;
-        attacks |= self
-            .move_generator
-            .generate_bishop_moves(square, pieces.all_pieces)
-            & their_bishops;
-
-        let their_queens = pieces.queens & their_pieces;
-        attacks |= self
-            .move_generator
-            .generate_queen_moves(square, pieces.all_pieces)
-            & their_queens;
-
-        let their_knights = pieces.knights & their_pieces;
-        attacks |= self.move_generator.generate_knight_moves(square) & their_knights;
-
+        let their_pieces = self.board.get_their_pieces();
         let their_pawns = pieces.pawns & their_pieces;
-        if self.board.get_player() == Player::White {
-            attacks |= Bitboard::from(WHITE_PAWN_CAPTURES[square]) & their_pawns;
-        } else {
-            attacks |= Bitboard::from(BLACK_PAWN_CAPTURES[square]) & their_pawns;
-        }
 
-        attacks
+        (self.move_generator.generate_king_moves(square) & (pieces.kings & their_pieces))
+            | (self
+                .move_generator
+                .generate_rook_moves(square, pieces.all_pieces)
+                & (pieces.rooks & their_pieces))
+            | (self
+                .move_generator
+                .generate_bishop_moves(square, pieces.all_pieces)
+                & (pieces.bishops & their_pieces))
+            | (self
+                .move_generator
+                .generate_queen_moves(square, pieces.all_pieces)
+                & (pieces.queens & their_pieces))
+            | (self.move_generator.generate_knight_moves(square) & (pieces.knights & their_pieces))
+            | (if self.board.get_player() == Player::White {
+                Bitboard::from(WHITE_PAWN_CAPTURES[square]) & their_pawns
+            } else {
+                Bitboard::from(BLACK_PAWN_CAPTURES[square]) & their_pawns
+            })
     }
 
     pub fn is_check(&self) -> bool {
