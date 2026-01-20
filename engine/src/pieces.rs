@@ -1,4 +1,5 @@
 use crate::bitboard::Bitboard;
+use crate::game::Player;
 use crate::square::Square;
 
 /// Represents the color of a chess piece.
@@ -7,6 +8,15 @@ pub enum Color {
     #[default]
     White,
     Black,
+}
+
+impl From<Player> for Color {
+    fn from(player: Player) -> Self {
+        match player {
+            Player::White => Color::White,
+            Player::Black => Color::Black,
+        }
+    }
 }
 
 impl Color {
@@ -180,6 +190,24 @@ impl Pieces {
             Piece::Bishop => self.bishops.set(i),
             Piece::Knight => self.knights.set(i),
             Piece::Pawn => self.pawns.set(i),
+        }
+    }
+
+    /// Clear the given piece type and color on square `i`.
+    pub fn clear(&mut self, piece: Piece, color: Color, i: u8) {
+        match color {
+            Color::White => self.white_pieces.clear(i),
+            Color::Black => self.black_pieces.clear(i),
+        }
+        self.all_pieces.clear(i);
+
+        match piece {
+            Piece::King => self.kings.clear(i),
+            Piece::Queen => self.queens.clear(i),
+            Piece::Rook => self.rooks.clear(i),
+            Piece::Bishop => self.bishops.clear(i),
+            Piece::Knight => self.knights.clear(i),
+            Piece::Pawn => self.pawns.clear(i),
         }
     }
 

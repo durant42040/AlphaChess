@@ -9,7 +9,7 @@ use crate::constants::{
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
-use crate::pieces::{Piece, Pieces};
+use crate::pieces::{Color, Piece, Pieces};
 use crate::square::Square;
 
 pub struct Engine {
@@ -109,7 +109,7 @@ impl Engine {
                 // White king's castle
                 let mut is_kingside_attacked = false;
                 for idx in Bitboard::from(WHITE_KINGSIDE_SQUARES).iter() {
-                    if self.is_under_attack(Square::from(idx)) {
+                    if self.is_square_under_attack(Square::from(idx)) {
                         is_kingside_attacked = true;
                         break;
                     }
@@ -122,7 +122,7 @@ impl Engine {
 
                 let mut is_queenside_attacked = false;
                 for idx in Bitboard::from(WHITE_QUEENSIDE_ATTACKED).iter() {
-                    if self.is_under_attack(Square::from(idx)) {
+                    if self.is_square_under_attack(Square::from(idx)) {
                         is_queenside_attacked = true;
                         break;
                     }
@@ -144,7 +144,7 @@ impl Engine {
                 // Black king's castle
                 let mut is_kingside_attacked = false;
                 for idx in Bitboard::from(BLACK_KINGSIDE_SQUARES).iter() {
-                    if self.is_under_attack(Square::from(idx)) {
+                    if self.is_square_under_attack(Square::from(idx)) {
                         is_kingside_attacked = true;
                         break;
                     }
@@ -157,7 +157,7 @@ impl Engine {
 
                 let mut is_queenside_attacked = false;
                 for idx in Bitboard::from(BLACK_QUEENSIDE_ATTACKED).iter() {
-                    if self.is_under_attack(Square::from(idx)) {
+                    if self.is_square_under_attack(Square::from(idx)) {
                         is_queenside_attacked = true;
                         break;
                     }
@@ -188,14 +188,13 @@ impl Engine {
         // King moves
         if pieces.kings.get_square(from) {
             for to in legal_moves.iter() {
-                let r#move = Move::new(from, to.into(), None);
-                self.board.act(r#move);
-                self.board.switch_player();
-                if self.is_under_attack(to.into()) {
+                if self.is_under_attack(
+                    to.into(),
+                    pieces.all_pieces & !Bitboard::from(from),
+                    self.board.get_player().into(),
+                ) {
                     legal_moves.clear(to);
                 }
-                self.board.switch_player();
-                self.board.undo(r#move);
             }
             if from == 4 || from == 60 {
                 legal_moves |= self.generate_castling_moves(from);
@@ -212,19 +211,28 @@ impl Engine {
             let to = Square::from(pieces.en_passant);
             let r#move = Move::new(from, to, None);
             self.board.act(r#move);
-            self.board.switch_player();
-            if self.is_check() {
+            let our_king = self.board.get_their_pieces() & self.get_pieces().kings;
+
+            if self.is_under_attack(
+                Square::from(our_king),
+                self.board.get_pieces().all_pieces,
+                self.board.get_player().switch().into(),
+            ) {
                 legal_moves.clear_square(to);
             } else {
                 en_passant_legal = true;
             }
-            self.board.switch_player();
+
             self.board.undo(r#move);
         }
 
         let (pinned_pieces, attack_lines) = self.find_pinned_pieces();
         let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
-        let attacks = self.generate_attacks(Square::from(our_king));
+        let attacks = self.generate_attacks(
+            Square::from(our_king),
+            pieces.all_pieces,
+            self.board.get_player().into(),
+        );
         let num_checks = attacks.count();
 
         if num_checks > 0 {
@@ -285,40 +293,45 @@ impl Engine {
     }
 
     /// Checks if the given square is under attack by the opponent.
-    pub fn is_under_attack(&self, square: Square) -> bool {
-        self.generate_attacks(square).count() > 0
+    pub fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
+        self.generate_attacks(square, all_pieces, color).count() > 0
+    }
+
+    /// Checks if the given square is under attack by the opponent in the current position.
+    fn is_square_under_attack(&self, square: Square) -> bool {
+        let pieces = self.get_pieces();
+        self.is_under_attack(square, pieces.all_pieces, self.board.get_player().into())
     }
 
     /// returns all attackers to the given square
-    pub fn generate_attacks(&self, square: Square) -> Bitboard {
+    pub fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
         let pieces = self.get_pieces();
-        let their_pieces = self.board.get_their_pieces();
-        let their_pawns = pieces.pawns & their_pieces;
+        let their_pieces = if color == Color::White {
+            pieces.black_pieces
+        } else {
+            pieces.white_pieces
+        };
 
         (self.move_generator.generate_king_moves(square) & (pieces.kings & their_pieces))
-            | (self
-                .move_generator
-                .generate_rook_moves(square, pieces.all_pieces)
+            | (self.move_generator.generate_rook_moves(square, all_pieces)
                 & (pieces.rooks & their_pieces))
             | (self
                 .move_generator
-                .generate_bishop_moves(square, pieces.all_pieces)
+                .generate_bishop_moves(square, all_pieces)
                 & (pieces.bishops & their_pieces))
-            | (self
-                .move_generator
-                .generate_queen_moves(square, pieces.all_pieces)
+            | (self.move_generator.generate_queen_moves(square, all_pieces)
                 & (pieces.queens & their_pieces))
             | (self.move_generator.generate_knight_moves(square) & (pieces.knights & their_pieces))
-            | (if self.board.get_player() == Player::White {
-                Bitboard::from(WHITE_PAWN_CAPTURES[square]) & their_pawns
+            | (if color == Color::White {
+                Bitboard::from(WHITE_PAWN_CAPTURES[square]) & (pieces.pawns & their_pieces)
             } else {
-                Bitboard::from(BLACK_PAWN_CAPTURES[square]) & their_pawns
+                Bitboard::from(BLACK_PAWN_CAPTURES[square]) & (pieces.pawns & their_pieces)
             })
     }
 
     pub fn is_check(&self) -> bool {
         let our_king = self.board.get_our_pieces() & self.get_pieces().kings;
-        self.is_under_attack(Square::from(our_king))
+        self.is_square_under_attack(Square::from(our_king))
     }
 
     pub fn is_legal_move(&mut self, r#move: Move) -> bool {
@@ -387,8 +400,8 @@ impl Engine {
     pub fn find_pinned_pieces(&self) -> (Bitboard, Bitboard) {
         let mut pinned_pieces = Bitboard::default();
         let pieces = self.get_pieces();
-        let our_pieces: Bitboard = self.board.get_our_pieces();
-        let their_pieces: Bitboard = self.board.get_their_pieces();
+        let our_pieces = self.board.get_our_pieces();
+        let their_pieces = self.board.get_their_pieces();
         let our_king = Square::from(our_pieces & pieces.kings);
 
         let rook_rays = self
@@ -449,8 +462,7 @@ impl Perft for Engine {
         for r#move in moves {
             self.board.act(r#move);
             self.update_game_state();
-            let ans = self.perft(depth - 1);
-            nodes += ans;
+            nodes += self.perft(depth - 1);
             self.board.undo(r#move);
             self.game_state = GameState::Playing;
         }
