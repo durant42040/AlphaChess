@@ -11,8 +11,6 @@ fn perft_benchmark(c: &mut Criterion) {
     let expected_nodes = vec![20, 400, 8902, 197281, 4865609];
 
     for depth in 1..=5 {
-        let mut engine = Engine::from_fen(starting_fen.to_string());
-
         group.bench_with_input(
             BenchmarkId::new("starting_position", depth),
             &depth,

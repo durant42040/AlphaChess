@@ -80,18 +80,22 @@ const ChessProvider = (props) => {
   }
 
   const handleRevert = () => {
-    // if (history.length === (1 + (game === 'b'))) return;
-
-    // playSound('move')
-
-    // setBoard(history[history.length - history.length % 2 - 2 - (game === 'b')].board)
-    // chess.load(history[history.length - history.length % 2 - 2 - (game === 'b')].fen)
-
-    // let newHistory = history
-    // newHistory = newHistory.slice(0, history.length - history.length % 2 - 1 - (game === 'b'))
-
-    // setHistory(newHistory)
-    // setGameOver('No')
+    axios.get(`${serverUrl}/undo`)
+      .then(res => {
+        const isCheck = res.data.isCheck
+        setBoard(toBoard(res.data.board))
+        // Server `/undo` rewinds back to the player's turn (it undoes twice),
+        // so ensure we *don't* trigger a Stockfish `/generate` by setting turn to the human side.
+        setSide(game)
+        setPositionFrom([])
+        setPositionTo([])
+        setGameOver('No')
+        playSound(isCheck ? 'check' : 'move')
+      })
+      .catch(err => {
+        // No moves to undo or server error – keep current state but log for debugging
+        console.error(err.response?.data?.error || err.message)
+      })
   }
 
   useEffect(() => {

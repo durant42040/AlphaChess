@@ -101,6 +101,37 @@ async fn make_move(
     ))
 }
 
+async fn undo_move(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Value>), StockfishError> {
+    let mut engine = state.engine.lock().await;
+    let mut stockfish = state.stockfish.lock().await;
+
+    // undo twice to get back to the previous turn
+    if !engine.undo() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "No moves to undo" })),
+        ));
+    }
+    if !engine.undo() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "No moves to undo" })),
+        ));
+    }
+    println!("{}", engine);
+    stockfish.set_fen_position(&engine.get_fen())?;
+
+    Ok((
+        StatusCode::OK,
+        Json(json!({
+            "board": engine.to_board_string(),
+            "isCheck": engine.is_check()
+        })),
+    ))
+}
+
 async fn reset(State(state): State<AppState>) -> StatusCode {
     let mut engine = state.engine.lock().await;
     let mut stockfish = state.stockfish.lock().await;
@@ -143,6 +174,7 @@ async fn main() {
         .route("/act", get(make_move))
         .route("/reset", get(reset))
         .route("/game", get(game))
+        .route("/undo", get(undo_move))
         .layer(cors)
         .with_state(app_state);
 

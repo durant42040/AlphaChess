@@ -80,7 +80,7 @@ fn check_detection_benchmark(c: &mut Criterion) {
 
     group.bench_function("is_check_false", |b| {
         b.iter(|| {
-            let mut engine = Engine::from_fen(starting_fen.to_string());
+            let engine = Engine::from_fen(starting_fen.to_string());
             let result = engine.is_check();
             black_box(result)
         })
@@ -91,7 +91,7 @@ fn check_detection_benchmark(c: &mut Criterion) {
 
     group.bench_function("is_check_true", |b| {
         b.iter(|| {
-            let mut engine = Engine::from_fen(check_fen.to_string());
+            let engine = Engine::from_fen(check_fen.to_string());
 
             let result = engine.is_check();
             black_box(result)

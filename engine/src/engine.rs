@@ -16,6 +16,7 @@ pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
     game_state: GameState,
+    move_history: Vec<Move>,
 }
 
 impl Engine {
@@ -26,6 +27,7 @@ impl Engine {
             board: ChessBoard::new(),
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
+            move_history: Vec::new(),
         }
     }
 
@@ -36,6 +38,7 @@ impl Engine {
             board: ChessBoard::load_from_fen(fen),
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
+            move_history: Vec::new(),
         }
     }
 
@@ -111,6 +114,7 @@ impl Engine {
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
         self.game_state = GameState::Playing;
+        self.move_history.clear();
     }
 
     pub fn act(&mut self, move_string: String) -> bool {
@@ -119,7 +123,19 @@ impl Engine {
             return false;
         }
         self.board.act(r#move);
+        self.move_history.push(r#move);
         self.update_game_state();
+        true
+    }
+
+    pub fn undo(&mut self) -> bool {
+        if self.move_history.is_empty() {
+            return false;
+        }
+
+        let prev_move = self.move_history.pop().unwrap();
+        self.board.undo(prev_move);
+        self.game_state = GameState::Playing;
         true
     }
 
@@ -367,7 +383,7 @@ impl Engine {
     }
 
     /// Checks if the given square is under attack by the opponent.
-    pub fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
+    fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
         self.generate_attacks(square, all_pieces, color).count() > 0
     }
 
@@ -378,7 +394,7 @@ impl Engine {
     }
 
     /// returns all attackers to the given square
-    pub fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
+    fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
         let pieces = self.get_pieces();
         let their_pieces = if color == Color::White {
             pieces.black_pieces
@@ -408,7 +424,7 @@ impl Engine {
         self.is_square_under_attack(Square::from(our_king))
     }
 
-    pub fn is_legal_move(&mut self, r#move: Move) -> bool {
+    fn is_legal_move(&mut self, r#move: Move) -> bool {
         let from = r#move.from;
         let to = r#move.to;
 

@@ -139,7 +139,7 @@ fn test_insufficient_material() {
 
 #[test]
 fn test_pinned_pieces() {
-    let mut engine =
+    let engine =
         Engine::from_fen("3r4/3r2kb/8/1b1N4/2n5/1r1KN1qr/2BQ4/1b1q4 w - - 0 1".to_string());
     assert_eq!(
         engine.find_pinned_pieces(),
