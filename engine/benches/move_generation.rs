@@ -11,8 +11,7 @@ fn generate_all_legal_moves_benchmark(c: &mut Criterion) {
 
     group.bench_function("generate_all_legal_moves_starting", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(starting_fen.to_string());
+            let mut engine = Engine::from_fen(starting_fen.to_string());
             let moves = engine.generate_all_legal_moves();
             black_box(moves)
         })
@@ -23,8 +22,7 @@ fn generate_all_legal_moves_benchmark(c: &mut Criterion) {
 
     group.bench_function("generate_all_legal_moves_kiwipete", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(kiwipete_fen.to_string());
+            let mut engine = Engine::from_fen(kiwipete_fen.to_string());
             let moves = engine.generate_all_legal_moves();
             black_box(moves)
         })
@@ -35,8 +33,7 @@ fn generate_all_legal_moves_benchmark(c: &mut Criterion) {
 
     group.bench_function("generate_all_legal_moves_in_check", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(check_fen.to_string());
+            let mut engine = Engine::from_fen(check_fen.to_string());
 
             let moves = engine.generate_all_legal_moves();
             black_box(moves)
@@ -63,8 +60,7 @@ fn generate_legal_moves_per_square_benchmark(c: &mut Criterion) {
 
     for (piece_name, square) in test_squares {
         group.bench_function(format!("{}_square_{}", piece_name, square), |b| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(starting_fen.to_string());
+            let mut engine = Engine::from_fen(starting_fen.to_string());
 
             b.iter(|| {
                 let moves = engine.generate_legal_moves(black_box(square));
@@ -84,8 +80,7 @@ fn check_detection_benchmark(c: &mut Criterion) {
 
     group.bench_function("is_check_false", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(starting_fen.to_string());
+            let mut engine = Engine::from_fen(starting_fen.to_string());
             let result = engine.is_check();
             black_box(result)
         })
@@ -96,8 +91,7 @@ fn check_detection_benchmark(c: &mut Criterion) {
 
     group.bench_function("is_check_true", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(check_fen.to_string());
+            let mut engine = Engine::from_fen(check_fen.to_string());
 
             let result = engine.is_check();
             black_box(result)
@@ -115,8 +109,7 @@ fn castling_benchmark(c: &mut Criterion) {
 
     group.bench_function("generate_castling_moves", |b| {
         b.iter(|| {
-            let mut engine = Engine::new();
-            engine.load_from_fen(castling_fen.to_string());
+            let mut engine = Engine::from_fen(castling_fen.to_string());
             // Generate moves for king (which includes castling)
             let moves = engine.generate_legal_moves(Square::from(4));
             black_box(moves)

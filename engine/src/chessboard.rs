@@ -183,6 +183,10 @@ impl ChessBoard {
         self.castling_rights
     }
 
+    pub fn get_fifty_move_rule(&self) -> u8 {
+        self.fifty_move_rule
+    }
+
     pub fn castle(&mut self, from: Square, to: Square) {
         // remove castling rights if king or rook is moved or captured
         if from == 0 || to == 0 {

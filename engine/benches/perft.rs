@@ -11,16 +11,14 @@ fn perft_benchmark(c: &mut Criterion) {
     let expected_nodes = vec![20, 400, 8902, 197281, 4865609];
 
     for depth in 1..=5 {
-        let mut engine = Engine::new();
-        engine.load_from_fen(starting_fen.to_string());
+        let mut engine = Engine::from_fen(starting_fen.to_string());
 
         group.bench_with_input(
             BenchmarkId::new("starting_position", depth),
             &depth,
             |b, &depth| {
                 b.iter(|| {
-                    let mut engine = Engine::new();
-                    engine.load_from_fen(starting_fen.to_string());
+                    let mut engine = Engine::from_fen(starting_fen.to_string());
                     let nodes = engine.perft(black_box(depth));
                     assert_eq!(nodes, expected_nodes[(depth - 1) as usize]);
                     nodes
@@ -36,8 +34,7 @@ fn perft_benchmark(c: &mut Criterion) {
     for depth in 1..=4 {
         group.bench_with_input(BenchmarkId::new("kiwipete", depth), &depth, |b, &depth| {
             b.iter(|| {
-                let mut engine = Engine::new();
-                engine.load_from_fen(kiwipete_fen.to_string());
+                let mut engine = Engine::from_fen(kiwipete_fen.to_string());
                 let nodes = engine.perft(black_box(depth));
                 assert_eq!(nodes, kiwipete_nodes[(depth - 1) as usize]);
                 nodes
@@ -55,8 +52,7 @@ fn perft_benchmark(c: &mut Criterion) {
             &depth,
             |b, &depth| {
                 b.iter(|| {
-                    let mut engine = Engine::new();
-                    engine.load_from_fen(pos3_fen.to_string());
+                    let mut engine = Engine::from_fen(pos3_fen.to_string());
                     let nodes = engine.perft(black_box(depth));
                     assert_eq!(nodes, pos3_nodes[(depth - 1) as usize]);
                     nodes
@@ -77,8 +73,7 @@ fn perft_nodes_per_second(c: &mut Criterion) {
     for depth in 3..=5 {
         group.bench_with_input(BenchmarkId::new("nps", depth), &depth, |b, depth| {
             b.iter(|| {
-                let mut engine = Engine::new();
-                engine.load_from_fen(starting_fen.to_string());
+                let mut engine = Engine::from_fen(starting_fen.to_string());
                 let nodes = engine.perft(black_box(*depth));
                 let _nps = nodes; // Calculate NPS from timing
                 nodes

@@ -29,9 +29,83 @@ impl Engine {
         }
     }
 
-    pub fn load_from_fen(&mut self, fen: String) {
-        self.board = ChessBoard::load_from_fen(fen);
-        self.game_state = GameState::Playing;
+    pub fn from_fen(fen: String) -> Self {
+        Bitboard::init();
+
+        Self {
+            board: ChessBoard::load_from_fen(fen),
+            move_generator: MoveGenerator::new(),
+            game_state: GameState::Playing,
+        }
+    }
+
+    pub fn get_fen(&self) -> String {
+        let pieces = self.get_pieces();
+        let mut fen = String::new();
+
+        for rank in (0..8).rev() {
+            let mut empty_count = 0;
+            for file in 0..8 {
+                let square = rank * 8 + file;
+                if let Some((piece, color)) = pieces.get_piece(square) {
+                    if empty_count > 0 {
+                        fen.push_str(&empty_count.to_string());
+                        empty_count = 0;
+                    }
+                    fen.push(piece.to_char(color));
+                } else {
+                    empty_count += 1;
+                }
+            }
+            if empty_count > 0 {
+                fen.push_str(&empty_count.to_string());
+            }
+            if rank > 0 {
+                fen.push('/');
+            }
+        }
+
+        fen.push(' ');
+        fen.push(if self.board.get_player() == Player::White {
+            'w'
+        } else {
+            'b'
+        });
+
+        fen.push(' ');
+        let castling_rights = self.board.get_castling_rights();
+        if castling_rights == 0 {
+            fen.push('-');
+        } else {
+            if (castling_rights & 1) != 0 {
+                fen.push('K');
+            }
+            if (castling_rights & 2) != 0 {
+                fen.push('Q');
+            }
+            if (castling_rights & 4) != 0 {
+                fen.push('k');
+            }
+            if (castling_rights & 8) != 0 {
+                fen.push('q');
+            }
+        }
+
+        fen.push(' ');
+        if pieces.en_passant.empty() {
+            fen.push('-');
+        } else {
+            let ep_square = Square::from(pieces.en_passant);
+            fen.push_str(&ep_square.to_string());
+        }
+
+        fen.push(' ');
+        fen.push_str(&self.board.get_fifty_move_rule().to_string());
+
+        fen.push(' ');
+        fen.push('1');
+
+        fen
     }
 
     pub fn reset(&mut self) {
