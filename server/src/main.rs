@@ -57,7 +57,7 @@ async fn generate_move(
 
     stockfish.play_move(move_string)?;
 
-    engine.act(&move_string);
+    engine.act(move_string);
     println!("{}", engine);
 
     Ok((
