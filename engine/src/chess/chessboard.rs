@@ -10,19 +10,53 @@ use crate::chess::square::Square;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
-    pub captured_piece: Option<(Piece, Color)>,
-    pub prev_en_passant: Bitboard,
-    pub prev_castling_rights: CastlingRights,
-    pub prev_fifty_move_rule: u8,
+    captured_piece: Option<(Piece, Color)>,
+    prev_en_passant: Bitboard,
+    prev_castling_rights: CastlingRights,
+    prev_fifty_move_rule: u8,
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+impl State {
+    pub fn new(
+        captured_piece: Option<(Piece, Color)>,
+        prev_en_passant: Bitboard,
+        prev_castling_rights: CastlingRights,
+        prev_fifty_move_rule: u8,
+    ) -> Self {
+        Self {
+            captured_piece,
+            prev_en_passant,
+            prev_castling_rights,
+            prev_fifty_move_rule,
+        }
+    }
+
+    pub fn captured_piece(&self) -> Option<(Piece, Color)> {
+        self.captured_piece
+    }
+
+    pub fn prev_en_passant(&self) -> Bitboard {
+        self.prev_en_passant
+    }
+
+    pub fn prev_castling_rights(&self) -> CastlingRights {
+        self.prev_castling_rights
+    }
+
+    pub fn prev_fifty_move_rule(&self) -> u8 {
+        self.prev_fifty_move_rule
+    }
+}
+
+#[derive(Default)]
 pub struct ChessBoard {
+    move_history: Vec<Move>,
     fifty_move_rule: u8,
     castling_rights: CastlingRights,
     player: Player,
     pieces: Pieces,
     state_history: Vec<State>,
+    material_score: i32,
 }
 
 impl ChessBoard {
@@ -33,11 +67,13 @@ impl ChessBoard {
         let castling_rights = CastlingRights::new();
 
         Self {
+            move_history: Vec::new(),
             fifty_move_rule: 0,
             castling_rights,
             player,
             pieces,
             state_history,
+            material_score: 0,
         }
     }
 
@@ -90,7 +126,7 @@ impl ChessBoard {
         let en_passant_str = parts.next().unwrap_or("-");
         if en_passant_str != "-" {
             let square = en_passant_str.parse::<Square>().unwrap();
-            chessboard.pieces.en_passant.set_square(square);
+            chessboard.pieces.set_en_passant_square(square);
         }
 
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
@@ -102,19 +138,28 @@ impl ChessBoard {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
+        let captured_piece = self.pieces.get_piece(to.square);
 
         // king must not be captured
-        debug_assert!(!self.pieces.kings.get_square(to));
+        debug_assert!(!self.pieces.kings().get_square(to));
 
-        self.state_history.push(State {
-            captured_piece: self.pieces.get_piece(to.square),
-            prev_en_passant: self.pieces.en_passant,
-            prev_castling_rights: self.castling_rights,
-            prev_fifty_move_rule: self.fifty_move_rule,
-        });
+        if let Some((piece, color)) = captured_piece {
+            if color == Color::White {
+                self.material_score -= piece.value();
+            } else {
+                self.material_score += piece.value();
+            }
+        }
+
+        self.state_history.push(State::new(
+            captured_piece,
+            self.pieces.en_passant(),
+            self.castling_rights,
+            self.fifty_move_rule,
+        ));
 
         self.fifty_move_rule += 1;
-        if self.pieces.pawns.get_square(from) || self.pieces.all_pieces.get_square(to) {
+        if self.pieces.pawns().get_square(from) || self.pieces.all_pieces().get_square(to) {
             self.fifty_move_rule = 0;
         }
 
@@ -124,9 +169,11 @@ impl ChessBoard {
 
         self.pieces.update(from, to);
         self.switch_player();
+        self.move_history.push(r#move);
     }
 
-    pub fn undo(&mut self, r#move: Move) {
+    pub fn undo(&mut self) {
+        let r#move = self.move_history.pop().unwrap();
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
@@ -135,21 +182,26 @@ impl ChessBoard {
         }
 
         self.pieces.update(to, from);
-        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece {
+        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece() {
             self.pieces.set(piece, color, to.square);
+            if color == Color::White {
+                self.material_score += piece.value();
+            } else {
+                self.material_score -= piece.value();
+            }
         }
         self.undo_castle(from, to);
         let state = self.state_history.last().unwrap();
 
-        if state.prev_en_passant.get_square(to) && self.pieces.pawns.get_square(from) {
+        if state.prev_en_passant().get_square(to) && self.pieces.pawns().get_square(from) {
             let captured_square = Square::new(from.rank, to.file);
             self.pieces
                 .set(Piece::Pawn, self.player.to_color(), captured_square.square);
         }
 
-        self.pieces.en_passant = state.prev_en_passant;
-        self.castling_rights = state.prev_castling_rights;
-        self.fifty_move_rule = state.prev_fifty_move_rule;
+        self.pieces.set_en_passant(state.prev_en_passant());
+        self.castling_rights = state.prev_castling_rights();
+        self.fifty_move_rule = state.prev_fifty_move_rule();
         self.switch_player();
         self.state_history.pop();
     }
@@ -160,17 +212,17 @@ impl ChessBoard {
 
     pub fn get_our_pieces(&self) -> Bitboard {
         if self.player == Player::White {
-            self.pieces.white_pieces
+            self.pieces.white_pieces()
         } else {
-            self.pieces.black_pieces
+            self.pieces.black_pieces()
         }
     }
 
     pub fn get_their_pieces(&self) -> Bitboard {
         if self.player == Player::White {
-            self.pieces.black_pieces
+            self.pieces.black_pieces()
         } else {
-            self.pieces.white_pieces
+            self.pieces.white_pieces()
         }
     }
 
@@ -185,15 +237,23 @@ impl ChessBoard {
     pub fn is_draw(&self) -> bool {
         !self.pieces.has_mating_material()
             || self.fifty_move_rule == 100
-            || self.get_repetition_count() >= 2
+            || self.repetition_count() >= 2
     }
 
-    pub fn get_fifty_move_rule(&self) -> u8 {
+    pub fn fifty_move_rule(&self) -> u8 {
         self.fifty_move_rule
     }
 
-    pub fn get_repetition_count(&self) -> u8 {
+    pub fn repetition_count(&self) -> u8 {
         0
+    }
+
+    pub fn move_history(&self) -> &[Move] {
+        &self.move_history
+    }
+
+    pub fn material_score(&self) -> i32 {
+        self.material_score
     }
 }
 
@@ -213,7 +273,8 @@ impl Castling for ChessBoard {
         self.castling_rights.revoke_castling_rights(from, to);
 
         // Move rook if this is a castling move (king moves two squares).
-        if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
+        if self.pieces.kings().get_square(from) && (from.square as i8 - to.square as i8).abs() == 2
+        {
             if from == WHITE_KING_START {
                 if to == WHITE_QUEENSIDE_CASTLE_TO {
                     self.pieces.update(
@@ -243,7 +304,8 @@ impl Castling for ChessBoard {
     }
 
     fn undo_castle(&mut self, from: Square, to: Square) {
-        if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
+        if self.pieces.kings().get_square(from) && (from.square as i8 - to.square as i8).abs() == 2
+        {
             if from == WHITE_KING_START {
                 if to == WHITE_QUEENSIDE_CASTLE_TO {
                     self.pieces.update(
@@ -330,6 +392,6 @@ mod tests {
             ChessBoard::load_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let new_board = ChessBoard::new();
 
-        assert_eq!(board_from_fen, new_board);
+        assert_eq!(board_from_fen.get_pieces(), new_board.get_pieces());
     }
 }

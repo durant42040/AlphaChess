@@ -51,6 +51,17 @@ pub enum Piece {
 }
 
 impl Piece {
+    pub fn value(self) -> i32 {
+        match self {
+            Piece::Pawn => 1,
+            Piece::Knight => 3,
+            Piece::Bishop => 3,
+            Piece::Rook => 5,
+            Piece::Queen => 9,
+            Piece::King => 0,
+        }
+    }
+
     /// Create a `(Piece, Color)` pair from a FEN board character.
     pub fn from_char(c: char) -> Option<(Self, Color)> {
         let color = if c.is_uppercase() {
@@ -114,16 +125,16 @@ impl Piece {
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Pieces {
-    pub pawns: Bitboard,
-    pub knights: Bitboard,
-    pub bishops: Bitboard,
-    pub rooks: Bitboard,
-    pub queens: Bitboard,
-    pub kings: Bitboard,
-    pub white_pieces: Bitboard,
-    pub black_pieces: Bitboard,
-    pub all_pieces: Bitboard,
-    pub en_passant: Bitboard,
+    pawns: Bitboard,
+    knights: Bitboard,
+    bishops: Bitboard,
+    rooks: Bitboard,
+    queens: Bitboard,
+    kings: Bitboard,
+    white_pieces: Bitboard,
+    black_pieces: Bitboard,
+    all_pieces: Bitboard,
+    en_passant: Bitboard,
 }
 
 impl Pieces {
@@ -302,5 +313,56 @@ impl Pieces {
         if self.pawns.get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
             self.en_passant.set((from.square + to.square) / 2);
         }
+    }
+
+    // Getters for all fields
+    pub fn pawns(&self) -> Bitboard {
+        self.pawns
+    }
+
+    pub fn knights(&self) -> Bitboard {
+        self.knights
+    }
+
+    pub fn bishops(&self) -> Bitboard {
+        self.bishops
+    }
+
+    pub fn rooks(&self) -> Bitboard {
+        self.rooks
+    }
+
+    pub fn queens(&self) -> Bitboard {
+        self.queens
+    }
+
+    pub fn kings(&self) -> Bitboard {
+        self.kings
+    }
+
+    pub fn white_pieces(&self) -> Bitboard {
+        self.white_pieces
+    }
+
+    pub fn black_pieces(&self) -> Bitboard {
+        self.black_pieces
+    }
+
+    pub fn all_pieces(&self) -> Bitboard {
+        self.all_pieces
+    }
+
+    pub fn en_passant(&self) -> Bitboard {
+        self.en_passant
+    }
+
+    // Setter for en_passant (needed for undo)
+    pub fn set_en_passant(&mut self, en_passant: Bitboard) {
+        self.en_passant = en_passant;
+    }
+
+    // Set en_passant square (needed for FEN loading)
+    pub fn set_en_passant_square(&mut self, square: Square) {
+        self.en_passant.set_square(square);
     }
 }

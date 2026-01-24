@@ -23,11 +23,11 @@ impl Perft {
         let mut nodes = 0u64;
 
         for r#move in moves {
-            self.engine.board.act(r#move);
+            self.engine.board_mut().act(r#move);
             self.engine.update_game_state();
             nodes += self.search(depth - 1);
-            self.engine.board.undo(r#move);
-            self.engine.game_state = GameState::Playing;
+            self.engine.board_mut().undo();
+            self.engine.set_game_state(GameState::Playing);
         }
 
         nodes
