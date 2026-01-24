@@ -1,12 +1,4 @@
-use crate::chess::{
-    constants::{
-        ALL_CASTLING_RIGHTS, BLACK_CASTLE_KINGSIDE, BLACK_CASTLE_QUEENSIDE, BLACK_KING_START,
-        BLACK_KINGSIDE_ROOK_START, BLACK_QUEENSIDE_ROOK_START, WHITE_CASTLE_KINGSIDE,
-        WHITE_CASTLE_QUEENSIDE, WHITE_KING_START, WHITE_KINGSIDE_ROOK_START,
-        WHITE_QUEENSIDE_ROOK_START,
-    },
-    square::Square,
-};
+use crate::chess::{Square, constants::*};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct CastlingRights {

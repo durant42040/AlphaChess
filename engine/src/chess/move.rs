@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 
-use crate::chess::pieces::Piece;
-use crate::chess::square::Square;
+use crate::chess::Piece;
+use crate::chess::Square;
 
 #[derive(Clone, Copy)]
 pub struct Move {

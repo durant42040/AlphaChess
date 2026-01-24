@@ -1,4 +1,4 @@
-use crate::chess::square::Square;
+use crate::chess::Square;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not, Shl, Shr};
 use std::sync::OnceLock;

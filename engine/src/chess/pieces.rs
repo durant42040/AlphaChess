@@ -1,6 +1,6 @@
-use crate::chess::bitboard::Bitboard;
-use crate::chess::game::Player;
-use crate::chess::square::Square;
+use crate::chess::Bitboard;
+use crate::chess::Player;
+use crate::chess::Square;
 
 /// Represents the color of a chess piece.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]

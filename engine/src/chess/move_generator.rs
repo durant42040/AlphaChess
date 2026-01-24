@@ -1,10 +1,9 @@
 use crate::chess::{
-    bitboard::Bitboard,
+    Bitboard, Square,
     constants::{
         BISHOP_MAGIC_NUMBERS, BISHOP_MASKS, BISHOP_SHIFT_BITS, BLACK_PAWN_CAPTURES, KING_ATTACKS,
         KNIGHT_ATTACKS, ROOK_MAGIC_NUMBERS, ROOK_MASKS, ROOK_SHIFT_BITS, WHITE_PAWN_CAPTURES,
     },
-    square::Square,
 };
 
 fn get_blockers(index: usize, mask: Bitboard) -> u64 {
