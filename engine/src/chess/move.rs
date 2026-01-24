@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 
-use crate::pieces::Piece;
-use crate::square::Square;
+use crate::chess::pieces::Piece;
+use crate::chess::square::Square;
 
 #[derive(Clone, Copy)]
 pub struct Move {
@@ -58,8 +58,8 @@ impl FromStr for Move {
 #[cfg(test)]
 mod tests {
     use super::Move;
-    use crate::pieces::Piece;
-    use crate::square::Square;
+    use crate::chess::Piece;
+    use crate::chess::Square;
 
     #[test]
     fn test_move() {

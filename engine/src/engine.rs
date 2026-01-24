@@ -1,19 +1,19 @@
 use std::fmt;
 
-use crate::bitboard::Bitboard;
-use crate::chessboard::{Castling, ChessBoard};
-use crate::constants::*;
-use crate::game::{GameState, Player};
-use crate::r#move::Move;
-use crate::move_generator::MoveGenerator;
-use crate::pieces::{Color, Piece, Pieces};
-use crate::square::Square;
+use crate::chess::bitboard::Bitboard;
+use crate::chess::chessboard::{Castling, ChessBoard};
+use crate::chess::constants::*;
+use crate::chess::game::{GameState, Player};
+use crate::chess::r#move::Move;
+use crate::chess::move_generator::MoveGenerator;
+use crate::chess::pieces::{Color, Piece, Pieces};
+use crate::chess::square::Square;
 
 pub struct Engine {
-    board: ChessBoard,
-    move_generator: MoveGenerator,
-    game_state: GameState,
-    move_history: Vec<Move>,
+    pub board: ChessBoard,
+    pub move_generator: MoveGenerator,
+    pub game_state: GameState,
+    pub move_history: Vec<Move>,
 }
 
 impl Engine {
@@ -444,7 +444,7 @@ impl Engine {
         self.generate_legal_moves(from).get_square(to)
     }
 
-    fn update_game_state(&mut self) {
+    pub fn update_game_state(&mut self) {
         // insufficient material, 50-move rule, three-fold repetition
         if self.board.is_draw() {
             self.game_state = GameState::Draw;
@@ -526,33 +526,5 @@ impl Default for Engine {
 impl fmt::Display for Engine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.board)
-    }
-}
-
-pub trait Perft {
-    fn perft(&mut self, depth: u8) -> u64;
-}
-
-impl Perft for Engine {
-    fn perft(&mut self, depth: u8) -> u64 {
-        if depth == 0 {
-            return 1;
-        }
-        if self.get_game_state() != "playing" {
-            return 0;
-        }
-
-        let moves = self.generate_all_legal_moves();
-        let mut nodes = 0u64;
-
-        for r#move in moves {
-            self.board.act(r#move);
-            self.update_game_state();
-            nodes += self.perft(depth - 1);
-            self.board.undo(r#move);
-            self.game_state = GameState::Playing;
-        }
-
-        nodes
     }
 }

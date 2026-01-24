@@ -1,4 +1,5 @@
-use engine::{bitboard::Bitboard, engine::Engine};
+use engine::Engine;
+use engine::chess::Bitboard;
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {

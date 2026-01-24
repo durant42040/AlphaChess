@@ -1,6 +1,6 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use engine::engine::Engine;
-use engine::square::Square;
+use engine::Engine;
+use engine::chess::square::Square;
 use std::hint::black_box;
 
 fn generate_all_legal_moves_benchmark(c: &mut Criterion) {

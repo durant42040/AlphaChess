@@ -1,10 +1,6 @@
-pub mod bitboard;
-mod castling;
-pub mod chessboard;
-mod constants;
+pub mod chess;
 pub mod engine;
-mod game;
-pub mod r#move;
-pub mod move_generator;
-pub mod pieces;
-pub mod square;
+pub mod search;
+
+pub use engine::Engine;
+pub use search::Perft;

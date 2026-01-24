@@ -1,12 +1,12 @@
 use std::fmt;
 
-use crate::bitboard::Bitboard;
-use crate::castling::CastlingRights;
-use crate::constants::*;
-use crate::game::Player;
-use crate::r#move::Move;
-use crate::pieces::{Color, Piece, Pieces};
-use crate::square::Square;
+use crate::chess::bitboard::Bitboard;
+use crate::chess::castling::CastlingRights;
+use crate::chess::constants::*;
+use crate::chess::game::Player;
+use crate::chess::r#move::Move;
+use crate::chess::pieces::{Color, Piece, Pieces};
+use crate::chess::square::Square;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {

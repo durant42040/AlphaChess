@@ -1,8 +1,8 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use engine::bitboard::Bitboard;
-use engine::chessboard::ChessBoard;
-use engine::move_generator::MoveGenerator;
-use engine::square::Square;
+use engine::chess::bitboard::Bitboard;
+use engine::chess::chessboard::ChessBoard;
+use engine::chess::move_generator::MoveGenerator;
+use engine::chess::square::Square;
 use std::hint::black_box;
 
 fn move_generator_functions_benchmark(c: &mut Criterion) {

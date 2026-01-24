@@ -1,4 +1,4 @@
-use crate::{
+use crate::chess::{
     bitboard::Bitboard,
     constants::{
         BISHOP_MAGIC_NUMBERS, BISHOP_MASKS, BISHOP_SHIFT_BITS, BLACK_PAWN_CAPTURES, KING_ATTACKS,

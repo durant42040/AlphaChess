@@ -1,4 +1,4 @@
-use engine::engine::Engine;
+use engine::Engine;
 
 #[test]
 fn test_get_fen_roundtrip_with_en_passant() {

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::pieces::Color;
+use crate::chess::pieces::Color;
 
 #[derive(Default, Copy, Clone)]
 pub enum GameState {
