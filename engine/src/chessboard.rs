@@ -1,6 +1,8 @@
 use std::fmt;
 
 use crate::bitboard::Bitboard;
+use crate::castling::CastlingRights;
+use crate::constants::*;
 use crate::game::Player;
 use crate::r#move::Move;
 use crate::pieces::{Color, Piece, Pieces};
@@ -10,14 +12,14 @@ use crate::square::Square;
 pub struct State {
     pub captured_piece: Option<(Piece, Color)>,
     pub prev_en_passant: Bitboard,
-    pub prev_castling_rights: u8,
+    pub prev_castling_rights: CastlingRights,
     pub prev_fifty_move_rule: u8,
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct ChessBoard {
     fifty_move_rule: u8,
-    castling_rights: u8,
+    castling_rights: CastlingRights,
     player: Player,
     pieces: Pieces,
     state_history: Vec<State>,
@@ -28,10 +30,11 @@ impl ChessBoard {
         let pieces = Pieces::new();
         let state_history = Vec::with_capacity(100);
         let player = Player::White;
+        let castling_rights = CastlingRights::new();
 
         Self {
             fifty_move_rule: 0,
-            castling_rights: 0b1111,
+            castling_rights,
             player,
             pieces,
             state_history,
@@ -73,13 +76,13 @@ impl ChessBoard {
         }
 
         let castling_str = parts.next().unwrap_or("-");
-        chessboard.castling_rights = 0u8;
+        chessboard.castling_rights = CastlingRights::default();
         for c in castling_str.chars() {
             match c {
-                'K' => chessboard.castling_rights |= 1,
-                'Q' => chessboard.castling_rights |= 2,
-                'k' => chessboard.castling_rights |= 4,
-                'q' => chessboard.castling_rights |= 8,
+                'K' => chessboard.castling_rights.set(WHITE_CASTLE_KINGSIDE),
+                'Q' => chessboard.castling_rights.set(WHITE_CASTLE_QUEENSIDE),
+                'k' => chessboard.castling_rights.set(BLACK_CASTLE_KINGSIDE),
+                'q' => chessboard.castling_rights.set(BLACK_CASTLE_QUEENSIDE),
                 _ => {}
             }
         }
@@ -179,50 +182,61 @@ impl ChessBoard {
         self.player = self.player.switch();
     }
 
-    pub fn get_castling_rights(&self) -> u8 {
-        self.castling_rights
+    pub fn is_draw(&self) -> bool {
+        !self.pieces.has_mating_material()
+            || self.fifty_move_rule == 100
+            || self.get_repetition_count() >= 2
     }
 
     pub fn get_fifty_move_rule(&self) -> u8 {
         self.fifty_move_rule
     }
 
-    pub fn castle(&mut self, from: Square, to: Square) {
-        // remove castling rights if king or rook is moved or captured
-        if from == 0 || to == 0 {
-            self.castling_rights &= !2;
-        } else if from == 7 || to == 7 {
-            self.castling_rights &= !1;
-        } else if from == 4 || to == 4 {
-            self.castling_rights &= !3;
-        } else if from == 56 || to == 56 {
-            self.castling_rights &= !8;
-        } else if from == 60 || to == 60 {
-            self.castling_rights &= !12;
-        } else if from == 63 || to == 63 {
-            self.castling_rights &= !4;
-        }
-        // move rook if castling
+    pub fn get_repetition_count(&self) -> u8 {
+        0
+    }
+}
+
+pub trait Castling {
+    fn get_castling_rights(&self) -> CastlingRights;
+    fn castle(&mut self, from: Square, to: Square);
+    fn undo_castle(&mut self, from: Square, to: Square);
+}
+
+impl Castling for ChessBoard {
+    fn get_castling_rights(&self) -> CastlingRights {
+        self.castling_rights
+    }
+
+    fn castle(&mut self, from: Square, to: Square) {
+        // Remove castling rights when king or rook moves or is captured.
+        self.castling_rights.revoke_castling_rights(from, to);
+
+        // Move rook if this is a castling move (king moves two squares).
         if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
-            if from == 4 {
-                if to == 2 {
-                    self.pieces.rooks.update(0, 3);
-                    self.pieces.white_pieces.update(0, 3);
-                    self.pieces.all_pieces.update(0, 3);
-                } else if to == 6 {
-                    self.pieces.rooks.update(7, 5);
-                    self.pieces.white_pieces.update(7, 5);
-                    self.pieces.all_pieces.update(7, 5);
+            if from == WHITE_KING_START {
+                if to == WHITE_QUEENSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        WHITE_QUEENSIDE_ROOK_START.into(),
+                        WHITE_QUEENSIDE_ROOK_CASTLE_TO.into(),
+                    );
+                } else if to == WHITE_KINGSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        WHITE_KINGSIDE_ROOK_START.into(),
+                        WHITE_KINGSIDE_ROOK_CASTLE_TO.into(),
+                    );
                 }
-            } else if from == 60 {
-                if to == 58 {
-                    self.pieces.rooks.update(56, 59);
-                    self.pieces.black_pieces.update(56, 59);
-                    self.pieces.all_pieces.update(56, 59);
-                } else if to == 62 {
-                    self.pieces.rooks.update(63, 61);
-                    self.pieces.black_pieces.update(63, 61);
-                    self.pieces.all_pieces.update(63, 61);
+            } else if from == BLACK_KING_START {
+                if to == BLACK_QUEENSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        BLACK_QUEENSIDE_ROOK_START.into(),
+                        BLACK_QUEENSIDE_ROOK_CASTLE_TO.into(),
+                    );
+                } else if to == BLACK_KINGSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        BLACK_KINGSIDE_ROOK_START.into(),
+                        BLACK_KINGSIDE_ROOK_CASTLE_TO.into(),
+                    );
                 }
             }
         }
@@ -230,38 +244,32 @@ impl ChessBoard {
 
     fn undo_castle(&mut self, from: Square, to: Square) {
         if self.pieces.kings.get_square(from) && (from.square as i8 - to.square as i8).abs() == 2 {
-            if from == 4 {
-                if to == 2 {
-                    self.pieces.rooks.update(3, 0);
-                    self.pieces.white_pieces.update(3, 0);
-                    self.pieces.all_pieces.update(3, 0);
-                } else if to == 6 {
-                    self.pieces.rooks.update(5, 7);
-                    self.pieces.white_pieces.update(5, 7);
-                    self.pieces.all_pieces.update(5, 7);
+            if from == WHITE_KING_START {
+                if to == WHITE_QUEENSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        WHITE_QUEENSIDE_ROOK_CASTLE_TO.into(),
+                        WHITE_QUEENSIDE_ROOK_START.into(),
+                    );
+                } else if to == WHITE_KINGSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        WHITE_KINGSIDE_ROOK_CASTLE_TO.into(),
+                        WHITE_KINGSIDE_ROOK_START.into(),
+                    );
                 }
-            } else if from == 60 {
-                if to == 58 {
-                    self.pieces.rooks.update(59, 56);
-                    self.pieces.black_pieces.update(59, 56);
-                    self.pieces.all_pieces.update(59, 56);
-                } else if to == 62 {
-                    self.pieces.rooks.update(61, 63);
-                    self.pieces.black_pieces.update(61, 63);
-                    self.pieces.all_pieces.update(61, 63);
+            } else if from == BLACK_KING_START {
+                if to == BLACK_QUEENSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        BLACK_QUEENSIDE_ROOK_CASTLE_TO.into(),
+                        BLACK_QUEENSIDE_ROOK_START.into(),
+                    );
+                } else if to == BLACK_KINGSIDE_CASTLE_TO {
+                    self.pieces.update(
+                        BLACK_KINGSIDE_ROOK_CASTLE_TO.into(),
+                        BLACK_KINGSIDE_ROOK_START.into(),
+                    );
                 }
             }
         }
-    }
-
-    pub fn is_draw(&self) -> bool {
-        !self.pieces.has_mating_material()
-            || self.fifty_move_rule == 100
-            || self.get_repetition_count() >= 2
-    }
-
-    pub fn get_repetition_count(&self) -> u8 {
-        0
     }
 }
 

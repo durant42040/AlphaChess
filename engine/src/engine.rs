@@ -1,11 +1,8 @@
 use std::fmt;
 
 use crate::bitboard::Bitboard;
-use crate::chessboard::ChessBoard;
-use crate::constants::{
-    BLACK_KINGSIDE_SQUARES, BLACK_PAWN_CAPTURES, BLACK_QUEENSIDE_ATTACKED, BLACK_QUEENSIDE_SQUARES,
-    WHITE_KINGSIDE_SQUARES, WHITE_PAWN_CAPTURES, WHITE_QUEENSIDE_ATTACKED, WHITE_QUEENSIDE_SQUARES,
-};
+use crate::chessboard::{Castling, ChessBoard};
+use crate::constants::*;
 use crate::game::{GameState, Player};
 use crate::r#move::Move;
 use crate::move_generator::MoveGenerator;
@@ -76,20 +73,19 @@ impl Engine {
         });
 
         fen.push(' ');
-        let castling_rights = self.board.get_castling_rights();
-        if castling_rights == 0 {
+        if !self.board.get_castling_rights().can(ALL_CASTLING_RIGHTS) {
             fen.push('-');
         } else {
-            if (castling_rights & 1) != 0 {
+            if self.board.get_castling_rights().can(WHITE_CASTLE_KINGSIDE) {
                 fen.push('K');
             }
-            if (castling_rights & 2) != 0 {
+            if self.board.get_castling_rights().can(WHITE_CASTLE_QUEENSIDE) {
                 fen.push('Q');
             }
-            if (castling_rights & 4) != 0 {
+            if self.board.get_castling_rights().can(BLACK_CASTLE_KINGSIDE) {
                 fen.push('k');
             }
-            if (castling_rights & 8) != 0 {
+            if self.board.get_castling_rights().can(BLACK_CASTLE_QUEENSIDE) {
                 fen.push('q');
             }
         }
@@ -195,7 +191,7 @@ impl Engine {
         let mut castling_moves = Bitboard::default();
 
         match from.square {
-            4 => {
+            WHITE_KING_START => {
                 // White king's castle
                 let mut is_kingside_attacked = false;
                 for idx in Bitboard::from(WHITE_KINGSIDE_SQUARES).iter() {
@@ -208,7 +204,7 @@ impl Engine {
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings)
-                    && (self.board.get_castling_rights() & 1) != 0;
+                    && self.board.get_castling_rights().can(WHITE_CASTLE_KINGSIDE);
 
                 let mut is_queenside_attacked = false;
                 for idx in Bitboard::from(WHITE_QUEENSIDE_ATTACKED).iter() {
@@ -221,16 +217,16 @@ impl Engine {
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(WHITE_QUEENSIDE_SQUARES) & !pieces.kings)
-                    && (self.board.get_castling_rights() & 2) != 0;
+                    && self.board.get_castling_rights().can(WHITE_CASTLE_QUEENSIDE);
 
                 if can_kingside {
-                    castling_moves.set(6);
+                    castling_moves.set(WHITE_KINGSIDE_CASTLE_TO);
                 }
                 if can_queenside {
-                    castling_moves.set(2);
+                    castling_moves.set(WHITE_QUEENSIDE_CASTLE_TO);
                 }
             }
-            60 => {
+            BLACK_KING_START => {
                 // Black king's castle
                 let mut is_kingside_attacked = false;
                 for idx in Bitboard::from(BLACK_KINGSIDE_SQUARES).iter() {
@@ -243,7 +239,7 @@ impl Engine {
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings)
-                    && (self.board.get_castling_rights() & 4) != 0;
+                    && self.board.get_castling_rights().can(BLACK_CASTLE_KINGSIDE);
 
                 let mut is_queenside_attacked = false;
                 for idx in Bitboard::from(BLACK_QUEENSIDE_ATTACKED).iter() {
@@ -256,13 +252,13 @@ impl Engine {
                     && !pieces
                         .all_pieces
                         .intersects(Bitboard::from(BLACK_QUEENSIDE_SQUARES) & !pieces.kings)
-                    && (self.board.get_castling_rights() & 8) != 0;
+                    && self.board.get_castling_rights().can(BLACK_CASTLE_QUEENSIDE);
 
                 if can_kingside {
-                    castling_moves.set(62);
+                    castling_moves.set(BLACK_KINGSIDE_CASTLE_TO);
                 }
                 if can_queenside {
-                    castling_moves.set(58);
+                    castling_moves.set(BLACK_QUEENSIDE_CASTLE_TO);
                 }
             }
             _ => {}
@@ -286,7 +282,7 @@ impl Engine {
                     legal_moves.clear(to);
                 }
             }
-            if from == 4 || from == 60 {
+            if from == WHITE_KING_START || from == BLACK_KING_START {
                 legal_moves |= self.generate_castling_moves(from);
             }
             return legal_moves;

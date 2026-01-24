@@ -1,4 +1,5 @@
 pub mod bitboard;
+mod castling;
 pub mod chessboard;
 mod constants;
 pub mod engine;
