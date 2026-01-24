@@ -28,7 +28,7 @@ impl Engine {
         }
     }
 
-    pub fn from_fen(fen: String) -> Self {
+    pub fn from_fen(fen: &str) -> Self {
         Bitboard::init();
 
         Self {
@@ -113,7 +113,7 @@ impl Engine {
         self.move_history.clear();
     }
 
-    pub fn act(&mut self, move_string: String) -> bool {
+    pub fn act(&mut self, move_string: &str) -> bool {
         let r#move = move_string.parse::<Move>().unwrap();
         if !self.is_legal_move(r#move) {
             return false;

@@ -7,7 +7,7 @@ pub struct Perft {
 impl Perft {
     pub fn new(fen: &str) -> Self {
         Self {
-            engine: Engine::from_fen(fen.to_string()),
+            engine: Engine::from_fen(fen),
         }
     }
 

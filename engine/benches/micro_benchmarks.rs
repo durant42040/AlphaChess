@@ -148,7 +148,7 @@ fn board_cloning_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("board_operations");
 
     let starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    let board = ChessBoard::load_from_fen(starting_fen.to_string());
+    let board = ChessBoard::load_from_fen(starting_fen);
 
     group.bench_function("board_clone", |b| {
         b.iter(|| {

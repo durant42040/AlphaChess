@@ -3,21 +3,13 @@ use engine::chess::Bitboard;
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {
-    assert!(
-        engine.act(move_str.to_string()),
-        "Move {} should be valid",
-        move_str
-    );
+    assert!(engine.act(move_str), "Move {} should be valid", move_str);
     println!("{}", engine);
 }
 
 /// Helper function to make a move and assert it's invalid
 fn assert_invalid_move(engine: &mut Engine, move_str: &str) {
-    assert!(
-        !engine.act(move_str.to_string()),
-        "Move {} should be invalid",
-        move_str
-    );
+    assert!(!engine.act(move_str), "Move {} should be invalid", move_str);
 }
 
 /// Helper function to assert game state
@@ -117,14 +109,14 @@ fn test_en_passant() {
 
 #[test]
 fn test_en_passant_pin() {
-    let mut engine = Engine::from_fen("4k3/3pr3/8/4P3/8/8/8/4K3 b - d6 0 1".to_string());
+    let mut engine = Engine::from_fen("4k3/3pr3/8/4P3/8/8/8/4K3 b - d6 0 1");
     make_move(&mut engine, "d7d5");
     assert_invalid_move(&mut engine, "e5d6");
 }
 
 #[test]
 fn test_promotion() {
-    let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/1k6 w - - 0 1".to_string());
+    let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/1k6 w - - 0 1");
 
     assert_invalid_move(&mut engine, "d7d8");
     make_move(&mut engine, "d7d8q");
@@ -133,15 +125,14 @@ fn test_promotion() {
 
 #[test]
 fn test_insufficient_material() {
-    let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/nk6 w - - 0 1".to_string());
+    let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/nk6 w - - 0 1");
     make_move(&mut engine, "d7d8n");
     assert_game_state(&engine, "draw");
 }
 
 #[test]
 fn test_pinned_pieces() {
-    let engine =
-        Engine::from_fen("3r4/3r2kb/8/1b1N4/2n5/1r1KN1qr/2BQ4/1b1q4 w - - 0 1".to_string());
+    let engine = Engine::from_fen("3r4/3r2kb/8/1b1N4/2n5/1r1KN1qr/2BQ4/1b1q4 w - - 0 1");
     assert_eq!(
         engine.find_pinned_pieces(),
         (Bitboard::from(0x800100C00), Bitboard::from(0x402010040000),)

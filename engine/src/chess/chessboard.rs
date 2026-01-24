@@ -41,7 +41,7 @@ impl ChessBoard {
         }
     }
 
-    pub fn load_from_fen(fen: String) -> Self {
+    pub fn load_from_fen(fen: &str) -> Self {
         let mut chessboard = Self::default();
         let mut parts = fen.split_whitespace();
 
@@ -326,9 +326,8 @@ mod tests {
 
     #[test]
     fn test_load_from_fen() {
-        let board_from_fen = ChessBoard::load_from_fen(
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
-        );
+        let board_from_fen =
+            ChessBoard::load_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let new_board = ChessBoard::new();
 
         assert_eq!(board_from_fen, new_board);

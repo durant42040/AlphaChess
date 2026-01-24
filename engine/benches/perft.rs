@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use engine::{Engine, Perft};
+use engine::Perft;
 use std::hint::black_box;
 
 fn perft_benchmark(c: &mut Criterion) {
