@@ -1,12 +1,9 @@
 use std::fmt;
 
-use crate::chess::Bitboard;
-use crate::chess::Move;
-use crate::chess::Player;
-use crate::chess::Square;
 use crate::chess::castling::CastlingRights;
 use crate::chess::constants::*;
 use crate::chess::pieces::{Color, Piece, Pieces};
+use crate::chess::{Bitboard, Move, Player, Square};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
@@ -206,7 +203,7 @@ impl ChessBoard {
         self.state_history.pop();
     }
 
-    pub fn get_pieces(&self) -> Pieces {
+    pub fn pieces(&self) -> Pieces {
         self.pieces
     }
 
@@ -392,6 +389,6 @@ mod tests {
             ChessBoard::load_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let new_board = ChessBoard::new();
 
-        assert_eq!(board_from_fen.get_pieces(), new_board.get_pieces());
+        assert_eq!(board_from_fen.pieces(), new_board.pieces());
     }
 }

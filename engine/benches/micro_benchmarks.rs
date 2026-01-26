@@ -152,14 +152,14 @@ fn board_cloning_benchmark(c: &mut Criterion) {
 
     group.bench_function("board_clone", |b| {
         b.iter(|| {
-            let cloned = black_box(&board).clone();
+            let cloned = black_box(&board);
             black_box(cloned)
         })
     });
 
     group.bench_function("get_pieces", |b| {
         b.iter(|| {
-            let pieces = black_box(&board).get_pieces();
+            let pieces = black_box(&board).pieces();
             black_box(pieces)
         })
     });

@@ -3,4 +3,4 @@ pub mod engine;
 pub mod search;
 
 pub use engine::Engine;
-pub use search::Perft;
+pub use search::{Perft, Search};

@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::chess::Color;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, PartialEq, Eq)]
 pub enum GameState {
     #[default]
     Playing,

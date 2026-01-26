@@ -1,4 +1,4 @@
-use crate::{Engine, chess::game::GameState};
+use crate::Engine;
 
 pub struct Perft {
     engine: Engine,
@@ -23,11 +23,9 @@ impl Perft {
         let mut nodes = 0u64;
 
         for r#move in moves {
-            self.engine.board_mut().act(r#move);
-            self.engine.update_game_state();
+            self.engine.act(&r#move.to_string());
             nodes += self.search(depth - 1);
-            self.engine.board_mut().undo();
-            self.engine.set_game_state(GameState::Playing);
+            self.engine.undo();
         }
 
         nodes

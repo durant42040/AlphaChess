@@ -10,8 +10,9 @@ pub mod square;
 
 pub use bitboard::Bitboard;
 pub use chessboard::ChessBoard;
-pub use game::Player;
+pub use game::{GameState, Player};
 pub use r#move::Move;
+pub use move_generator::MoveGenerator;
 pub use pieces::Color;
 pub use pieces::Piece;
 pub use square::Square;

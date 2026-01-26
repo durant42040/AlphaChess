@@ -1,13 +1,9 @@
 use std::fmt;
 
-use crate::chess::bitboard::Bitboard;
 use crate::chess::chessboard::{Castling, ChessBoard};
 use crate::chess::constants::*;
-use crate::chess::game::{GameState, Player};
-use crate::chess::r#move::Move;
-use crate::chess::move_generator::MoveGenerator;
 use crate::chess::pieces::{Color, Piece, Pieces};
-use crate::chess::square::Square;
+use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
 
 pub struct Engine {
     board: ChessBoard,
@@ -37,7 +33,7 @@ impl Engine {
     }
 
     pub fn get_fen(&self) -> String {
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         let mut fen = String::new();
 
         for rank in (0..8).rev() {
@@ -128,12 +124,12 @@ impl Engine {
         true
     }
 
-    pub fn get_pieces(&self) -> Pieces {
-        self.board.get_pieces()
+    pub fn pieces(&self) -> Pieces {
+        self.board.pieces()
     }
 
     fn generate_moves(&self, from: Square) -> Bitboard {
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         let our_pieces = if pieces.white_pieces().get_square(from) {
             pieces.white_pieces()
         } else {
@@ -180,7 +176,7 @@ impl Engine {
     }
 
     fn generate_castling_moves(&self, from: Square) -> Bitboard {
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         let mut castling_moves = Bitboard::default();
 
         match from.square {
@@ -262,7 +258,7 @@ impl Engine {
 
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
 
         // King moves
         if pieces.kings().get_square(from) {
@@ -290,11 +286,11 @@ impl Engine {
             let to = Square::from(pieces.en_passant());
             let r#move = Move::new(from, to, None);
             self.board.act(r#move);
-            let our_king = self.board.get_their_pieces() & self.get_pieces().kings();
+            let our_king = self.board.get_their_pieces() & self.pieces().kings();
 
             if self.is_under_attack(
                 Square::from(our_king),
-                self.board.get_pieces().all_pieces(),
+                self.board.pieces().all_pieces(),
                 self.board.get_player().switch().into(),
             ) {
                 legal_moves.clear_square(to);
@@ -306,7 +302,7 @@ impl Engine {
         }
 
         let (pinned_pieces, attack_lines) = self.find_pinned_pieces();
-        let our_king = self.board.get_our_pieces() & self.get_pieces().kings();
+        let our_king = self.board.get_our_pieces() & self.pieces().kings();
         let attacks = self.generate_attacks(
             Square::from(our_king),
             pieces.all_pieces(),
@@ -339,7 +335,7 @@ impl Engine {
 
         if pinned_pieces.get_square(from) {
             // if a piece is pinned, only the moves that are along the pin ray are legal
-            let our_king = self.board.get_our_pieces() & self.get_pieces().kings();
+            let our_king = self.board.get_our_pieces() & self.pieces().kings();
             legal_moves &= Bitboard::ray(from, Square::from(our_king));
         }
 
@@ -353,7 +349,7 @@ impl Engine {
             for to in moves.iter() {
                 let from = Square::from(from);
                 let to = Square::from(to);
-                if self.get_pieces().pawns().get_square(from) && (to.rank == 7 || to.rank == 0) {
+                if self.pieces().pawns().get_square(from) && (to.rank == 7 || to.rank == 0) {
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Queen)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Rook)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Bishop)));
@@ -378,13 +374,13 @@ impl Engine {
 
     /// Checks if the given square is under attack by the opponent in the current position.
     fn is_square_under_attack(&self, square: Square) -> bool {
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         self.is_under_attack(square, pieces.all_pieces(), self.board.get_player().into())
     }
 
     /// returns all attackers to the given square
     fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         let their_pieces = if color == Color::White {
             pieces.black_pieces()
         } else {
@@ -410,7 +406,7 @@ impl Engine {
     }
 
     pub fn is_check(&self) -> bool {
-        let our_king = self.board.get_our_pieces() & self.get_pieces().kings();
+        let our_king = self.board.get_our_pieces() & self.pieces().kings();
         self.is_square_under_attack(Square::from(our_king))
     }
 
@@ -423,7 +419,7 @@ impl Engine {
             return false;
         }
 
-        let is_pawn = self.get_pieces().pawns().get_square(from);
+        let is_pawn = self.pieces().pawns().get_square(from);
 
         // promotion from non-pawn piece is illegal
         if !is_pawn && r#move.promotion.is_some() {
@@ -468,7 +464,7 @@ impl Engine {
 
     pub fn to_board_string(&self) -> String {
         let mut board_str = String::with_capacity(64);
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
 
         for i in 0..64 {
             board_str.push(pieces.get_char(i));
@@ -485,13 +481,9 @@ impl Engine {
         &mut self.board
     }
 
-    pub fn set_game_state(&mut self, state: GameState) {
-        self.game_state = state;
-    }
-
     pub fn find_pinned_pieces(&self) -> (Bitboard, Bitboard) {
         let mut pinned_pieces = Bitboard::default();
-        let pieces = self.get_pieces();
+        let pieces = self.pieces();
         let our_pieces = self.board.get_our_pieces();
         let their_pieces = self.board.get_their_pieces();
         let our_king = Square::from(our_pieces & pieces.kings());
@@ -521,8 +513,24 @@ impl Engine {
 
         (pinned_pieces, attack_lines)
     }
+}
 
-    pub fn eval(&self) -> i32 {
+pub trait Evaluation {
+    fn eval(&self) -> i32;
+}
+
+impl Evaluation for Engine {
+    /// Evaluate the position as white
+    fn eval(&self) -> i32 {
+        if self.game_state == GameState::Draw {
+            return 0;
+        }
+        if self.game_state == GameState::WhiteWin {
+            return i32::MAX;
+        }
+        if self.game_state == GameState::BlackWin {
+            return i32::MIN;
+        }
         self.board.material_score()
     }
 }
