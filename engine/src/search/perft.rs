@@ -15,9 +15,6 @@ impl Perft {
         if depth == 0 {
             return 1;
         }
-        if self.engine.get_game_state() != "playing" {
-            return 0;
-        }
 
         let moves = self.engine.generate_all_legal_moves();
         let mut nodes = 0u64;

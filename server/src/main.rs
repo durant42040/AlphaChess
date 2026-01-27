@@ -147,7 +147,7 @@ async fn reset(State(state): State<AppState>) -> StatusCode {
 
 async fn game(State(state): State<AppState>) -> Json<Value> {
     let engine = state.engine.lock().await;
-    Json(json!({ "gameState": engine.get_game_state() }))
+    Json(json!({ "gameState": engine.game_state().to_string() }))
 }
 
 #[tokio::main]

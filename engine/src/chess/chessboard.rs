@@ -59,12 +59,12 @@ pub struct ChessBoard {
 impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
-        let state_history = Vec::with_capacity(100);
+        let state_history = Vec::with_capacity(200);
         let player = Player::White;
         let castling_rights = CastlingRights::new();
 
         Self {
-            move_history: Vec::new(),
+            move_history: Vec::with_capacity(200),
             fifty_move_rule: 0,
             castling_rights,
             player,
@@ -170,6 +170,7 @@ impl ChessBoard {
     }
 
     pub fn undo(&mut self) {
+        debug_assert!(!self.move_history.is_empty());
         let r#move = self.move_history.pop().unwrap();
         let from = r#move.from;
         let to = r#move.to;

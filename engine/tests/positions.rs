@@ -15,11 +15,11 @@ fn assert_invalid_move(engine: &mut Engine, move_str: &str) {
 /// Helper function to assert game state
 fn assert_game_state(engine: &Engine, expected: &str) {
     assert_eq!(
-        engine.get_game_state(),
+        engine.game_state().to_string(),
         expected,
         "Expected game state '{}', got '{}'",
         expected,
-        engine.get_game_state()
+        engine.game_state().to_string()
     );
 }
 

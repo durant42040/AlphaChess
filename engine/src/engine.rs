@@ -364,8 +364,8 @@ impl Engine {
         all_legal_moves
     }
 
-    pub fn get_game_state(&self) -> String {
-        self.game_state.to_string()
+    pub fn game_state(&self) -> GameState {
+        self.game_state
     }
 
     /// Checks if the given square is under attack by the opponent.
