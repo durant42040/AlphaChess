@@ -343,7 +343,8 @@ impl Engine {
     }
 
     pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let mut all_legal_moves = Vec::new();
+        let mut all_legal_moves = Vec::with_capacity(MAX_LEGAL_MOVES);
+
         for from in self.board.get_our_pieces().iter() {
             let moves = self.generate_legal_moves(Square::from(from));
             for to in moves.iter() {

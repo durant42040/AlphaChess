@@ -23,7 +23,7 @@ impl Perft {
         let mut nodes = 0u64;
 
         for r#move in moves {
-            self.engine.act(&r#move.to_string());
+            self.engine.board_mut().act(r#move);
             nodes += self.search(depth - 1);
             self.engine.undo();
         }

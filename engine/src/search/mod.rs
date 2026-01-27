@@ -7,12 +7,13 @@ pub use perft::Perft;
 use crate::engine::{Engine, Evaluation};
 
 pub trait Search {
-    /// Find the best sequence of moves up to the given depth
     fn max_search(&mut self, depth: u8) -> i32;
     fn minimax_search(&mut self, depth: u8) -> i32;
+    fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
 }
 
 impl Search for Engine {
+    /// Performs max search.
     fn max_search(&mut self, depth: u8) -> i32 {
         if depth == 0 {
             let score = self.eval();
@@ -32,6 +33,7 @@ impl Search for Engine {
         score
     }
 
+    /// Performs minimax search.
     fn minimax_search(&mut self, depth: u8) -> i32 {
         if depth == 0 {
             let score = self.eval();
@@ -50,11 +52,39 @@ impl Search for Engine {
 
         score
     }
+
+    /// Performs alpha-beta pruning search.
+    ///
+    /// - `alpha`: minimum score for the maximizing player
+    /// - `beta`: maximum score for the minimizing player
+    fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
+        if depth == 0 {
+            let score = self.eval();
+            return score;
+        }
+
+        let mut score = i32::MIN;
+
+        let moves = self.generate_all_legal_moves();
+        for r#move in moves {
+            self.board_mut().act(r#move);
+            self.update_game_state();
+            score = max(score, -self.alpha_beta_search(depth - 1, -beta, -alpha));
+            self.undo();
+            if score >= beta {
+                return beta;
+            }
+            alpha = max(alpha, score);
+        }
+
+        alpha
+    }
 }
 
 #[test]
-fn test_search() {
+fn test_max_search() {
+    // look for 4-move checkmate
     let mut engine = Engine::new();
     let best_score = engine.max_search(5);
-    println!("{}", best_score);
+    assert_eq!(best_score, i32::MAX);
 }
