@@ -1,3 +1,4 @@
+pub mod attack;
 pub mod bitboard;
 pub mod castling;
 pub mod chessboard;
@@ -8,6 +9,7 @@ pub mod move_generator;
 pub mod pieces;
 pub mod square;
 
+pub use attack::AttackState;
 pub use bitboard::Bitboard;
 pub use chessboard::ChessBoard;
 pub use game::{GameState, Player};

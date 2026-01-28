@@ -120,7 +120,7 @@ All moves are expressed in long algebraic notation (e.g., "e2e4").
   * `new()`: creates a new engine instance
   * `is_legal_move(Move)`: returns if a move is legal
   * `act(String)`: makes a move
-  * `get_game_state()`: checks if the game is active, drawn, or won
+  * `game_state()`: checks if the game is active, drawn, or won
   * `to_board_string()`: returns board as a string
 * `chessboard.rs`: stores board information and updates the board for each move
 * `move_generator.rs`: generates legal moves for each piece in each position
@@ -227,7 +227,7 @@ After basic move generation, castling moves are added. Moves that put the king i
 let temp_board = self.board.clone();
 for to in legal_moves.iter() {
     self.board.act(Move::new(from, to.into(), None));
-    if self.is_player_in_check(self.board.get_player().switch()) {
+    if self.is_player_in_check(self.board.player().switch()) {
         legal_moves.clear(to);
     }
     self.board = temp_board.clone();

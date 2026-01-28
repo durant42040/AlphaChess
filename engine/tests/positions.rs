@@ -1,5 +1,4 @@
 use engine::Engine;
-use engine::chess::Bitboard;
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {
@@ -128,13 +127,4 @@ fn test_insufficient_material() {
     let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/nk6 w - - 0 1");
     make_move(&mut engine, "d7d8n");
     assert_game_state(&engine, "draw");
-}
-
-#[test]
-fn test_pinned_pieces() {
-    let engine = Engine::from_fen("3r4/3r2kb/8/1b1N4/2n5/1r1KN1qr/2BQ4/1b1q4 w - - 0 1");
-    assert_eq!(
-        engine.find_pinned_pieces(),
-        (Bitboard::from(0x800100C00), Bitboard::from(0x402010040000),)
-    );
 }

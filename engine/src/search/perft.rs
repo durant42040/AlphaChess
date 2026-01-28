@@ -21,6 +21,7 @@ impl Perft {
 
         for r#move in moves {
             self.engine.board_mut().act(r#move);
+            self.engine.update_attack_state();
             nodes += self.search(depth - 1);
             self.engine.undo();
         }

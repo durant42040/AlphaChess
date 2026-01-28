@@ -208,7 +208,7 @@ impl ChessBoard {
         self.pieces
     }
 
-    pub fn get_our_pieces(&self) -> Bitboard {
+    pub fn our_pieces(&self) -> Bitboard {
         if self.player == Player::White {
             self.pieces.white_pieces()
         } else {
@@ -216,7 +216,7 @@ impl ChessBoard {
         }
     }
 
-    pub fn get_their_pieces(&self) -> Bitboard {
+    pub fn their_pieces(&self) -> Bitboard {
         if self.player == Player::White {
             self.pieces.black_pieces()
         } else {
@@ -224,7 +224,7 @@ impl ChessBoard {
         }
     }
 
-    pub fn get_player(&self) -> Player {
+    pub fn player(&self) -> Player {
         self.player
     }
 
@@ -256,13 +256,13 @@ impl ChessBoard {
 }
 
 pub trait Castling {
-    fn get_castling_rights(&self) -> CastlingRights;
+    fn castling_rights(&self) -> CastlingRights;
     fn castle(&mut self, from: Square, to: Square);
     fn undo_castle(&mut self, from: Square, to: Square);
 }
 
 impl Castling for ChessBoard {
-    fn get_castling_rights(&self) -> CastlingRights {
+    fn castling_rights(&self) -> CastlingRights {
         self.castling_rights
     }
 
