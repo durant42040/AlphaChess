@@ -1,7 +1,10 @@
 use std::fmt;
 
+use arrayvec::ArrayVec;
+
 use crate::chess::castling::CastlingRights;
 use crate::chess::constants::*;
+use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Color, Piece, Pieces};
 use crate::chess::{Bitboard, Move, Player, Square};
 
@@ -47,24 +50,24 @@ impl State {
 
 #[derive(Default)]
 pub struct ChessBoard {
-    move_history: Vec<Move>,
+    move_history: MoveList,
     fifty_move_rule: u8,
     castling_rights: CastlingRights,
     player: Player,
     pieces: Pieces,
-    state_history: Vec<State>,
+    state_history: ArrayVec<State, 200>,
     material_score: i32,
 }
 
 impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
-        let state_history = Vec::with_capacity(200);
+        let state_history = ArrayVec::<State, 200>::new();
         let player = Player::White;
         let castling_rights = CastlingRights::new();
 
         Self {
-            move_history: Vec::with_capacity(200),
+            move_history: MoveList::new(),
             fifty_move_rule: 0,
             castling_rights,
             player,
@@ -163,7 +166,6 @@ impl ChessBoard {
         self.pieces.promote(promotion, from);
         self.pieces.update_en_passant(from, to);
         self.castle(from, to);
-
         self.pieces.update(from, to);
         self.switch_player();
         self.move_history.push(r#move);

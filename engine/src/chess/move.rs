@@ -1,7 +1,10 @@
 use std::{fmt, str::FromStr};
 
+use arrayvec::ArrayVec;
+
 use crate::chess::Piece;
 use crate::chess::Square;
+use crate::chess::constants::MAX_LEGAL_MOVES;
 
 #[derive(Clone, Copy)]
 pub struct Move {
@@ -54,6 +57,8 @@ impl FromStr for Move {
         })
     }
 }
+
+pub type MoveList = ArrayVec<Move, MAX_LEGAL_MOVES>;
 
 #[cfg(test)]
 mod tests {

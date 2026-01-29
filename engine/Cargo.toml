@@ -17,3 +17,6 @@ harness = false
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }
+
+[dependencies]
+arrayvec = "0.7.6"

@@ -12,16 +12,13 @@ impl Perft {
     }
 
     pub fn search(&mut self, depth: u8) -> u64 {
-        if depth == 0 {
-            return 1;
+        if depth == 1 {
+            return self.engine.generate_all_legal_moves().len() as u64;
         }
 
-        let moves = self.engine.generate_all_legal_moves();
         let mut nodes = 0u64;
-
-        for r#move in moves {
-            self.engine.board_mut().act(r#move);
-            self.engine.update_attack_state();
+        for r#move in self.engine.generate_all_legal_moves() {
+            self.engine.act(r#move);
             nodes += self.search(depth - 1);
             self.engine.undo();
         }

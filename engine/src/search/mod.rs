@@ -22,11 +22,8 @@ impl Search for Engine {
 
         let mut score = i32::MIN;
 
-        let moves = self.generate_all_legal_moves();
-        for r#move in moves {
-            self.board_mut().act(r#move);
-            self.update_attack_state();
-            self.update_game_state();
+        for r#move in self.generate_all_legal_moves() {
+            self.act(r#move);
             score = max(score, self.max_search(depth - 1));
             self.undo();
         }
@@ -43,11 +40,8 @@ impl Search for Engine {
 
         let mut score = i32::MIN;
 
-        let moves = self.generate_all_legal_moves();
-        for r#move in moves {
-            self.board_mut().act(r#move);
-            self.update_attack_state();
-            self.update_game_state();
+        for r#move in self.generate_all_legal_moves() {
+            self.act(r#move);
             score = max(score, -self.minimax_search(depth - 1));
             self.undo();
         }
@@ -67,11 +61,8 @@ impl Search for Engine {
 
         let mut score = i32::MIN;
 
-        let moves = self.generate_all_legal_moves();
-        for r#move in moves {
-            self.board_mut().act(r#move);
-            self.update_attack_state();
-            self.update_game_state();
+        for r#move in self.generate_all_legal_moves() {
+            self.act(r#move);
             score = max(score, -self.alpha_beta_search(depth - 1, -beta, -alpha));
             self.undo();
             if score >= beta {

@@ -3,6 +3,7 @@ use std::fmt;
 use crate::chess::AttackState;
 use crate::chess::chessboard::{Castling, ChessBoard};
 use crate::chess::constants::*;
+use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Color, Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
 
@@ -113,7 +114,7 @@ impl Engine {
         self.game_state = GameState::Playing;
     }
 
-    pub fn act(&mut self, move_string: &str) -> bool {
+    pub fn make_move(&mut self, move_string: &str) -> bool {
         let r#move = move_string.parse::<Move>().unwrap();
         if !self.is_legal_move(r#move) {
             return false;
@@ -122,6 +123,12 @@ impl Engine {
         self.update_attack_state();
         self.update_game_state();
         true
+    }
+
+    pub fn act(&mut self, r#move: Move) {
+        self.board.act(r#move);
+        self.update_attack_state();
+        self.update_game_state();
     }
 
     pub fn undo(&mut self) -> bool {
@@ -307,7 +314,6 @@ impl Engine {
             } else {
                 en_passant_legal = true;
             }
-
             self.board.undo();
         }
 
@@ -341,15 +347,15 @@ impl Engine {
         legal_moves
     }
 
-    pub fn generate_all_legal_moves(&mut self) -> Vec<Move> {
-        let mut all_legal_moves = Vec::with_capacity(MAX_LEGAL_MOVES);
+    pub fn generate_all_legal_moves(&mut self) -> MoveList {
+        let mut all_legal_moves = MoveList::new();
 
         for from in self.board.our_pieces().iter() {
             let moves = self.generate_legal_moves(Square::from(from));
             for to in moves.iter() {
                 let from = Square::from(from);
                 let to = Square::from(to);
-                if self.pieces().pawns().get_square(from) && (to.rank == 7 || to.rank == 0) {
+                if (to.rank == 7 || to.rank == 0) && self.pieces().pawns().get_square(from) {
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Queen)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Rook)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Bishop)));
@@ -446,7 +452,6 @@ impl Engine {
                 return;
             }
         }
-
         // if there are no legal moves, check for checkmate or stalemate
         if self.is_check() {
             // checkmate
@@ -470,14 +475,6 @@ impl Engine {
         }
 
         board_str
-    }
-
-    pub fn board(&self) -> &ChessBoard {
-        &self.board
-    }
-
-    pub fn board_mut(&mut self) -> &mut ChessBoard {
-        &mut self.board
     }
 
     pub fn update_attack_state(&mut self) {
@@ -510,11 +507,8 @@ impl Engine {
             }
         }
 
-        let attackers = self.generate_attacks(
-            Square::from(our_king),
-            pieces.all_pieces(),
-            self.board.player().into(),
-        );
+        let attackers =
+            self.generate_attacks(our_king, pieces.all_pieces(), self.board.player().into());
         let num_checks = attackers.count();
         debug_assert!(num_checks <= 2);
 

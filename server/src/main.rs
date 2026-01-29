@@ -57,7 +57,7 @@ async fn generate_move(
 
     stockfish.play_move(move_string)?;
 
-    engine.act(move_string);
+    engine.make_move(move_string);
     println!("{}", engine);
 
     Ok((
@@ -83,7 +83,7 @@ async fn make_move(
         ));
     }
 
-    if !engine.act(&move_string) {
+    if !engine.make_move(&move_string) {
         return Ok((
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "Illegal move" })),

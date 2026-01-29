@@ -2,13 +2,21 @@ use engine::Engine;
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {
-    assert!(engine.act(move_str), "Move {} should be valid", move_str);
+    assert!(
+        engine.make_move(move_str),
+        "Move {} should be valid",
+        move_str
+    );
     println!("{}", engine);
 }
 
 /// Helper function to make a move and assert it's invalid
 fn assert_invalid_move(engine: &mut Engine, move_str: &str) {
-    assert!(!engine.act(move_str), "Move {} should be invalid", move_str);
+    assert!(
+        !engine.make_move(move_str),
+        "Move {} should be invalid",
+        move_str
+    );
 }
 
 /// Helper function to assert game state
