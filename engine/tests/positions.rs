@@ -116,7 +116,7 @@ fn test_en_passant() {
 
 #[test]
 fn test_en_passant_pin() {
-    let mut engine = Engine::from_fen("4k3/3pr3/8/4P3/8/8/8/4K3 b - d6 0 1");
+    let mut engine = Engine::from_fen("4k3/3pr3/8/4P3/8/8/8/4K3 b - - 0 1");
     make_move(&mut engine, "d7d5");
     assert_invalid_move(&mut engine, "e5d6");
 }
