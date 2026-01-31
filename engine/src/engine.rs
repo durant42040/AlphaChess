@@ -146,6 +146,10 @@ impl Engine {
         self.board.pieces()
     }
 
+    pub fn player(&self) -> Player {
+        self.board.player()
+    }
+
     fn generate_moves(&self, from: Square) -> Bitboard {
         let pieces = self.pieces();
         let our_pieces = if pieces.white_pieces().get_square(from) {
@@ -538,7 +542,7 @@ impl Evaluation for Engine {
         if self.game_state == GameState::BlackWin {
             return i32::MIN;
         }
-        self.board.material_score()
+        self.board.score()
     }
 }
 

@@ -4,7 +4,7 @@ use crate::api::{self, ActResponse, GenerateResponse};
 use crate::components::{ChessBoard, StartPage};
 use crate::sound;
 use crate::state::{Msg, State};
-use crate::utils::{to_board, to_move_string};
+use crate::utils::{move_string_with_promotion, to_board};
 use gloo::render::request_animation_frame;
 use gloo::timers::callback::Timeout;
 use yew::events::KeyboardEvent;
@@ -124,7 +124,8 @@ impl Component for App {
             }
             Msg::TryAct => {
                 if let (Some(from), Some(to)) = (self.state.position_from, self.state.position_to) {
-                    let move_str = to_move_string(from, to);
+                    let move_str =
+                        move_string_with_promotion(&self.state.board, from, to);
                     let capture = self.state.board[to[0] as usize][to[1] as usize].is_some();
                     let link = ctx.link().clone();
                     yew::platform::spawn_local(async move {

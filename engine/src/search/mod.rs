@@ -58,17 +58,14 @@ impl Search for Engine {
     /// - `beta`: maximum score for the minimizing player
     fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
         if depth == 0 {
-            let score = self.eval();
-            return score;
+            return self.eval();
         }
-
-        let mut score = i32::MIN;
 
         for r#move in self.generate_all_legal_moves() {
             self.act(r#move);
-            let child_score =
-                self.alpha_beta_search(depth - 1, beta.saturating_neg(), alpha.saturating_neg());
-            score = max(score, child_score.saturating_neg());
+            let score = self
+                .alpha_beta_search(depth - 1, beta.saturating_neg(), alpha.saturating_neg())
+                .saturating_neg();
             self.undo();
             if score >= beta {
                 return beta;
@@ -85,14 +82,14 @@ impl Search for Engine {
 
         let mut best_move = moves[0];
         let mut best_score = i32::MIN;
+
+        let alpha = i32::MAX.saturating_neg();
+        let beta = i32::MIN.saturating_neg();
+
         for r#move in moves {
             self.act(r#move);
             let score = self
-                .alpha_beta_search(
-                    depth - 1,
-                    i32::MAX.saturating_neg(),
-                    i32::MIN.saturating_neg(),
-                )
+                .alpha_beta_search(depth - 1, alpha, beta)
                 .saturating_neg();
             self.undo();
             if score > best_score {

@@ -252,8 +252,12 @@ impl ChessBoard {
         &self.move_history
     }
 
-    pub fn material_score(&self) -> i32 {
-        self.material_score
+    pub fn score(&self) -> i32 {
+        if self.player == Player::Black {
+            -self.material_score
+        } else {
+            self.material_score
+        }
     }
 }
 

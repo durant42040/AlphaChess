@@ -35,6 +35,27 @@ pub fn to_move_string(from: [u8; 2], to: [u8; 2]) -> String {
     )
 }
 
+pub fn move_string_with_promotion(
+    board: &[Vec<Option<Piece>>],
+    from: [u8; 2],
+    to: [u8; 2],
+) -> String {
+    let mut s = to_move_string(from, to);
+    let piece = board
+        .get(from[0] as usize)
+        .and_then(|r| r.get(from[1] as usize))
+        .and_then(|p| p.as_ref());
+    if let Some(p) = piece {
+        if p.piece_type == 'p' {
+            let on_promotion_rank = (p.color == 'w' && to[0] == 0) || (p.color == 'b' && to[0] == 7);
+            if on_promotion_rank {
+                s.push('q');
+            }
+        }
+    }
+    s
+}
+
 pub fn is_equal(a: [u8; 2], b: [u8; 2]) -> bool {
     a[0] == b[0] && a[1] == b[1]
 }
