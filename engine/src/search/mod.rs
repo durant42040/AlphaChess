@@ -12,7 +12,7 @@ pub trait Search {
     fn minimax_search(&mut self, depth: u8) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
     /// Returns the best move for the current player using alpha-beta search, or None if no legal moves.
-    fn best_move(&mut self) -> Option<Move>;
+    fn best_move(&mut self) -> Move;
 }
 
 impl Search for Engine {
@@ -79,12 +79,10 @@ impl Search for Engine {
         alpha
     }
 
-    fn best_move(&mut self) -> Option<Move> {
+    fn best_move(&mut self) -> Move {
         let depth = 5;
         let moves = self.generate_all_legal_moves();
-        if moves.is_empty() {
-            return None;
-        }
+
         let mut best_move = moves[0];
         let mut best_score = i32::MIN;
         for r#move in moves {
@@ -102,7 +100,7 @@ impl Search for Engine {
                 best_move = r#move;
             }
         }
-        Some(best_move)
+        best_move
     }
 }
 
