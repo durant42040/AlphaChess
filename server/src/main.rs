@@ -150,9 +150,13 @@ async fn game(State(state): State<AppState>) -> Json<Value> {
     Json(json!({ "gameState": engine.game_state().to_string() }))
 }
 
+async fn ping() -> &'static str {
+    "pong"
+}
+
 #[tokio::main]
 async fn main() {
-    let port = 4000;
+    let port = std::env::var("PORT").unwrap_or_else(|_| "4000".into());
 
     let engine = Arc::new(Mutex::new(Engine::new()));
 
@@ -170,6 +174,7 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
+        .route("/ping", get(ping))
         .route("/generate", get(generate_move))
         .route("/act", get(make_move))
         .route("/reset", get(reset))

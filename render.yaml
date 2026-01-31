@@ -1,0 +1,11 @@
+# Render Blueprint: AlphaChess server (Docker build includes Stockfish)
+# Connect this repo in Render Dashboard; Render will use this file.
+
+services:
+  - type: web
+    name: alphachess-server
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /ping
