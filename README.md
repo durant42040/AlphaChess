@@ -1,20 +1,19 @@
 # AlphaChess
 
-A chess AI who is better than dhgf.
+A chess engine who is better than dhgf.
 
 ## Getting Started
 
-Install dependencies and start frontend:
+**Client**
 
-``` bash
+```bash
 cd client
-npm install
-npm run start
+trunk serve
 ```
 
-Build and start server
+**Server**
 
-``` bash
+```bash
 cd server
 cargo run
 ```
@@ -28,111 +27,64 @@ This is a full-stack web application for a chess game. The player will play agai
     1. Connects to Stockfish CLI to calculate the best move
     2. Validates moves through the engine
     3. Manages game state updates through the engine
-* **Engine**: provides fast move generation and updates the chessboard according to each move as well as checking for draws and checkmates.
+* **Engine**: provides fast move generation and updates the chessboard according to each move as well as checking for draws and checkmates, generates best move with alpha-beta search.
 
 ## Implementation
 
 ### Server
 
-The web server is implemented using Axum. The server is set up with async handlers and routes:
+The server is implemented with Axum and shared engine state:
 
-``` rust
+```rust
 use axum::{Router, routing::get};
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() {
+    let engine = Arc::new(Mutex::new(Engine::new()));
+
     let app = Router::new()
+        .route("/ping", get(ping))
         .route("/generate", get(generate_move))
         .route("/act", get(make_move))
         .route("/reset", get(reset))
-        .route("/game", get(game));
+        .route("/game", get(game))
+        .route("/undo", get(undo_move))
+        .with_state(engine);
 
     let listener = TcpListener::bind("0.0.0.0:4000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 ```
 
-Routes are defined as async functions that handle HTTP requests:
+* **`/generate`** — Computes the best move via `engine.best_move()`, applies it, and returns the move and updated board.
+* **`/act?move=e2e4`** — Validates and applies the given move (e.g. long algebraic notation), returns board and check status.
+* **`/reset`** — Resets the game to the starting position.
+* **`/game`** — Returns the current game state (e.g. playing, draw, checkmate).
+* **`/undo`** — Undoes the last two half-moves.
 
-``` rust
-async fn generate_move(
-    State(state): State<AppState>,
-) -> Result<(StatusCode, Json<Value>), StockfishError> {
-    let mut engine = state.engine.lock().await;
-    let mut stockfish = state.stockfish.lock().await;
-    
-    let stockfish_output = stockfish.go()?;
-    let move_string = stockfish_output.best_move();
-    stockfish.play_move(move_string)?;
-    engine.act(move_string.clone());
-    
-    Ok((StatusCode::OK, Json(json!({ "move": move_string }))))
-}
-```
-
-Stockfish and the engine are both managed as shared, asynchronous state using `Arc<Mutex<T>>` to allow safe concurrent access by multiple HTTP requests.
-
-``` rust
-let engine = Arc::new(Mutex::new(Engine::new()));
-let stockfish = Arc::new(Mutex::new(
-    Stockfish::new("stockfish").expect("Failed to initialize Stockfish"),
-));
-```
-
-#### Stockfish
-
-The server uses the `stockfish` Rust crate to communicate with the Stockfish engine. The crate provides a convenient wrapper around the Stockfish binary:
-
-``` rust
-use stockfish::Stockfish;
-
-let mut stockfish = Stockfish::new("stockfish")?;
-stockfish.setup_for_new_game()?;
-stockfish.set_depth(20);
-```
-
-To set up a position, you can use FEN notation or play moves:
-
-``` rust
-// Set position using FEN
-let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-stockfish.set_fen_position(fen)?;
-
-// Or play moves from the starting position
-stockfish.play_moves(&["e2e4", "c7c5"])?;
-```
-
-To get the best move:
-
-``` rust
-let output = stockfish.go()?;
-let best_move = output.best_move();
-```
-
-All moves are expressed in long algebraic notation (e.g., "e2e4").
+The engine is stored in `Arc<Mutex<Engine>>` so all handlers share one game.
 
 ### Chess Engine
 
 #### Structure
 
-* `engine.rs`:
-  * `new()`: creates a new engine instance
-  * `is_legal_move(Move)`: returns if a move is legal
-  * `act(String)`: makes a move
-  * `game_state()`: checks if the game is active, drawn, or won
-  * `to_board_string()`: returns board as a string
-* `chessboard.rs`: stores board information and updates the board for each move
-* `move_generator.rs`: generates legal moves for each piece in each position
-* `move.rs`: struct definition of `Move`, which stores start and target squares and promotion
-* `bitboard.rs`: struct definition of `Bitboard`, provides bit operation methods and implements operator overloading
-* `constants.rs`: precomputed magic bitboards and position keys
+* **`engine.rs`** — Main API: `new()`, `from_fen()`, `reset()`, `make_move()`, `act()`, `undo()`, `game_state()`, `to_board_string()`, `is_check()`, and evaluation/search helpers.
+* **`search/mod.rs`** — `Search` trait implemented for `Engine`: `max_search`, `minimax_search`, `alpha_beta_search`, `best_move()` (alpha-beta for AI).
+* **`chess/chessboard.rs`** — Board representation, castling rights, move application and undo.
+* **`chess/move_generator.rs`** — Legal move generation for all piece types.
+* **`chess/move.rs`** — `Move` type (from/to squares, promotion).
+* **`chess/bitboard.rs`** — `Bitboard` and bit operations.
+* **`chess/constants.rs`** — Precomputed magic bitboards and related tables.
+* **`chess/pieces.rs`** — Piece sets (white/black, by type) and board occupancy.
+* **`chess/square.rs`** — Square indexing and notation.
 
 #### Bitboards
 
-For fast move generation and board manipulation, an efficient data structure for storing and writing board information is needed. **Bitboards** are 64-bit integers (`u64` in Rust) used to represent an 8x8 chessboard. A bit of a bitboard is set if a chess piece is present on its square. Therefore, we can have a complete representation of a chessboard with 8 bitboards:
+Board state is represented with 64-bit bitboards: one bit per square. For example, piece sets and occupancy:
 
-``` rust
+```rust
 pub struct Pieces {
     pub pawns: Bitboard,
     pub knights: Bitboard,
@@ -147,21 +99,16 @@ pub struct Pieces {
 }
 ```
 
-We can check if a square is occupied with simple bit operations:
+Square tests and updates use bit operations:
 
-``` rust
+```rust
 bitboard & (1 << index) != 0
-```
-
-Similarly, we can set a square with:
-
-``` rust
 bitboard |= 1 << index;
 ```
 
-Other operations such as bit count and getting the least significant bit can be implemented using Rust's built-in methods:
+Count and LSB use standard library helpers:
 
-``` rust
+```rust
 pub fn count(&self) -> u32 {
     self.bitboard.count_ones()
 }
@@ -171,18 +118,16 @@ pub fn get_lsb(&self) -> u8 {
 }
 ```
 
-Using bitboards as board representation thus allows for extremely fast board operations, even faster than basic arithmetic.
-
 #### Move Generation
 
-With the bitboards above, basic move generation involving kings and knights can be implemented with lookup tables with $O(1)$ time complexity. For pawns, bishops, and rooks, blockers become a problem, as generating the legal moves would require the location of blockers. For pawns, this problem is solved with some clever bit manipulations:
+Kings and knights use O(1) lookup tables. Pawns use bit masks for advances and captures. For example, white pawn one- and two-step moves:
 
-``` rust
+```rust
 let one_step_moves = (from_mask >> 8) & !all_pieces.bitboard;
 let two_step_moves = ((one_step_moves & (0xFFu64 << 40)) >> 8) & !all_pieces.bitboard;
 ```
 
-Capture moves can be generated with table lookups. For sliding pieces, a naive solution is to use loops:
+Sliding pieces (rooks, bishops) use **magic bitboards**: precomputed tables indexed by square and blocker pattern. A magic number hashes the blocker configuration into a compact index:
 
 ``` rust
 for i in (rank + 1)..8 {
@@ -221,17 +166,4 @@ let key = (blockers * BISHOP_MAGIC_NUMBERS[from.square as usize]) >> (64 - BISHO
 BISHOP_TABLE[from.square as usize][key as usize]
 ```
 
-After basic move generation, castling moves are added. Moves that put the king in check are filtered out:
-
-``` rust
-let temp_board = self.board.clone();
-for to in legal_moves.iter() {
-    self.board.act(Move::new(from, to.into(), None));
-    if self.is_player_in_check(self.board.player().switch()) {
-        legal_moves.clear(to);
-    }
-    self.board = temp_board.clone();
-}
-```
-
-After that, promotions are added and the full move set is returned.
+After generating candidate moves, castling is added, and moves that leave the king in check are removed. Promotions are then added to produce the final legal move list.
