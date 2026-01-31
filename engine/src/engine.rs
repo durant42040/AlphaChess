@@ -112,6 +112,7 @@ impl Engine {
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
         self.game_state = GameState::Playing;
+        self.attack_state = AttackState::default();
     }
 
     pub fn make_move(&mut self, move_string: &str) -> bool {
