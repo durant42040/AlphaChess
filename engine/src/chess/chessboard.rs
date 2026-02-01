@@ -11,10 +11,10 @@ use crate::chess::{Bitboard, Move, Player, Square};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
-    captured_piece: Option<(Piece, Color)>,
-    prev_en_passant: Bitboard,
-    prev_castling_rights: CastlingRights,
-    prev_fifty_move_rule: u8,
+    pub captured_piece: Option<(Piece, Color)>,
+    pub prev_en_passant: Bitboard,
+    pub prev_castling_rights: CastlingRights,
+    pub prev_fifty_move_rule: u8,
 }
 
 impl State {
@@ -30,22 +30,6 @@ impl State {
             prev_castling_rights,
             prev_fifty_move_rule,
         }
-    }
-
-    pub fn captured_piece(&self) -> Option<(Piece, Color)> {
-        self.captured_piece
-    }
-
-    pub fn prev_en_passant(&self) -> Bitboard {
-        self.prev_en_passant
-    }
-
-    pub fn prev_castling_rights(&self) -> CastlingRights {
-        self.prev_castling_rights
-    }
-
-    pub fn prev_fifty_move_rule(&self) -> u8 {
-        self.prev_fifty_move_rule
     }
 }
 
@@ -69,6 +53,7 @@ impl ChessBoard {
         let mut position_history = ArrayVec::<u64, 200>::new();
         let player = Player::White;
         let castling_rights = CastlingRights::new();
+        let hasher = Zobrist::new();
         position_history.push(0);
 
         Self {
@@ -77,7 +62,7 @@ impl ChessBoard {
             castling_rights,
             player,
             pieces,
-            hasher: Zobrist::new(),
+            hasher,
             state_history,
             position_history,
             material_score: 0,
@@ -137,6 +122,7 @@ impl ChessBoard {
         }
 
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
+        chessboard.position_history.push(0);
 
         chessboard
     }
@@ -145,9 +131,11 @@ impl ChessBoard {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
+        let moving_piece = self.pieces.get_piece(from.square);
         let captured_piece = self.pieces.get_piece(to.square);
 
         // king must not be captured
+        debug_assert!(moving_piece.is_some());
         debug_assert!(!self.pieces.kings().get_square(to));
 
         if let Some((piece, color)) = captured_piece {
@@ -158,12 +146,13 @@ impl ChessBoard {
             }
         }
 
-        self.state_history.push(State::new(
+        let prev_state = State::new(
             captured_piece,
             self.pieces.en_passant(),
             self.castling_rights,
             self.fifty_move_rule,
-        ));
+        );
+        self.state_history.push(prev_state);
 
         self.fifty_move_rule += 1;
         if self.pieces.pawns().get_square(from) || self.pieces.all_pieces().get_square(to) {
@@ -176,7 +165,16 @@ impl ChessBoard {
         self.pieces.update(from, to);
         self.switch_player();
         self.move_history.push(r#move);
-        self.position_history.push(self.hasher.hash(&self));
+        let prev_hash = self.position_history.last().unwrap();
+        let new_hash = self.hasher.hash(
+            r#move,
+            moving_piece.unwrap(),
+            self.castling_rights,
+            self.pieces.en_passant(),
+            prev_state,
+            *prev_hash,
+        );
+        self.position_history.push(new_hash);
     }
 
     pub fn undo(&mut self) {
@@ -190,7 +188,7 @@ impl ChessBoard {
         }
 
         self.pieces.update(to, from);
-        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece() {
+        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece {
             self.pieces.set(piece, color, to.square);
             if color == Color::White {
                 self.material_score += piece.value();
@@ -201,17 +199,18 @@ impl ChessBoard {
         self.undo_castle(from, to);
         let state = self.state_history.last().unwrap();
 
-        if state.prev_en_passant().get_square(to) && self.pieces.pawns().get_square(from) {
+        if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
             let captured_square = Square::new(from.rank, to.file);
             self.pieces
                 .set(Piece::Pawn, self.player.to_color(), captured_square.square);
         }
 
-        self.pieces.set_en_passant(state.prev_en_passant());
-        self.castling_rights = state.prev_castling_rights();
-        self.fifty_move_rule = state.prev_fifty_move_rule();
+        self.pieces.set_en_passant(state.prev_en_passant);
+        self.castling_rights = state.prev_castling_rights;
+        self.fifty_move_rule = state.prev_fifty_move_rule;
         self.switch_player();
         self.state_history.pop();
+        self.position_history.pop();
     }
 
     pub fn pieces(&self) -> Pieces {
@@ -258,6 +257,10 @@ impl ChessBoard {
 
     pub fn move_history(&self) -> &[Move] {
         &self.move_history
+    }
+
+    pub fn position_hash(&self) -> Option<u64> {
+        self.position_history.last().copied()
     }
 
     pub fn score(&self) -> i32 {
@@ -377,6 +380,41 @@ impl fmt::Display for ChessBoard {
 #[cfg(test)]
 mod tests {
     use super::ChessBoard;
+    use crate::chess::Move;
+
+    #[test]
+    fn zobrist_basic() {
+        let mut board = ChessBoard::new();
+        board.act("e2e3".parse::<Move>().unwrap());
+        board.act("e7e6".parse::<Move>().unwrap());
+        let h1 = board.position_hash().unwrap();
+        board.act("g1f3".parse::<Move>().unwrap());
+        board.act("b8c6".parse::<Move>().unwrap());
+        board.act("f1d3".parse::<Move>().unwrap());
+        board.act("f8d6".parse::<Move>().unwrap());
+        board.act("f3g1".parse::<Move>().unwrap());
+        board.act("c6b8".parse::<Move>().unwrap());
+        board.act("d3f1".parse::<Move>().unwrap());
+        board.act("d6f8".parse::<Move>().unwrap());
+        let h2 = board.position_hash().unwrap();
+        assert_eq!(h1, h2, "incremental hash should equal full hash");
+    }
+
+    #[test]
+    fn zobrist_undo() {
+        let mut board = ChessBoard::new();
+        let hash_initial = board.position_hash().unwrap();
+        let r#move = "e2e4".parse::<Move>().unwrap();
+        board.act(r#move);
+        let hash_after = board.position_hash().unwrap();
+        board.undo();
+        let hash_restored = board.position_hash().unwrap();
+        assert_eq!(
+            hash_initial, hash_restored,
+            "undo should restore position hash"
+        );
+        assert_ne!(hash_initial, hash_after, "move should change hash");
+    }
 
     #[test]
     fn test_chessboard_to_string() {
