@@ -49,7 +49,7 @@ impl Engine {
             let mut empty_count = 0;
             for file in 0..8 {
                 let square = rank * 8 + file;
-                if let Some((piece, color)) = pieces.get_piece(square) {
+                if let Some((piece, color)) = pieces.get_piece(Square::from(square)) {
                     if empty_count > 0 {
                         fen.push_str(&empty_count.to_string());
                         empty_count = 0;
@@ -301,10 +301,7 @@ impl Engine {
 
         // is en passant legal?
         let mut en_passant_legal = false;
-        if pieces.pawns().get_square(from)
-            && !pieces.en_passant().empty()
-            && legal_moves.intersects(pieces.en_passant())
-        {
+        if pieces.pawns().get_square(from) && legal_moves.intersects(pieces.en_passant()) {
             let to = Square::from(pieces.en_passant());
             let r#move = Move::new(from, to, None);
             self.board.act(r#move);
@@ -512,6 +509,10 @@ impl Engine {
             // stalemate
             self.game_state = GameState::Draw;
         }
+    }
+
+    pub fn board(&self) -> &ChessBoard {
+        &self.board
     }
 
     pub fn to_board_string(&self) -> String {

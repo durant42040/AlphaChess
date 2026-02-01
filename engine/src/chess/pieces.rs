@@ -62,12 +62,12 @@ pub enum Piece {
 impl Piece {
     pub fn value(self) -> i32 {
         match self {
-            Piece::Pawn => 1,
-            Piece::Knight => 3,
-            Piece::Bishop => 3,
-            Piece::Rook => 5,
-            Piece::Queen => 9,
-            Piece::King => 0,
+            Piece::Pawn => 100,
+            Piece::Knight => 320,
+            Piece::Bishop => 330,
+            Piece::Rook => 500,
+            Piece::Queen => 900,
+            Piece::King => 10000,
         }
     }
 
@@ -232,24 +232,24 @@ impl Pieces {
     }
 
     /// Get the `(Piece, Color)` at index `i`, if any.
-    pub fn get_piece(&self, i: u8) -> Option<(Piece, Color)> {
-        let piece = if self.pawns.get(i) {
+    pub fn get_piece(&self, i: Square) -> Option<(Piece, Color)> {
+        let piece = if self.pawns.get_square(i) {
             Piece::Pawn
-        } else if self.knights.get(i) {
+        } else if self.knights.get_square(i) {
             Piece::Knight
-        } else if self.bishops.get(i) {
+        } else if self.bishops.get_square(i) {
             Piece::Bishop
-        } else if self.rooks.get(i) {
+        } else if self.rooks.get_square(i) {
             Piece::Rook
-        } else if self.queens.get(i) {
+        } else if self.queens.get_square(i) {
             Piece::Queen
-        } else if self.kings.get(i) {
+        } else if self.kings.get_square(i) {
             Piece::King
         } else {
             return None;
         };
 
-        let color = if self.white_pieces.get(i) {
+        let color = if self.white_pieces.get_square(i) {
             Color::White
         } else {
             Color::Black
@@ -259,7 +259,7 @@ impl Pieces {
 
     /// Convenience helper to get a FEN-style character for the board display.
     pub fn get_char(&self, i: u8) -> char {
-        if let Some((piece, color)) = self.get_piece(i) {
+        if let Some((piece, color)) = self.get_piece(Square::from(i)) {
             piece.to_char(color)
         } else {
             '.'

@@ -6,7 +6,7 @@ use crate::chess::chessboard::State;
 use crate::chess::{Bitboard, Color, Move, Piece};
 
 pub struct Zobrist {
-    piece: [[[u64; 64]; 6]; 2], // [color][piece][square]
+    piece: [[[u64; 64]; 6]; 2],
     color: u64,
     castling_rights: [u64; 16],
     en_passant: [u64; 64],

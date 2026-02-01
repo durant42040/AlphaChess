@@ -131,8 +131,8 @@ impl ChessBoard {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
-        let moving_piece = self.pieces.get_piece(from.square);
-        let captured_piece = self.pieces.get_piece(to.square);
+        let moving_piece = self.pieces.get_piece(from);
+        let captured_piece = self.pieces.get_piece(to);
 
         // king must not be captured
         debug_assert!(moving_piece.is_some());

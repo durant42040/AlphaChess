@@ -4,10 +4,12 @@ use std::cmp::max;
 
 pub use perft::Perft;
 
-use crate::chess::Move;
+use crate::chess::r#move::MoveList;
+use crate::chess::{Move, Piece};
 use crate::engine::{Engine, Evaluation};
 
 pub trait Search {
+    fn order_moves(&mut self, moves: &mut MoveList);
     fn max_search(&mut self, depth: u8) -> i32;
     fn minimax_search(&mut self, depth: u8) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
@@ -16,6 +18,24 @@ pub trait Search {
 }
 
 impl Search for Engine {
+    fn order_moves(&mut self, moves: &mut MoveList) {
+        let pieces = self.pieces();
+        moves.sort_by_key(|r#move| {
+            let is_en_passant =
+                pieces.pawns().get_square(r#move.from) && pieces.en_passant().get_square(r#move.to);
+            let is_capture = self.board().their_pieces().get_square(r#move.to);
+            let mut value = 0;
+            if is_capture {
+                debug_assert!(pieces.get_piece(r#move.to).is_some());
+                value = 7 * pieces.get_piece(r#move.to).unwrap().0.value()
+                    - pieces.get_piece(r#move.from).unwrap().0.value();
+            } else if is_en_passant {
+                value = 6 * Piece::Pawn.value();
+            }
+            (!is_capture && !is_en_passant, -value)
+        });
+    }
+
     /// Performs max search.
     fn max_search(&mut self, depth: u8) -> i32 {
         if depth == 0 {
@@ -25,7 +45,10 @@ impl Search for Engine {
 
         let mut score = i32::MIN;
 
-        for r#move in self.generate_all_legal_moves() {
+        let mut moves = self.generate_all_legal_moves();
+        self.order_moves(&mut moves);
+
+        for r#move in moves {
             self.act(r#move);
             score = max(score, self.max_search(depth - 1));
             self.undo();
@@ -42,8 +65,10 @@ impl Search for Engine {
         }
 
         let mut score = i32::MIN;
+        let mut moves = self.generate_all_legal_moves();
+        self.order_moves(&mut moves);
 
-        for r#move in self.generate_all_legal_moves() {
+        for r#move in moves {
             self.act(r#move);
             score = max(score, -self.minimax_search(depth - 1));
             self.undo();
@@ -61,7 +86,10 @@ impl Search for Engine {
             return self.eval();
         }
 
-        for r#move in self.generate_all_legal_moves() {
+        let mut moves = self.generate_all_legal_moves();
+        self.order_moves(&mut moves);
+
+        for r#move in moves {
             self.act(r#move);
             let score = self
                 .alpha_beta_search(depth - 1, beta.saturating_neg(), alpha.saturating_neg())
@@ -78,7 +106,8 @@ impl Search for Engine {
 
     fn best_move(&mut self) -> Move {
         let depth = 5;
-        let moves = self.generate_all_legal_moves();
+        let mut moves = self.generate_all_legal_moves();
+        self.order_moves(&mut moves);
 
         let mut best_move = moves[0];
         let mut best_score = i32::MIN;
