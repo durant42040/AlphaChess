@@ -23,16 +23,20 @@ pub trait Search {
 impl Search for Engine {
     fn order_moves(&mut self, moves: &mut MoveList) {
         let pieces = self.pieces();
+
         moves.sort_by_key(|r#move| {
             let is_en_passant =
                 pieces.pawns().get_square(r#move.from) && pieces.en_passant().get_square(r#move.to);
             let is_capture = self.board().their_pieces().get_square(r#move.to);
-            let mut value = 0;
-            if is_capture {
-                value = pieces.get_piece(r#move.to).unwrap().0.value()
+
+            let value = if is_capture {
+                pieces.get_piece(r#move.to).unwrap().0.value()
             } else if is_en_passant {
-                value = Piece::Pawn.value();
-            }
+                Piece::Pawn.value()
+            } else {
+                0
+            };
+
             (!is_capture && !is_en_passant, -value)
         });
     }
