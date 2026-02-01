@@ -1,6 +1,6 @@
 const base =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  (import.meta.env.DEV ? 'http://localhost:4000' : '');
+  (import.meta.env.DEV ? 'http://localhost:4000' : 'https://alphachess-server.onrender.com');
 
 function apiUrl(path: string): string {
   if (!base) return path;

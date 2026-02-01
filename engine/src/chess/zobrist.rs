@@ -27,8 +27,8 @@ impl Zobrist {
         }
     }
 
+    // TODO: Account for rook move in castling, promotion.
     /// Incremental update: new hash from prev_hash after making the given move.
-    /// TODO: Account for rook move in castling, promotion.
     pub fn hash(
         &self,
         r#move: Move,
