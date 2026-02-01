@@ -20,14 +20,14 @@ cargo run
 
 ## Architecture
 
-This is a full-stack web application for a chess game. The player will play against Stockfish with 20-depth search. The application consists of three services:
+This is a full-stack web application for a chess game. The player will play against the engine. The application consists of three services:
 
-* **Client**: Simple React App of a Chess game GUI, enables players to choose sides or let it be chosen randomly. The game supports drag and drop or clicking of pieces and sound effects for every move. The client-side connects to the backend via API calls with Rest.
-* **Server**: Rust web server using Axum that
-    1. Connects to Stockfish CLI to calculate the best move
-    2. Validates moves through the engine
-    3. Manages game state updates through the engine
-* **Engine**: provides fast move generation and updates the chessboard according to each move as well as checking for draws and checkmates, generates best move with alpha-beta search.
+* **Client**: Rust+Yew App of a Chess game GUI
+* **Server**: Rust web server using Axum
+* **Engine**:
+  * fast move generation using bitboards
+  * checks for draws and checkmates
+  * generates best move with alpha-beta search.
 
 ## Implementation
 
@@ -71,7 +71,7 @@ The engine is stored in `Arc<Mutex<Engine>>` so all handlers share one game.
 #### Structure
 
 * **`engine.rs`** — Main API: `new()`, `from_fen()`, `reset()`, `make_move()`, `act()`, `undo()`, `game_state()`, `to_board_string()`, `is_check()`, and evaluation/search helpers.
-* **`search/mod.rs`** — `Search` trait implemented for `Engine`: `max_search`, `minimax_search`, `alpha_beta_search`, `best_move()` (alpha-beta for AI).
+* **`search/mod.rs`** — `Search` trait implemented for `Engine`: `max_search`, `minimax_search`, `alpha_beta_search`, `best_move()`.
 * **`chess/chessboard.rs`** — Board representation, castling rights, move application and undo.
 * **`chess/move_generator.rs`** — Legal move generation for all piece types.
 * **`chess/move.rs`** — `Move` type (from/to squares, promotion).
