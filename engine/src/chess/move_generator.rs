@@ -128,7 +128,7 @@ impl MoveGenerator {
         let rank = from.rank as i32;
         let file = from.file as i32;
 
-        let mut moves = Bitboard::default();
+        let mut moves = Bitboard::zero();
         slide(&mut moves, all_pieces, rank, file, 1, 1);
         slide(&mut moves, all_pieces, rank, file, -1, 1);
         slide(&mut moves, all_pieces, rank, file, 1, -1);
@@ -139,7 +139,7 @@ impl MoveGenerator {
     fn generate_rook_moves_slow(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         let file = from.file as i32;
         let rank = from.rank as i32;
-        let mut moves = Bitboard::default();
+        let mut moves = Bitboard::zero();
         slide(&mut moves, all_pieces, rank, file, 1, 0);
         slide(&mut moves, all_pieces, rank, file, -1, 0);
         slide(&mut moves, all_pieces, rank, file, 0, 1);

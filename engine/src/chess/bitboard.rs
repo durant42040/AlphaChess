@@ -12,6 +12,10 @@ pub struct Bitboard {
 }
 
 impl Bitboard {
+    pub fn zero() -> Self {
+        Self { bitboard: 0 }
+    }
+
     pub fn get_square(&self, square: Square) -> bool {
         self.bitboard & (1 << square.square) != 0
     }
@@ -86,13 +90,13 @@ impl Bitboard {
     }
 
     fn init_between_table() -> [[Bitboard; 64]; 64] {
-        let mut table = [[Bitboard::default(); 64]; 64];
+        let mut table = [[Bitboard::zero(); 64]; 64];
 
         #[allow(clippy::needless_range_loop)]
         for sq1 in 0..64 {
             for sq2 in 0..64 {
                 if sq1 == sq2 {
-                    table[sq1][sq2] = Bitboard::default();
+                    table[sq1][sq2] = Bitboard::zero();
                     continue;
                 }
 
@@ -104,7 +108,7 @@ impl Bitboard {
                 let rank2 = s2.rank;
                 let file2 = s2.file;
 
-                let mut between = Bitboard::default();
+                let mut between = Bitboard::zero();
 
                 if rank1 == rank2 {
                     let start_file = file1.min(file2);
@@ -146,7 +150,7 @@ impl Bitboard {
     }
 
     fn init_ray_table() -> [[Bitboard; 64]; 64] {
-        let mut table = [[Bitboard::default(); 64]; 64];
+        let mut table = [[Bitboard::zero(); 64]; 64];
 
         #[allow(clippy::needless_range_loop)]
         for sq1 in 0..64 {
@@ -159,7 +163,7 @@ impl Bitboard {
                 let rank2 = s2.rank;
                 let file2 = s2.file;
 
-                let mut ray = Bitboard::default();
+                let mut ray = Bitboard::zero();
 
                 if rank1 == rank2 {
                     for file in 0..8 {
@@ -346,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let mut bitboard = Bitboard::default();
+        let mut bitboard = Bitboard::zero();
         let positions = [1, 4, 6, 7, 18, 43, 63];
 
         for &pos in &positions {
@@ -424,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_bitboard_to_square() {
-        let mut bb = Bitboard::default();
+        let mut bb = Bitboard::zero();
         bb.set(42);
         let sq: Square = bb.into();
         assert_eq!(sq.square, 42);

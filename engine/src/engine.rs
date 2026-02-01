@@ -158,7 +158,7 @@ impl Engine {
             pieces.black_pieces()
         };
 
-        let mut moves = Bitboard::default();
+        let mut moves = Bitboard::zero();
 
         if pieces.pawns().get_square(from) {
             if pieces.white_pieces().get_square(from) {
@@ -199,7 +199,7 @@ impl Engine {
 
     fn generate_castling_moves(&self, from: Square) -> Bitboard {
         let pieces = self.pieces();
-        let mut castling_moves = Bitboard::default();
+        let mut castling_moves = Bitboard::zero();
 
         match from.square {
             WHITE_KING_START => {
@@ -325,12 +325,12 @@ impl Engine {
         if self.is_check() {
             // if in double check, no legal non-king moves
             if self.attack_state.num_checks == 2 {
-                return Bitboard::default();
+                return Bitboard::zero();
             }
 
             // pinned pieces cannot resolve check
             if self.attack_state.pinned_pieces.get_square(from) {
-                return Bitboard::default();
+                return Bitboard::zero();
             }
 
             // if not double check, non-king move must block the check or capture
@@ -374,8 +374,28 @@ impl Engine {
         all_legal_moves
     }
 
-    pub fn game_state(&self) -> GameState {
-        self.game_state
+    fn is_legal_move(&mut self, r#move: Move) -> bool {
+        let from = r#move.from;
+        let to = r#move.to;
+
+        // move from our pieces
+        if !self.board.our_pieces().get_square(from) {
+            return false;
+        }
+
+        let is_pawn = self.pieces().pawns().get_square(from);
+
+        // promotion from non-pawn piece is illegal
+        if !is_pawn && r#move.promotion.is_some() {
+            return false;
+        }
+
+        // non-promotion move to promotion square is illegal
+        if is_pawn && (to.rank == 7 || to.rank == 0) && r#move.promotion.is_none() {
+            return false;
+        }
+
+        self.generate_legal_moves(from).get_square(to)
     }
 
     /// Checks if the given square is under attack by the opponent.
@@ -416,32 +436,55 @@ impl Engine {
             })
     }
 
+    pub fn update_attack_state(&mut self) {
+        let mut pinned_pieces = Bitboard::zero();
+        let pieces = self.pieces();
+        let our_pieces = self.board.our_pieces();
+        let their_pieces = self.board.their_pieces();
+        let our_king = Square::from(our_pieces & pieces.kings());
+
+        let rook_rays = self
+            .move_generator
+            .generate_rook_moves(our_king, Bitboard::zero());
+        let bishop_rays = self
+            .move_generator
+            .generate_bishop_moves(our_king, Bitboard::zero());
+
+        let mut snipers = their_pieces
+            & ((pieces.queens() | pieces.rooks()) & rook_rays
+                | (pieces.queens() | pieces.bishops()) & bishop_rays);
+
+        let mut attack_lines = Bitboard::zero();
+        while !snipers.empty() {
+            let sniper = snipers.pop_lsb();
+            let blockers = pieces.all_pieces() & Bitboard::between(Square::from(sniper), our_king);
+            if blockers.count() == 1 && our_pieces.intersects(blockers) {
+                pinned_pieces |= blockers;
+            } else if blockers.count() == 0 {
+                // If no blockers, this is a check from a sliding piece
+                attack_lines |= Bitboard::between(Square::from(sniper), our_king);
+            }
+        }
+
+        let attackers =
+            self.generate_attacks(our_king, pieces.all_pieces(), self.board.player().into());
+        let num_checks = attackers.count();
+        debug_assert!(num_checks <= 2);
+
+        self.attack_state = AttackState {
+            attackers,
+            num_checks,
+            pinned_pieces,
+            attack_lines,
+        };
+    }
+
     pub fn is_check(&self) -> bool {
         self.attack_state.num_checks > 0
     }
 
-    fn is_legal_move(&mut self, r#move: Move) -> bool {
-        let from = r#move.from;
-        let to = r#move.to;
-
-        // move from our pieces
-        if !self.board.our_pieces().get_square(from) {
-            return false;
-        }
-
-        let is_pawn = self.pieces().pawns().get_square(from);
-
-        // promotion from non-pawn piece is illegal
-        if !is_pawn && r#move.promotion.is_some() {
-            return false;
-        }
-
-        // non-promotion move to promotion square is illegal
-        if is_pawn && (to.rank == 7 || to.rank == 0) && r#move.promotion.is_none() {
-            return false;
-        }
-
-        self.generate_legal_moves(from).get_square(to)
+    pub fn game_state(&self) -> GameState {
+        self.game_state
     }
 
     pub fn update_game_state(&mut self) {
@@ -480,49 +523,6 @@ impl Engine {
         }
 
         board_str
-    }
-
-    pub fn update_attack_state(&mut self) {
-        let mut pinned_pieces = Bitboard::default();
-        let pieces = self.pieces();
-        let our_pieces = self.board.our_pieces();
-        let their_pieces = self.board.their_pieces();
-        let our_king = Square::from(our_pieces & pieces.kings());
-
-        let rook_rays = self
-            .move_generator
-            .generate_rook_moves(our_king, Bitboard::default());
-        let bishop_rays = self
-            .move_generator
-            .generate_bishop_moves(our_king, Bitboard::default());
-
-        let mut snipers = their_pieces
-            & ((pieces.queens() | pieces.rooks()) & rook_rays
-                | (pieces.queens() | pieces.bishops()) & bishop_rays);
-
-        let mut attack_lines = Bitboard::default();
-        while !snipers.empty() {
-            let sniper = snipers.pop_lsb();
-            let blockers = pieces.all_pieces() & Bitboard::between(Square::from(sniper), our_king);
-            if blockers.count() == 1 && our_pieces.intersects(blockers) {
-                pinned_pieces |= blockers;
-            } else if blockers.count() == 0 {
-                // If no blockers, this is a check from a sliding piece
-                attack_lines |= Bitboard::between(Square::from(sniper), our_king);
-            }
-        }
-
-        let attackers =
-            self.generate_attacks(our_king, pieces.all_pieces(), self.board.player().into());
-        let num_checks = attackers.count();
-        debug_assert!(num_checks <= 2);
-
-        self.attack_state = AttackState {
-            attackers,
-            num_checks,
-            pinned_pieces,
-            attack_lines,
-        };
     }
 }
 
