@@ -6,6 +6,7 @@ use crate::chess::castling::CastlingRights;
 use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Color, Piece, Pieces};
+use crate::chess::zobrist::Zobrist;
 use crate::chess::{Bitboard, Move, Player, Square};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -55,7 +56,9 @@ pub struct ChessBoard {
     castling_rights: CastlingRights,
     player: Player,
     pieces: Pieces,
+    hasher: Zobrist,
     state_history: ArrayVec<State, 200>,
+    position_history: ArrayVec<u64, 200>,
     material_score: i32,
 }
 
@@ -63,8 +66,10 @@ impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
         let state_history = ArrayVec::<State, 200>::new();
+        let mut position_history = ArrayVec::<u64, 200>::new();
         let player = Player::White;
         let castling_rights = CastlingRights::new();
+        position_history.push(0);
 
         Self {
             move_history: MoveList::new(),
@@ -72,7 +77,9 @@ impl ChessBoard {
             castling_rights,
             player,
             pieces,
+            hasher: Zobrist::new(),
             state_history,
+            position_history,
             material_score: 0,
         }
     }
@@ -169,6 +176,7 @@ impl ChessBoard {
         self.pieces.update(from, to);
         self.switch_player();
         self.move_history.push(r#move);
+        self.position_history.push(self.hasher.hash(&self));
     }
 
     pub fn undo(&mut self) {
