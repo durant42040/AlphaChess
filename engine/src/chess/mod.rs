@@ -8,6 +8,7 @@ pub mod r#move;
 pub mod move_generator;
 pub mod pieces;
 pub mod square;
+pub mod zobrist;
 
 pub use attack::AttackState;
 pub use bitboard::Bitboard;

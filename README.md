@@ -8,8 +8,7 @@ A chess engine who is better than dhgf.
 
 ```bash
 cd client
-npm install
-npm run dev
+trunk serve
 ```
 
 **Server**

@@ -39,6 +39,15 @@ impl Color {
     }
 }
 
+impl From<Color> for usize {
+    fn from(color: Color) -> Self {
+        match color {
+            Color::White => 0,
+            Color::Black => 1,
+        }
+    }
+}
+
 /// Represents the type of a chess piece (color is handled separately).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Piece {
