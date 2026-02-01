@@ -469,13 +469,13 @@ mod tests {
     }
 
     #[test]
-    fn three_fold_repetition() {
+    fn test_draw_by_repetition() {
         let mut board = ChessBoard::new();
         let moves = [
             "g1f3", "b8c6", "f3g1", "c6b8", "g1f3", "b8c6", "f3g1", "c6b8",
         ];
-        for m in &moves {
-            board.act(m.parse::<Move>().unwrap());
+        for r#move in &moves {
+            board.act(r#move.parse::<Move>().unwrap());
         }
         assert!(
             board.repetition_count() >= 2,

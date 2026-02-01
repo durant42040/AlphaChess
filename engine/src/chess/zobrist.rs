@@ -14,7 +14,7 @@ pub struct Zobrist {
 
 impl Zobrist {
     pub fn new() -> Self {
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = StdRng::seed_from_u64(67);
 
         let piece =
             std::array::from_fn(|_| std::array::from_fn(|_| std::array::from_fn(|_| rng.random())));
@@ -42,7 +42,7 @@ impl Zobrist {
         hash ^= self.piece[moving_piece.1 as usize][moving_piece.0 as usize]
             [r#move.from.square as usize];
 
-        if let Some((captured_color, captured_piece)) = prev_state.captured_piece {
+        if let Some((captured_piece, captured_color)) = prev_state.captured_piece {
             hash ^= self.piece[captured_color as usize][captured_piece as usize]
                 [r#move.to.square as usize];
         }
