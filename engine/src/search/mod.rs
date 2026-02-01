@@ -4,8 +4,8 @@ use std::cmp::max;
 
 pub use perft::Perft;
 
+use crate::chess::Move;
 use crate::chess::r#move::MoveList;
-use crate::chess::{Move, Piece};
 use crate::engine::{Engine, Evaluation};
 
 pub trait Search {
@@ -26,7 +26,6 @@ impl Search for Engine {
             let is_capture = self.board().their_pieces().get_square(r#move.to);
             let mut value = 0;
             if is_capture || is_en_passant {
-                debug_assert!(pieces.get_piece(r#move.to).is_some());
                 value = pieces.get_piece(r#move.to).unwrap().0.value()
             } else if self.is_square_under_attack(r#move.to) {
                 value = -pieces.get_piece(r#move.from).unwrap().0.value();
