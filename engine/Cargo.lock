@@ -203,6 +203,7 @@ dependencies = [
  "arrayvec",
  "criterion",
  "rand",
+ "rayon",
 ]
 
 [[package]]

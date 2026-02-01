@@ -2,10 +2,12 @@ pub mod perft;
 
 use std::cmp::max;
 
+use rayon::prelude::*;
+
 pub use perft::Perft;
 
-use crate::chess::Move;
 use crate::chess::r#move::MoveList;
+use crate::chess::{Move, Piece};
 use crate::engine::{Engine, Evaluation};
 
 pub trait Search {
@@ -13,7 +15,8 @@ pub trait Search {
     fn max_search(&mut self, depth: u8) -> i32;
     fn minimax_search(&mut self, depth: u8) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
-    /// Returns the best move for the current player using alpha-beta search, or None if no legal moves.
+    fn best_move_without_ordering(&mut self) -> Move;
+    fn best_move_without_parallelism(&mut self) -> Move;
     fn best_move(&mut self) -> Move;
 }
 
@@ -25,10 +28,10 @@ impl Search for Engine {
                 pieces.pawns().get_square(r#move.from) && pieces.en_passant().get_square(r#move.to);
             let is_capture = self.board().their_pieces().get_square(r#move.to);
             let mut value = 0;
-            if is_capture || is_en_passant {
+            if is_capture {
                 value = pieces.get_piece(r#move.to).unwrap().0.value()
-            } else if self.is_square_under_attack(r#move.to) {
-                value = -pieces.get_piece(r#move.from).unwrap().0.value();
+            } else if is_en_passant {
+                value = Piece::Pawn.value();
             }
             (!is_capture && !is_en_passant, -value)
         });
@@ -102,7 +105,31 @@ impl Search for Engine {
         alpha
     }
 
-    fn best_move(&mut self) -> Move {
+    fn best_move_without_ordering(&mut self) -> Move {
+        let depth = 5;
+        let moves = self.generate_all_legal_moves();
+
+        let mut best_move = moves[0];
+        let mut best_score = i32::MIN;
+
+        let alpha = i32::MAX.saturating_neg();
+        let beta = i32::MIN.saturating_neg();
+
+        for r#move in moves {
+            self.act(r#move);
+            let score = self
+                .alpha_beta_search(depth - 1, alpha, beta)
+                .saturating_neg();
+            self.undo();
+            if score > best_score {
+                best_score = score;
+                best_move = r#move;
+            }
+        }
+        best_move
+    }
+
+    fn best_move_without_parallelism(&mut self) -> Move {
         let depth = 5;
         let mut moves = self.generate_all_legal_moves();
         self.order_moves(&mut moves);
@@ -124,6 +151,32 @@ impl Search for Engine {
                 best_move = r#move;
             }
         }
+        best_move
+    }
+
+    fn best_move(&mut self) -> Move {
+        let depth = 5;
+        let mut moves = self.generate_all_legal_moves();
+        self.order_moves(&mut moves);
+
+        let alpha = i32::MAX.saturating_neg();
+        let beta = i32::MIN.saturating_neg();
+
+        let engine_snapshot = self.clone();
+
+        let (best_move, _best_score) = moves
+            .par_iter()
+            .map(|&r#move| {
+                let mut eng = engine_snapshot.clone();
+                eng.act(r#move);
+                let score = eng
+                    .alpha_beta_search(depth - 1, alpha, beta)
+                    .saturating_neg();
+                (r#move, score)
+            })
+            .max_by_key(|&(_, score)| score)
+            .expect("at least one legal move");
+
         best_move
     }
 }

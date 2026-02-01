@@ -36,6 +36,7 @@ fn slide(moves: &mut Bitboard, all_pieces: Bitboard, mut i: i32, mut j: i32, di:
     }
 }
 
+#[derive(Clone)]
 pub struct MoveGenerator {
     rook: Vec<Vec<u64>>,
     bishop: Vec<Vec<u64>>,

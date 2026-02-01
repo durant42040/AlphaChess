@@ -7,6 +7,7 @@ use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Color, Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
 
+#[derive(Clone)]
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,

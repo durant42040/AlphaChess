@@ -5,6 +5,7 @@ use crate::chess::castling::CastlingRights;
 use crate::chess::chessboard::State;
 use crate::chess::{Bitboard, Color, Move, Piece};
 
+#[derive(Clone)]
 pub struct Zobrist {
     piece: [[[u64; 64]; 6]; 2],
     color: u64,
