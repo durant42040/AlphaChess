@@ -371,7 +371,7 @@ impl Engine {
         all_legal_moves
     }
 
-    fn is_legal_move(&mut self, r#move: Move) -> bool {
+    pub fn is_legal_move(&mut self, r#move: Move) -> bool {
         let from = r#move.from;
         let to = r#move.to;
 
@@ -396,12 +396,12 @@ impl Engine {
     }
 
     /// Checks if the given square is under attack by the opponent.
-    fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
+    pub fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
         self.generate_attacks(square, all_pieces, color).count() > 0
     }
 
     /// Checks if the given square is under attack by the opponent in the current position.
-    fn is_square_under_attack(&self, square: Square) -> bool {
+    pub fn is_square_under_attack(&self, square: Square) -> bool {
         let pieces = self.pieces();
         self.is_under_attack(square, pieces.all_pieces(), self.board.player().into())
     }
