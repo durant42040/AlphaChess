@@ -8,7 +8,8 @@ A chess engine who is better than dhgf.
 
 ```bash
 cd client
-trunk serve
+npm install
+npm run dev
 ```
 
 **Server**
@@ -22,7 +23,7 @@ cargo run
 
 This is a full-stack web application for a chess game. The player will play against the engine. The application consists of three services:
 
-* **Client**: Rust+Yew App of a Chess game GUI
+* **Client**: React App of a Chess game GUI
 * **Server**: Rust web server using Axum
 * **Engine**:
   * fast move generation using bitboards

@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AlphaChess</title>
-    <link data-trunk rel="css" href="index.css"/>
-    <link data-trunk rel="copy-dir" href="assets"/>
-</head>
-<body>
-    <div id="app"></div>
-    <link data-trunk rel="rust" data-wasm-opt="z"/>
-</body>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

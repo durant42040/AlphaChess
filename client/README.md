@@ -1,29 +1,29 @@
-# AlphaChess client (Rust / Yew)
+# AlphaChess client (React / Vite)
 
-Web client for AlphaChess, built with Yew and compiled to WASM. Uses the local engine crate for game state and [stockfish.js](https://github.com/lichess-org/stockfish.js) (Web Worker) for AI move generation—no server required.
+Web client for AlphaChess, built with React 18 and TypeScript (Vite). Talks to the AlphaChess server for game state and engine moves.
 
 ## Prerequisites
 
-- [Rust](https://rustup.rs/) (stable)
-- [Trunk](https://trunkrs.dev/): `cargo install trunk`
-- wasm32 target: `rustup target add wasm32-unknown-unknown`
+- Node.js 18+
+- npm or pnpm
 
 ## Build and run
 
 ```bash
-# Development (with reload)
-trunk serve
+# Install dependencies
+npm install
 
-# Release build
-trunk build --release
+# Development (with hot reload)
+npm run dev
+
+# Production build
+npm run build
 ```
 
-Output is in `dist/`.
+The dev server runs on port 5173 by default. The API is proxied to `http://localhost:4000` in development. For production, set `VITE_API_BASE_URL` to your server URL (e.g. `https://api.example.com`) so the client can reach the API.
 
-## Stockfish (AI)
-
-The AI uses [lichess-org/stockfish.js](https://github.com/lichess-org/stockfish.js). The bridge tries to load the worker from the release; if that fails (e.g. CORS), it falls back to `/stockfish.js` or `/stockfish.wasm.js` in your dist. To use the local fallback, download the matching file from [releases](https://github.com/lichess-org/stockfish.js/releases) (e.g. `ddugovic-250718`) and place it in `dist/`.
+**Note:** The server must be running (e.g. `cd server && cargo run`) for the game to work.
 
 ## Assets
 
-SVGs and sounds are in `assets/` and are copied into `dist/` by Trunk.
+Piece SVGs and sound MP3s live in `public/assets/` and are served at `/assets/...`.
