@@ -41,16 +41,16 @@ pub struct ChessBoard {
     player: Player,
     pieces: Pieces,
     hasher: Zobrist,
-    state_history: ArrayVec<State, 200>,
-    position_history: ArrayVec<u64, 200>,
+    state_history: ArrayVec<State, 8192>,
+    position_history: ArrayVec<u64, 8192>,
     material_score: i32,
 }
 
 impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
-        let state_history = ArrayVec::<State, 200>::new();
-        let mut position_history = ArrayVec::<u64, 200>::new();
+        let state_history = ArrayVec::<State, 8192>::new();
+        let mut position_history = ArrayVec::<u64, 8192>::new();
         let player = Player::White;
         let castling_rights = CastlingRights::new();
         let hasher = Zobrist::new();
@@ -243,7 +243,7 @@ impl ChessBoard {
 
     pub fn is_draw(&self) -> bool {
         !self.pieces.has_mating_material()
-            || self.fifty_move_rule == 100
+            || self.fifty_move_rule >= 100
             || self.repetition_count() >= 2
     }
 
@@ -252,7 +252,30 @@ impl ChessBoard {
     }
 
     pub fn repetition_count(&self) -> u8 {
-        0
+        if self.position_history.len() <= 2 {
+            return 0;
+        }
+
+        let hash = self.position_hash().unwrap();
+        let mut count = 0;
+
+        let len = self.position_history.len();
+        let fifty_move = self.fifty_move_rule as usize;
+
+        let start = len.saturating_sub(1 + fifty_move);
+
+        let mut i = len.saturating_sub(3);
+        while i >= start {
+            if self.position_history[i] == hash {
+                count += 1;
+            }
+            if i < 2 {
+                break;
+            }
+            i -= 2;
+        }
+
+        count
     }
 
     pub fn move_history(&self) -> &[Move] {
@@ -443,5 +466,21 @@ mod tests {
         let new_board = ChessBoard::new();
 
         assert_eq!(board_from_fen.pieces(), new_board.pieces());
+    }
+
+    #[test]
+    fn three_fold_repetition() {
+        let mut board = ChessBoard::new();
+        let moves = [
+            "g1f3", "b8c6", "f3g1", "c6b8", "g1f3", "b8c6", "f3g1", "c6b8",
+        ];
+        for m in &moves {
+            board.act(m.parse::<Move>().unwrap());
+        }
+        assert!(
+            board.repetition_count() >= 2,
+            "initial position occurred three times"
+        );
+        assert!(board.is_draw(), "three-fold repetition is a draw");
     }
 }

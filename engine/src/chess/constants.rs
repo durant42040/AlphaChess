@@ -577,4 +577,5 @@ pub const WHITE_QUEENSIDE_ROOK_CASTLE_TO: u8 = 3;
 pub const BLACK_KINGSIDE_ROOK_CASTLE_TO: u8 = 61;
 pub const BLACK_QUEENSIDE_ROOK_CASTLE_TO: u8 = 59;
 
-pub const MAX_LEGAL_MOVES: usize = 218;
+//
+pub const MAX_LEGAL_MOVES: usize = 256;
