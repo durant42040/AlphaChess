@@ -46,9 +46,11 @@ export default function App() {
   const pollGame = useCallback(
     (
       boardBeforeEngine?: (Piece | null)[][],
-      sideToMove?: 'w' | 'b'
+      sideToMove?: 'w' | 'b',
+      player?: 'w' | 'b'
     ) => {
       const sideNow = sideToMove ?? side;
+      const human = player ?? game;
       api
         .gameState()
         .then((gameState) => {
@@ -62,8 +64,8 @@ export default function App() {
             return;
           }
           setGameOver('No');
-          if (game === null) return;
-          if (sideNow === game) return;
+          if (human === null) return;
+          if (sideNow === human) return;
           setTimeout(() => {
             const boardBefore =
               boardBeforeEngine ?? board.map((row) => row.map((p) => p));
@@ -84,7 +86,7 @@ export default function App() {
                 else if (wasCapture) play('capture');
                 else play('move');
                 const nextSide: 'w' | 'b' = sideNow === 'w' ? 'b' : 'w';
-                pollGame(toBoard(r.board), nextSide);
+                pollGame(toBoard(r.board), nextSide, human);
               })
               .catch((e) => console.error('generate failed:', e));
           }, 100);
@@ -102,7 +104,7 @@ export default function App() {
       resetBoard();
       api
         .reset()
-        .then(() => pollGame())
+        .then(() => pollGame(undefined, 'w', chosen))
         .catch((e) => console.error('reset failed:', e));
     },
     [resetBoard, pollGame]
@@ -177,11 +179,12 @@ export default function App() {
   const handleRematch = useCallback(() => {
     setGame((g) => (g === 'w' ? 'b' : 'w'));
     resetBoard();
+    const nextPlayer = game === 'w' ? 'b' : 'w';
     api
       .reset()
-      .then(() => pollGame())
+      .then(() => pollGame(undefined, 'w', nextPlayer))
       .catch((e) => console.error('reset failed:', e));
-  }, [resetBoard, pollGame]);
+  }, [resetBoard, pollGame, game]);
 
   const handleUndo = useCallback(() => {
     api

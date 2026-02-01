@@ -92,6 +92,7 @@ async fn undo_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json
 async fn reset(State(state): State<Arc<Mutex<Engine>>>) -> StatusCode {
     let mut engine = state.lock().await;
     engine.reset();
+    println!("{}", engine);
     StatusCode::OK
 }
 
