@@ -35,11 +35,10 @@ impl TranspositionTable {
             return None;
         }
 
-        if entry.flag == Flag::Exact {
-            return Some(entry.score);
-        } else if entry.flag == Flag::Upper && entry.score <= alpha {
-            return Some(entry.score);
-        } else if entry.flag == Flag::Lower && entry.score >= beta {
+        if entry.flag == Flag::Exact
+            || (entry.flag == Flag::Upper && entry.score <= alpha)
+            || (entry.flag == Flag::Lower && entry.score >= beta)
+        {
             return Some(entry.score);
         }
 
