@@ -1,22 +1,23 @@
 pub mod perft;
+pub mod transposition;
 
 use std::cmp::max;
 
 use rayon::prelude::*;
 
 pub use perft::Perft;
+pub use transposition::TranspositionTable;
 
 use crate::chess::r#move::MoveList;
 use crate::chess::{Move, Piece};
-use crate::engine::{Engine, Evaluation};
+use crate::search::transposition::Flag;
+use crate::{Engine, Evaluation};
 
 pub trait Search {
     fn order_moves(&mut self, moves: &mut MoveList);
     fn max_search(&mut self, depth: u8) -> i32;
     fn minimax_search(&mut self, depth: u8) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
-    fn best_move_without_ordering(&mut self) -> Move;
-    fn best_move_without_parallelism(&mut self) -> Move;
     fn best_move(&mut self) -> Move;
 }
 
@@ -27,7 +28,7 @@ impl Search for Engine {
         moves.sort_by_key(|r#move| {
             let is_en_passant =
                 pieces.pawns().get_square(r#move.from) && pieces.en_passant().get_square(r#move.to);
-            let is_capture = self.board().their_pieces().get_square(r#move.to);
+            let is_capture = self.board.their_pieces().get_square(r#move.to);
 
             let value = if is_capture {
                 pieces.get_piece(r#move.to).unwrap().0.value()
@@ -87,6 +88,12 @@ impl Search for Engine {
     /// - `alpha`: minimum score for the maximizing player
     /// - `beta`: maximum score for the minimizing player
     fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
+        let alpha_orig = alpha;
+        let hash = self.board.position_hash();
+        if let Some(score) = self.transposition_table.probe(hash, depth, alpha, beta) {
+            return score;
+        }
+
         if depth == 0 {
             return self.eval();
         }
@@ -106,56 +113,16 @@ impl Search for Engine {
             alpha = max(alpha, score);
         }
 
+        let flag = if alpha <= alpha_orig {
+            Flag::Upper
+        } else if alpha >= beta {
+            Flag::Lower
+        } else {
+            Flag::Exact
+        };
+        self.transposition_table.store(hash, depth, alpha, flag);
+
         alpha
-    }
-
-    fn best_move_without_ordering(&mut self) -> Move {
-        let depth = 5;
-        let moves = self.generate_all_legal_moves();
-
-        let mut best_move = moves[0];
-        let mut best_score = i32::MIN;
-
-        let alpha = i32::MAX.saturating_neg();
-        let beta = i32::MIN.saturating_neg();
-
-        for r#move in moves {
-            self.act(r#move);
-            let score = self
-                .alpha_beta_search(depth - 1, alpha, beta)
-                .saturating_neg();
-            self.undo();
-            if score > best_score {
-                best_score = score;
-                best_move = r#move;
-            }
-        }
-        best_move
-    }
-
-    fn best_move_without_parallelism(&mut self) -> Move {
-        let depth = 5;
-        let mut moves = self.generate_all_legal_moves();
-        self.order_moves(&mut moves);
-
-        let mut best_move = moves[0];
-        let mut best_score = i32::MIN;
-
-        let alpha = i32::MAX.saturating_neg();
-        let beta = i32::MIN.saturating_neg();
-
-        for r#move in moves {
-            self.act(r#move);
-            let score = self
-                .alpha_beta_search(depth - 1, alpha, beta)
-                .saturating_neg();
-            self.undo();
-            if score > best_score {
-                best_score = score;
-                best_move = r#move;
-            }
-        }
-        best_move
     }
 
     fn best_move(&mut self) -> Move {

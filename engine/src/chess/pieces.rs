@@ -126,7 +126,6 @@ impl Piece {
             Piece::Rook => 'r',
             Piece::Bishop => 'b',
             Piece::Knight => 'n',
-            // Pawns and kings are never used as promotion pieces.
             Piece::Pawn | Piece::King => ' ',
         }
     }

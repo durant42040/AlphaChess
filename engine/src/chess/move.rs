@@ -27,6 +27,10 @@ impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.from, self.to)?;
         if let Some(p) = self.promotion {
+            debug_assert!(
+                p != Piece::Pawn && p != Piece::King,
+                "Pawn and king cannot be promoted"
+            );
             write!(f, "{}", p.to_promotion_char())?;
         }
         Ok(())

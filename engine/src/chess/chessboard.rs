@@ -256,7 +256,7 @@ impl ChessBoard {
             return 0;
         }
 
-        let hash = self.position_hash().unwrap();
+        let hash = self.position_hash();
         let mut count = 0;
 
         let len = self.position_history.len();
@@ -282,8 +282,9 @@ impl ChessBoard {
         &self.move_history
     }
 
-    pub fn position_hash(&self) -> Option<u64> {
-        self.position_history.last().copied()
+    pub fn position_hash(&self) -> u64 {
+        debug_assert!(!self.position_history.is_empty());
+        self.position_history.last().copied().unwrap()
     }
 
     pub fn score(&self) -> i32 {
@@ -410,7 +411,7 @@ mod tests {
         let mut board = ChessBoard::new();
         board.act("e2e3".parse::<Move>().unwrap());
         board.act("e7e6".parse::<Move>().unwrap());
-        let h1 = board.position_hash().unwrap();
+        let h1 = board.position_hash();
         board.act("g1f3".parse::<Move>().unwrap());
         board.act("b8c6".parse::<Move>().unwrap());
         board.act("f1d3".parse::<Move>().unwrap());
@@ -419,19 +420,19 @@ mod tests {
         board.act("c6b8".parse::<Move>().unwrap());
         board.act("d3f1".parse::<Move>().unwrap());
         board.act("d6f8".parse::<Move>().unwrap());
-        let h2 = board.position_hash().unwrap();
+        let h2 = board.position_hash();
         assert_eq!(h1, h2, "incremental hash should equal full hash");
     }
 
     #[test]
     fn zobrist_undo() {
         let mut board = ChessBoard::new();
-        let hash_initial = board.position_hash().unwrap();
+        let hash_initial = board.position_hash();
         let r#move = "e2e4".parse::<Move>().unwrap();
         board.act(r#move);
-        let hash_after = board.position_hash().unwrap();
+        let hash_after = board.position_hash();
         board.undo();
-        let hash_restored = board.position_hash().unwrap();
+        let hash_restored = board.position_hash();
         assert_eq!(
             hash_initial, hash_restored,
             "undo should restore position hash"
