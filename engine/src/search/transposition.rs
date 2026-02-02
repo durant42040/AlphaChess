@@ -51,6 +51,12 @@ impl TranspositionTable {
     }
 }
 
+impl Default for TranspositionTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Entry {
     pub fn new(hash: u64, depth: u8, score: i32, flag: Flag) -> Self {
         Self {
