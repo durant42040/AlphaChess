@@ -3,7 +3,8 @@ use rand::{Rng, SeedableRng};
 
 use crate::chess::castling::CastlingRights;
 use crate::chess::chessboard::State;
-use crate::chess::{Bitboard, Color, Move, Piece};
+use crate::chess::pieces::Pieces;
+use crate::chess::{Bitboard, Color, Move, Piece, Player, Square};
 
 #[derive(Clone)]
 pub struct Zobrist {
@@ -26,6 +27,31 @@ impl Zobrist {
             castling_rights: std::array::from_fn(|_| rng.random()),
             en_passant: std::array::from_fn(|_| rng.random()),
         }
+    }
+
+    /// Full hash of a position from piece placement, side to move, castling rights, and en passant.
+    pub fn full_hash(
+        &self,
+        pieces: &Pieces,
+        player: Player,
+        castling_rights: CastlingRights,
+        en_passant: Bitboard,
+    ) -> u64 {
+        let mut hash = 0u64;
+        for sq in 0..64u8 {
+            let square = Square::from(sq);
+            if let Some((piece, color)) = pieces.get_piece(square) {
+                hash ^= self.piece[color as usize][piece as usize][sq as usize];
+            }
+        }
+        if player == Player::Black {
+            hash ^= self.color;
+        }
+        hash ^= self.castling_rights[castling_rights.get() as usize];
+        if !en_passant.empty() {
+            hash ^= self.en_passant[en_passant.get_lsb() as usize];
+        }
+        hash
     }
 
     // TODO: Account for rook move in castling, promotion.

@@ -1,7 +1,5 @@
 use std::fmt;
 
-use arrayvec::ArrayVec;
-
 use crate::chess::castling::CastlingRights;
 use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
@@ -41,20 +39,25 @@ pub struct ChessBoard {
     player: Player,
     pieces: Pieces,
     hasher: Zobrist,
-    state_history: ArrayVec<State, 8192>,
-    position_history: ArrayVec<u64, 8192>,
+    state_history: Vec<State>,
+    position_history: Vec<u64>,
     material_score: i32,
 }
 
 impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
-        let state_history = ArrayVec::<State, 8192>::new();
-        let mut position_history = ArrayVec::<u64, 8192>::new();
+        let state_history = Vec::with_capacity(8192);
+        let mut position_history = Vec::with_capacity(8192);
         let player = Player::White;
         let castling_rights = CastlingRights::new();
         let hasher = Zobrist::new();
-        position_history.push(0);
+        position_history.push(hasher.full_hash(
+            &pieces,
+            player,
+            castling_rights,
+            pieces.en_passant(),
+        ));
 
         Self {
             move_history: MoveList::new(),
@@ -122,7 +125,14 @@ impl ChessBoard {
         }
 
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
-        chessboard.position_history.push(0);
+        chessboard
+            .position_history
+            .push(chessboard.hasher.full_hash(
+                &chessboard.pieces,
+                chessboard.player,
+                chessboard.castling_rights,
+                chessboard.pieces.en_passant(),
+            ));
 
         chessboard
     }
@@ -411,7 +421,17 @@ mod tests {
         let mut board = ChessBoard::new();
         board.act("e2e3".parse::<Move>().unwrap());
         board.act("e7e6".parse::<Move>().unwrap());
-        let h1 = board.position_hash();
+        let incr_hash_1 = board.position_hash();
+        let full_hash_1 = board.hasher.full_hash(
+            &board.pieces(),
+            board.player(),
+            board.castling_rights,
+            board.pieces.en_passant(),
+        );
+        assert_eq!(
+            incr_hash_1, full_hash_1,
+            "incremental hash should equal full hash"
+        );
         board.act("g1f3".parse::<Move>().unwrap());
         board.act("b8c6".parse::<Move>().unwrap());
         board.act("f1d3".parse::<Move>().unwrap());
@@ -420,8 +440,18 @@ mod tests {
         board.act("c6b8".parse::<Move>().unwrap());
         board.act("d3f1".parse::<Move>().unwrap());
         board.act("d6f8".parse::<Move>().unwrap());
-        let h2 = board.position_hash();
-        assert_eq!(h1, h2, "incremental hash should equal full hash");
+        let incr_hash_2 = board.position_hash();
+        let full_hash_2 = board.hasher.full_hash(
+            &board.pieces(),
+            board.player(),
+            board.castling_rights,
+            board.pieces.en_passant(),
+        );
+        assert_eq!(
+            incr_hash_1, incr_hash_2,
+            "incremental hash should equal full hash"
+        );
+        assert_eq!(full_hash_1, full_hash_2);
     }
 
     #[test]
