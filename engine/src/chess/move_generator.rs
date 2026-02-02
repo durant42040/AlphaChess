@@ -1,8 +1,12 @@
-use crate::chess::{
-    Bitboard, Square,
-    constants::{
-        BISHOP_MAGIC_NUMBERS, BISHOP_MASKS, BISHOP_SHIFT_BITS, BLACK_PAWN_CAPTURES, KING_ATTACKS,
-        KNIGHT_ATTACKS, ROOK_MAGIC_NUMBERS, ROOK_MASKS, ROOK_SHIFT_BITS, WHITE_PAWN_CAPTURES,
+use crate::{
+    Engine,
+    chess::{
+        Bitboard, Square,
+        constants::{
+            BISHOP_MAGIC_NUMBERS, BISHOP_MASKS, BISHOP_SHIFT_BITS, BLACK_PAWN_CAPTURES,
+            KING_ATTACKS, KNIGHT_ATTACKS, ROOK_MAGIC_NUMBERS, ROOK_MASKS, ROOK_SHIFT_BITS,
+            WHITE_PAWN_CAPTURES,
+        },
     },
 };
 
@@ -172,6 +176,55 @@ impl MoveGenerator {
 impl Default for MoveGenerator {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Engine {
+    pub fn generate_moves(&self, from: Square) -> Bitboard {
+        let pieces = self.pieces();
+        let our_pieces = if pieces.white_pieces().get_square(from) {
+            pieces.white_pieces()
+        } else {
+            pieces.black_pieces()
+        };
+
+        let mut moves = Bitboard::zero();
+
+        if pieces.pawns().get_square(from) {
+            if pieces.white_pieces().get_square(from) {
+                moves = self.move_generator.generate_white_pawn_moves(
+                    from,
+                    pieces.all_pieces(),
+                    pieces.black_pieces() | pieces.en_passant(),
+                );
+            } else {
+                moves = self.move_generator.generate_black_pawn_moves(
+                    from,
+                    pieces.all_pieces(),
+                    pieces.white_pieces() | pieces.en_passant(),
+                );
+            }
+        } else if pieces.knights().get_square(from) {
+            moves = self.move_generator.generate_knight_moves(from);
+        } else if pieces.bishops().get_square(from) {
+            moves = self
+                .move_generator
+                .generate_bishop_moves(from, pieces.all_pieces());
+        } else if pieces.rooks().get_square(from) {
+            moves = self
+                .move_generator
+                .generate_rook_moves(from, pieces.all_pieces());
+        } else if pieces.queens().get_square(from) {
+            moves = self
+                .move_generator
+                .generate_queen_moves(from, pieces.all_pieces());
+        } else if pieces.kings().get_square(from) {
+            moves = self.move_generator.generate_king_moves(from);
+        }
+
+        moves &= !our_pieces;
+
+        moves
     }
 }
 

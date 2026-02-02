@@ -22,6 +22,11 @@ pub trait Search {
 }
 
 impl Search for Engine {
+    /// Move ordering improves search efficiency by prioritizing moves likely to cause beta cutoffs.
+    /// Moves are sorted as follows:
+    ///
+    /// - **Captures**: Moves that capture opponent pieces are given higher priority, and within captures,
+    ///   the most valuable victim is sorted first (MVV: Most Valuable Victim principle).
     fn order_moves(&mut self, moves: &mut MoveList) {
         let pieces = self.pieces();
 
@@ -90,6 +95,7 @@ impl Search for Engine {
     fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
+
         if let Some(score) = self.transposition_table.probe(hash, depth, alpha, beta) {
             return score;
         }
@@ -98,31 +104,36 @@ impl Search for Engine {
             return self.eval();
         }
 
+        let mut best_score = i32::MIN;
+
         let mut moves = self.generate_all_legal_moves();
         self.order_moves(&mut moves);
 
-        for r#move in moves {
-            self.act(r#move);
-            let score = self
-                .alpha_beta_search(depth - 1, beta.saturating_neg(), alpha.saturating_neg())
-                .saturating_neg();
+        for mv in moves {
+            self.act(mv);
+            let score = -self.alpha_beta_search(depth - 1, -beta, -alpha);
             self.undo();
-            if score >= beta {
-                return beta;
-            }
+
+            best_score = max(best_score, score);
             alpha = max(alpha, score);
+
+            if alpha >= beta {
+                break;
+            }
         }
 
-        let flag = if alpha <= alpha_orig {
+        let flag = if best_score <= alpha_orig {
             Flag::Upper
-        } else if alpha >= beta {
+        } else if best_score >= beta {
             Flag::Lower
         } else {
             Flag::Exact
         };
-        self.transposition_table.store(hash, depth, alpha, flag);
 
-        alpha
+        self.transposition_table
+            .store(hash, depth, best_score, flag);
+
+        best_score
     }
 
     fn best_move(&mut self) -> Move {

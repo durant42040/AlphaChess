@@ -6,7 +6,7 @@ use crate::chess::AttackState;
 use crate::chess::chessboard::{Castling, ChessBoard};
 use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
-use crate::chess::pieces::{Color, Piece, Pieces};
+use crate::chess::pieces::{Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
 use crate::search::TranspositionTable;
 
@@ -159,134 +159,6 @@ impl Engine {
         self.board.player()
     }
 
-    fn generate_moves(&self, from: Square) -> Bitboard {
-        let pieces = self.pieces();
-        let our_pieces = if pieces.white_pieces().get_square(from) {
-            pieces.white_pieces()
-        } else {
-            pieces.black_pieces()
-        };
-
-        let mut moves = Bitboard::zero();
-
-        if pieces.pawns().get_square(from) {
-            if pieces.white_pieces().get_square(from) {
-                moves = self.move_generator.generate_white_pawn_moves(
-                    from,
-                    pieces.all_pieces(),
-                    pieces.black_pieces() | pieces.en_passant(),
-                );
-            } else {
-                moves = self.move_generator.generate_black_pawn_moves(
-                    from,
-                    pieces.all_pieces(),
-                    pieces.white_pieces() | pieces.en_passant(),
-                );
-            }
-        } else if pieces.knights().get_square(from) {
-            moves = self.move_generator.generate_knight_moves(from);
-        } else if pieces.bishops().get_square(from) {
-            moves = self
-                .move_generator
-                .generate_bishop_moves(from, pieces.all_pieces());
-        } else if pieces.rooks().get_square(from) {
-            moves = self
-                .move_generator
-                .generate_rook_moves(from, pieces.all_pieces());
-        } else if pieces.queens().get_square(from) {
-            moves = self
-                .move_generator
-                .generate_queen_moves(from, pieces.all_pieces());
-        } else if pieces.kings().get_square(from) {
-            moves = self.move_generator.generate_king_moves(from);
-        }
-
-        moves &= !our_pieces;
-
-        moves
-    }
-
-    fn generate_castling_moves(&self, from: Square) -> Bitboard {
-        let pieces = self.pieces();
-        let mut castling_moves = Bitboard::zero();
-
-        match from.square {
-            WHITE_KING_START => {
-                // White king's castle
-                let mut is_kingside_attacked = false;
-                for idx in Bitboard::from(WHITE_KINGSIDE_SQUARES).iter() {
-                    if self.is_square_under_attack(Square::from(idx)) {
-                        is_kingside_attacked = true;
-                        break;
-                    }
-                }
-                let can_kingside = !is_kingside_attacked
-                    && !pieces
-                        .all_pieces()
-                        .intersects(Bitboard::from(WHITE_KINGSIDE_SQUARES) & !pieces.kings())
-                    && self.board.castling_rights().can(WHITE_CASTLE_KINGSIDE);
-
-                let mut is_queenside_attacked = false;
-                for idx in Bitboard::from(WHITE_QUEENSIDE_ATTACKED).iter() {
-                    if self.is_square_under_attack(Square::from(idx)) {
-                        is_queenside_attacked = true;
-                        break;
-                    }
-                }
-                let can_queenside = !is_queenside_attacked
-                    && !pieces
-                        .all_pieces()
-                        .intersects(Bitboard::from(WHITE_QUEENSIDE_SQUARES) & !pieces.kings())
-                    && self.board.castling_rights().can(WHITE_CASTLE_QUEENSIDE);
-
-                if can_kingside {
-                    castling_moves.set(WHITE_KINGSIDE_CASTLE_TO);
-                }
-                if can_queenside {
-                    castling_moves.set(WHITE_QUEENSIDE_CASTLE_TO);
-                }
-            }
-            BLACK_KING_START => {
-                // Black king's castle
-                let mut is_kingside_attacked = false;
-                for idx in Bitboard::from(BLACK_KINGSIDE_SQUARES).iter() {
-                    if self.is_square_under_attack(Square::from(idx)) {
-                        is_kingside_attacked = true;
-                        break;
-                    }
-                }
-                let can_kingside = !is_kingside_attacked
-                    && !pieces
-                        .all_pieces()
-                        .intersects(Bitboard::from(BLACK_KINGSIDE_SQUARES) & !pieces.kings())
-                    && self.board.castling_rights().can(BLACK_CASTLE_KINGSIDE);
-
-                let mut is_queenside_attacked = false;
-                for idx in Bitboard::from(BLACK_QUEENSIDE_ATTACKED).iter() {
-                    if self.is_square_under_attack(Square::from(idx)) {
-                        is_queenside_attacked = true;
-                        break;
-                    }
-                }
-                let can_queenside = !is_queenside_attacked
-                    && !pieces
-                        .all_pieces()
-                        .intersects(Bitboard::from(BLACK_QUEENSIDE_SQUARES) & !pieces.kings())
-                    && self.board.castling_rights().can(BLACK_CASTLE_QUEENSIDE);
-
-                if can_kingside {
-                    castling_moves.set(BLACK_KINGSIDE_CASTLE_TO);
-                }
-                if can_queenside {
-                    castling_moves.set(BLACK_QUEENSIDE_CASTLE_TO);
-                }
-            }
-            _ => {}
-        }
-
-        castling_moves
-    }
-
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
         let pieces = self.pieces();
@@ -404,91 +276,6 @@ impl Engine {
         self.generate_legal_moves(from).get_square(to)
     }
 
-    /// Checks if the given square is under attack by the opponent.
-    pub fn is_under_attack(&self, square: Square, all_pieces: Bitboard, color: Color) -> bool {
-        self.generate_attacks(square, all_pieces, color).count() > 0
-    }
-
-    /// Checks if the given square is under attack by the opponent in the current position.
-    pub fn is_square_under_attack(&self, square: Square) -> bool {
-        let pieces = self.pieces();
-        self.is_under_attack(square, pieces.all_pieces(), self.board.player().into())
-    }
-
-    /// returns all attackers to the given square
-    fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
-        let pieces = self.pieces();
-        let their_pieces = if color == Color::White {
-            pieces.black_pieces()
-        } else {
-            pieces.white_pieces()
-        };
-
-        (self.move_generator.generate_king_moves(square) & (pieces.kings() & their_pieces))
-            | (self.move_generator.generate_rook_moves(square, all_pieces)
-                & (pieces.rooks() & their_pieces))
-            | (self
-                .move_generator
-                .generate_bishop_moves(square, all_pieces)
-                & (pieces.bishops() & their_pieces))
-            | (self.move_generator.generate_queen_moves(square, all_pieces)
-                & (pieces.queens() & their_pieces))
-            | (self.move_generator.generate_knight_moves(square)
-                & (pieces.knights() & their_pieces))
-            | (if color == Color::White {
-                Bitboard::from(WHITE_PAWN_CAPTURES[square]) & (pieces.pawns() & their_pieces)
-            } else {
-                Bitboard::from(BLACK_PAWN_CAPTURES[square]) & (pieces.pawns() & their_pieces)
-            })
-    }
-
-    pub fn update_attack_state(&mut self) {
-        let mut pinned_pieces = Bitboard::zero();
-        let pieces = self.pieces();
-        let our_pieces = self.board.our_pieces();
-        let their_pieces = self.board.their_pieces();
-        let our_king = Square::from(our_pieces & pieces.kings());
-
-        let rook_rays = self
-            .move_generator
-            .generate_rook_moves(our_king, Bitboard::zero());
-        let bishop_rays = self
-            .move_generator
-            .generate_bishop_moves(our_king, Bitboard::zero());
-
-        let mut snipers = their_pieces
-            & ((pieces.queens() | pieces.rooks()) & rook_rays
-                | (pieces.queens() | pieces.bishops()) & bishop_rays);
-
-        let mut attack_lines = Bitboard::zero();
-        while !snipers.empty() {
-            let sniper = snipers.pop_lsb();
-            let blockers = pieces.all_pieces() & Bitboard::between(Square::from(sniper), our_king);
-            if blockers.count() == 1 && our_pieces.intersects(blockers) {
-                pinned_pieces |= blockers;
-            } else if blockers.count() == 0 {
-                // If no blockers, this is a check from a sliding piece
-                attack_lines |= Bitboard::between(Square::from(sniper), our_king);
-            }
-        }
-
-        let attackers =
-            self.generate_attacks(our_king, pieces.all_pieces(), self.board.player().into());
-        let num_checks = attackers.count();
-        debug_assert!(num_checks <= 2);
-
-        self.attack_state = AttackState {
-            attackers,
-            num_checks,
-            pinned_pieces,
-            attack_lines,
-        };
-    }
-
-    pub fn is_check(&self) -> bool {
-        self.attack_state.num_checks > 0
-    }
-
     pub fn game_state(&self) -> GameState {
         self.game_state
     }
@@ -533,6 +320,10 @@ impl Engine {
         }
 
         board_str
+    }
+
+    pub fn is_check(&self) -> bool {
+        self.attack_state.num_checks > 0
     }
 }
 
