@@ -255,7 +255,8 @@ impl Engine {
         let mut all_capture_moves = MoveList::new();
 
         for from in self.board.our_pieces().iter() {
-            let capture_moves = self.generate_legal_moves(Square::from(from)) & (self.board.pieces().all_pieces() | self.board.pieces().en_passant());
+            let capture_moves = self.generate_legal_moves(Square::from(from))
+                & (self.board.pieces().all_pieces() | self.board.pieces().en_passant());
             for to in capture_moves.iter() {
                 let from = Square::from(from);
                 let to = Square::from(to);

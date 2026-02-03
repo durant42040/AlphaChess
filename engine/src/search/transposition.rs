@@ -1,4 +1,5 @@
 use crate::chess::constants::TRANSPOSITION_TABLE_SIZE;
+use crate::chess::Move;
 
 pub struct TranspositionTable {
     table: Vec<Entry>,
@@ -12,12 +13,25 @@ pub enum Bound {
     Lower,
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Entry {
     pub hash: u64,
     pub depth: u8,
     pub score: i32,
     pub bound: Bound,
+    pub best_move: Move,
+}
+
+impl Default for Entry {
+    fn default() -> Self {
+        Self {
+            hash: 0,
+            depth: 0,
+            score: 0,
+            bound: Bound::default(),
+            best_move: Move::none(),
+        }
+    }
 }
 
 impl TranspositionTable {
@@ -44,13 +58,22 @@ impl TranspositionTable {
         None
     }
 
-    pub fn store(&mut self, hash: u64, depth: u8, score: i32, bound: Bound) {
+    pub fn get_best_move(&self, hash: u64) -> Move {
+        let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
+        let entry = &self.table[idx];
+        if entry.hash != hash {
+            return Move::none();
+        }
+        entry.best_move
+    }
+
+    pub fn store(&mut self, hash: u64, depth: u8, score: i32, bound: Bound, best_move: Move) {
         let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
         if self.table[idx].depth >= depth {
             return;
         }
 
-        let entry = Entry::new(hash, depth, score, bound);
+        let entry = Entry::new(hash, depth, score, bound, best_move);
         self.table[idx] = entry;
     }
 }
@@ -62,12 +85,13 @@ impl Default for TranspositionTable {
 }
 
 impl Entry {
-    pub fn new(hash: u64, depth: u8, score: i32, bound: Bound) -> Self {
+    pub fn new(hash: u64, depth: u8, score: i32, bound: Bound, best_move: Move) -> Self {
         Self {
             hash,
             depth,
             score,
             bound,
+            best_move,
         }
     }
 }

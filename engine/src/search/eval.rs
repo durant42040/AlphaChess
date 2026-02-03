@@ -16,7 +16,7 @@ impl Evaluation for Engine {
         if self.game_state == GameState::BlackWin {
             return i32::MIN;
         }
- 
+
         self.board.score()
     }
 }

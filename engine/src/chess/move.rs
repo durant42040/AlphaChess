@@ -6,7 +6,7 @@ use crate::chess::Piece;
 use crate::chess::Square;
 use crate::chess::constants::MAX_LEGAL_MOVES;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Move {
     pub from: Square,
     pub to: Square,
@@ -20,6 +20,18 @@ impl Move {
             to,
             promotion,
         }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            from: Square::from(0),
+            to: Square::from(0),
+            promotion: None,
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.from.square == 0 && self.to.square == 0 && self.promotion.is_none()
     }
 }
 

@@ -1,6 +1,6 @@
 use std::{fmt, ops::Index, str::FromStr};
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,

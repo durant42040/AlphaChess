@@ -16,8 +16,6 @@ use crate::search::transposition::Bound;
 pub trait Search {
     fn order_moves(&mut self, moves: &mut MoveList);
     fn quiescence_search(&mut self, alpha: i32, beta: i32) -> i32;
-    fn max_search(&mut self, depth: u8) -> i32;
-    fn minimax_search(&mut self, depth: u8) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
     fn best_move(&mut self) -> Move;
 }
@@ -71,46 +69,6 @@ impl Search for Engine {
         alpha
     }
 
-    /// Performs max search.
-    fn max_search(&mut self, depth: u8) -> i32 {
-        if depth == 0 {
-            let score = self.eval();
-            return score;
-        }
-
-        let mut score = i32::MIN;
-
-        let mut moves = self.generate_all_legal_moves();
-        self.order_moves(&mut moves);
-
-        for r#move in moves {
-            self.act(r#move);
-            score = max(score, self.max_search(depth - 1));
-            self.undo();
-        }
-
-        score
-    }
-
-    /// Performs minimax search.
-    fn minimax_search(&mut self, depth: u8) -> i32 {
-        if depth == 0 {
-            return self.eval();
-        }
-
-        let mut score = i32::MIN;
-        let mut moves = self.generate_all_legal_moves();
-        self.order_moves(&mut moves);
-
-        for r#move in moves {
-            self.act(r#move);
-            score = max(score, -self.minimax_search(depth - 1));
-            self.undo();
-        }
-
-        score
-    }
-
     /// Performs alpha-beta pruning search.
     ///
     /// - `alpha`: minimum score for the maximizing player
@@ -128,18 +86,39 @@ impl Search for Engine {
         }
 
         let mut best_score = i32::MIN;
+        let mut best_move = Move::none();
 
         let mut moves = self.generate_all_legal_moves();
+        let tt_move = self.transposition_table.get_best_move(hash);
+
+        self.act(tt_move);
+        let score = self
+            .alpha_beta_search(depth - 1, -beta, -alpha)
+            .saturating_neg();
+        self.undo();
+
+        if score > best_score {
+            best_score = score;
+            best_move = tt_move;
+        }
+        alpha = max(alpha, score);
+
         self.order_moves(&mut moves);
 
-        for mv in moves {
-            self.act(mv);
+        for r#move in moves {
+            if r#move == tt_move {
+                continue;
+            }
+            self.act(r#move);
             let score = self
                 .alpha_beta_search(depth - 1, -beta, -alpha)
                 .saturating_neg();
             self.undo();
 
-            best_score = max(best_score, score);
+            if score > best_score {
+                best_score = score;
+                best_move = r#move;
+            }
             alpha = max(alpha, score);
 
             if alpha >= beta {
@@ -156,40 +135,21 @@ impl Search for Engine {
         };
 
         self.transposition_table
-            .store(hash, depth, best_score, bound);
+            .store(hash, depth, best_score, bound, best_move);
 
         best_score
     }
 
     fn best_move(&mut self) -> Move {
         let depth = 6;
-        let mut moves = self.generate_all_legal_moves();
-        self.order_moves(&mut moves);
-
+        let hash = self.board.position_hash();
         let alpha = i32::MAX.saturating_neg();
         let beta = i32::MIN.saturating_neg();
 
-        let (best_move, _best_score) = moves
-            .iter()
-            .map(|&r#move| {
-                self.act(r#move);
-                let score = self
-                    .alpha_beta_search(depth - 1, alpha, beta)
-                    .saturating_neg();
-                self.undo();
-                (r#move, score)
-            })
-            .max_by_key(|&(_, score)| score)
-            .expect("at least one legal move");
+        self.alpha_beta_search(depth, alpha, beta);
 
+        let best_move = self.transposition_table.get_best_move(hash);
+        debug_assert!(!best_move.is_none(), "Best move is none");
         best_move
     }
-}
-
-#[test]
-fn test_max_search() {
-    // look for 4-move checkmate
-    let mut engine = Engine::new();
-    let best_score = engine.max_search(5);
-    assert_eq!(best_score, i32::MAX);
 }
