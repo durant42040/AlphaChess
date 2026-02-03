@@ -21,8 +21,8 @@ fn best_move_benchmark(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(name), fen, |b, fen| {
             b.iter(|| {
                 let mut engine = Engine::from_fen(fen);
-                let mv = engine.best_move();
-                black_box(mv)
+                let r#move = engine.best_move();
+                black_box(r#move)
             })
         });
     }

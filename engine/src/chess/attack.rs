@@ -6,7 +6,7 @@ use crate::{
     },
 };
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct AttackState {
     pub attackers: Bitboard,
     pub num_checks: u8,

@@ -12,7 +12,6 @@ use crate::search::TranspositionTable;
 
 pub use search::{Perft, Search};
 
-#[derive(Clone)]
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
@@ -252,6 +251,28 @@ impl Engine {
         all_legal_moves
     }
 
+    pub fn generate_all_capture_moves(&mut self) -> MoveList {
+        let mut all_capture_moves = MoveList::new();
+
+        for from in self.board.our_pieces().iter() {
+            let capture_moves = self.generate_legal_moves(Square::from(from)) & (self.board.pieces().all_pieces() | self.board.pieces().en_passant());
+            for to in capture_moves.iter() {
+                let from = Square::from(from);
+                let to = Square::from(to);
+                if (to.rank == 7 || to.rank == 0) && self.pieces().pawns().get_square(from) {
+                    all_capture_moves.push(Move::new(from, to, Some(Piece::Queen)));
+                    all_capture_moves.push(Move::new(from, to, Some(Piece::Rook)));
+                    all_capture_moves.push(Move::new(from, to, Some(Piece::Bishop)));
+                    all_capture_moves.push(Move::new(from, to, Some(Piece::Knight)));
+                } else {
+                    all_capture_moves.push(Move::new(from, to, None));
+                }
+            }
+        }
+
+        all_capture_moves
+    }
+
     pub fn is_legal_move(&mut self, r#move: Move) -> bool {
         let from = r#move.from;
         let to = r#move.to;
@@ -324,26 +345,6 @@ impl Engine {
 
     pub fn is_check(&self) -> bool {
         self.attack_state.num_checks > 0
-    }
-}
-
-pub trait Evaluation {
-    fn eval(&self) -> i32;
-}
-
-impl Evaluation for Engine {
-    /// Evaluate the position as white
-    fn eval(&self) -> i32 {
-        if self.game_state == GameState::Draw {
-            return 0;
-        }
-        if self.game_state == GameState::WhiteWin {
-            return i32::MAX;
-        }
-        if self.game_state == GameState::BlackWin {
-            return i32::MIN;
-        }
-        self.board.score()
     }
 }
 

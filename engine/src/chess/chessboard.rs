@@ -31,7 +31,7 @@ impl State {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct ChessBoard {
     move_history: MoveList,
     fifty_move_rule: u8,

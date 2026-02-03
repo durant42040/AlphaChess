@@ -1,12 +1,11 @@
 use crate::chess::constants::TRANSPOSITION_TABLE_SIZE;
 
-#[derive(Clone)]
 pub struct TranspositionTable {
     table: Vec<Entry>,
 }
 
 #[derive(Default, PartialEq, Eq, Copy, Clone)]
-pub enum Flag {
+pub enum Bound {
     #[default]
     Exact,
     Upper,
@@ -18,7 +17,7 @@ pub struct Entry {
     pub hash: u64,
     pub depth: u8,
     pub score: i32,
-    pub flag: Flag,
+    pub bound: Bound,
 }
 
 impl TranspositionTable {
@@ -35,9 +34,9 @@ impl TranspositionTable {
             return None;
         }
 
-        if entry.flag == Flag::Exact
-            || (entry.flag == Flag::Upper && entry.score <= alpha)
-            || (entry.flag == Flag::Lower && entry.score >= beta)
+        if entry.bound == Bound::Exact
+            || (entry.bound == Bound::Upper && entry.score <= alpha)
+            || (entry.bound == Bound::Lower && entry.score >= beta)
         {
             return Some(entry.score);
         }
@@ -45,13 +44,13 @@ impl TranspositionTable {
         None
     }
 
-    pub fn store(&mut self, hash: u64, depth: u8, score: i32, flag: Flag) {
+    pub fn store(&mut self, hash: u64, depth: u8, score: i32, bound: Bound) {
         let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
         if self.table[idx].depth >= depth {
             return;
         }
 
-        let entry = Entry::new(hash, depth, score, flag);
+        let entry = Entry::new(hash, depth, score, bound);
         self.table[idx] = entry;
     }
 }
@@ -63,12 +62,12 @@ impl Default for TranspositionTable {
 }
 
 impl Entry {
-    pub fn new(hash: u64, depth: u8, score: i32, flag: Flag) -> Self {
+    pub fn new(hash: u64, depth: u8, score: i32, bound: Bound) -> Self {
         Self {
             hash,
             depth,
             score,
-            flag,
+            bound,
         }
     }
 }
