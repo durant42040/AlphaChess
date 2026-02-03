@@ -1,161 +1,169 @@
-<div align="center">
+# AlphaChess
 
-  [![Stockfish][stockfish128-logo]][website-link]
+A chess engine who is better than dhgf.
 
-  <h3>Stockfish</h3>
+## Getting Started
 
-  A free and strong UCI chess engine.
-  <br>
-  <strong>[Explore Stockfish docs »][wiki-link]</strong>
-  <br>
-  <br>
-  [Report bug][issue-link]
-  ·
-  [Open a discussion][discussions-link]
-  ·
-  [Discord][discord-link]
-  ·
-  [Blog][website-blog-link]
+**Client**
 
-  [![Build][build-badge]][build-link]
-  [![License][license-badge]][license-link]
-  <br>
-  [![Release][release-badge]][release-link]
-  [![Commits][commits-badge]][commits-link]
-  <br>
-  [![Website][website-badge]][website-link]
-  [![Fishtest][fishtest-badge]][fishtest-link]
-  [![Discord][discord-badge]][discord-link]
-
-</div>
-
-## Overview
-
-[Stockfish][website-link] is a **free and strong UCI chess engine** derived from
-Glaurung 2.1 that analyzes chess positions and computes the optimal moves.
-
-Stockfish **does not include a graphical user interface** (GUI) that is required
-to display a chessboard and to make it easy to input moves. These GUIs are
-developed independently from Stockfish and are available online. **Read the
-documentation for your GUI** of choice for information about how to use
-Stockfish with it.
-
-See also the Stockfish [documentation][wiki-usage-link] for further usage help.
-
-## Files
-
-This distribution of Stockfish consists of the following files:
-
-  * [README.md][readme-link], the file you are currently reading.
-
-  * [Copying.txt][license-link], a text file containing the GNU General Public
-    License version 3.
-
-  * [AUTHORS][authors-link], a text file with the list of authors for the project.
-
-  * [src][src-link], a subdirectory containing the full source code, including a
-    Makefile that can be used to compile Stockfish on Unix-like systems.
-
-  * a file with the .nnue extension, storing the neural network for the NNUE
-    evaluation. Binary distributions will have this file embedded.
-
-## Contributing
-
-__See [Contributing Guide](CONTRIBUTING.md).__
-
-### Donating hardware
-
-Improving Stockfish requires a massive amount of testing. You can donate your
-hardware resources by installing the [Fishtest Worker][worker-link] and viewing
-the current tests on [Fishtest][fishtest-link].
-
-### Improving the code
-
-In the [chessprogramming wiki][programming-link], many techniques used in
-Stockfish are explained with a lot of background information.
-The [section on Stockfish][programmingsf-link] describes many features
-and techniques used by Stockfish. However, it is generic rather than
-focused on Stockfish's precise implementation.
-
-The engine testing is done on [Fishtest][fishtest-link].
-If you want to help improve Stockfish, please read this [guideline][guideline-link]
-first, where the basics of Stockfish development are explained.
-
-Discussions about Stockfish take place these days mainly in the Stockfish
-[Discord server][discord-link]. This is also the best place to ask questions
-about the codebase and how to improve it.
-
-## Compiling Stockfish
-
-Stockfish has support for 32 or 64-bit CPUs, certain hardware instructions,
-big-endian machines such as Power PC, and other platforms.
-
-On Unix-like systems, it should be easy to compile Stockfish directly from the
-source code with the included Makefile in the folder `src`. In general, it is
-recommended to run `make help` to see a list of make targets with corresponding
-descriptions. An example suitable for most Intel and AMD chips:
-
-```
-cd src
-make -j profile-build
+```bash
+cd client
+trunk serve
 ```
 
-Detailed compilation instructions for all platforms can be found in our
-[documentation][wiki-compile-link]. Our wiki also has information about
-the [UCI commands][wiki-uci-link] supported by Stockfish.
+**Server**
 
-## Terms of use
+```bash
+cd server
+cargo run
+```
 
-Stockfish is free and distributed under the
-[**GNU General Public License version 3**][license-link] (GPL v3). Essentially,
-this means you are free to do almost exactly what you want with the program,
-including distributing it among your friends, making it available for download
-from your website, selling it (either by itself or as part of some bigger
-software package), or using it as the starting point for a software project of
-your own.
+## Architecture
 
-The only real limitation is that whenever you distribute Stockfish in some way,
-you MUST always include the license and the full source code (or a pointer to
-where the source code can be found) to generate the exact binary you are
-distributing. If you make any changes to the source code, these changes must
-also be made available under GPL v3.
+This is a full-stack web application for a chess game. The player will play against the engine. The application consists of three services:
 
-## Acknowledgements
+* **Client**: React App of a Chess game GUI
+* **Server**: Rust web server using Axum
+* **Engine**:
+  * fast move generation using bitboards
+  * checks for draws and checkmates
+  * generates best move with alpha-beta search.
 
-Stockfish uses neural networks trained on [data provided by the Leela Chess Zero
-project][lc0-data-link], which is made available under the [Open Database License][odbl-link] (ODbL).
+## Implementation
 
+### Server
 
-[authors-link]:       https://github.com/official-stockfish/Stockfish/blob/master/AUTHORS
-[build-link]:         https://github.com/official-stockfish/Stockfish/actions/workflows/stockfish.yml
-[commits-link]:       https://github.com/official-stockfish/Stockfish/commits/master
-[discord-link]:       https://discord.gg/GWDRS3kU6R
-[issue-link]:         https://github.com/official-stockfish/Stockfish/issues/new?assignees=&labels=&template=BUG-REPORT.yml
-[discussions-link]:   https://github.com/official-stockfish/Stockfish/discussions/new
-[fishtest-link]:      https://tests.stockfishchess.org/tests
-[guideline-link]:     https://github.com/official-stockfish/fishtest/wiki/Creating-my-first-test
-[license-link]:       https://github.com/official-stockfish/Stockfish/blob/master/Copying.txt
-[programming-link]:   https://www.chessprogramming.org/Main_Page
-[programmingsf-link]: https://www.chessprogramming.org/Stockfish
-[readme-link]:        https://github.com/official-stockfish/Stockfish/blob/master/README.md
-[release-link]:       https://github.com/official-stockfish/Stockfish/releases/latest
-[src-link]:           https://github.com/official-stockfish/Stockfish/tree/master/src
-[stockfish128-logo]:  https://stockfishchess.org/images/logo/icon_128x128.png
-[uci-link]:           https://backscattering.de/chess/uci/
-[website-link]:       https://stockfishchess.org
-[website-blog-link]:  https://stockfishchess.org/blog/
-[wiki-link]:          https://github.com/official-stockfish/Stockfish/wiki
-[wiki-compile-link]:  https://github.com/official-stockfish/Stockfish/wiki/Compiling-from-source
-[wiki-uci-link]:      https://github.com/official-stockfish/Stockfish/wiki/UCI-&-Commands
-[wiki-usage-link]:    https://github.com/official-stockfish/Stockfish/wiki/Download-and-usage
-[worker-link]:        https://github.com/official-stockfish/fishtest/wiki/Running-the-worker
-[lc0-data-link]:      https://storage.lczero.org/files/training_data
-[odbl-link]:          https://opendatacommons.org/licenses/odbl/odbl-10.txt
+The server is implemented with Axum and shared engine state:
 
-[build-badge]:        https://img.shields.io/github/actions/workflow/status/official-stockfish/Stockfish/stockfish.yml?branch=master&style=for-the-badge&label=stockfish&logo=github
-[commits-badge]:      https://img.shields.io/github/commits-since/official-stockfish/Stockfish/latest?style=for-the-badge
-[discord-badge]:      https://img.shields.io/discord/435943710472011776?style=for-the-badge&label=discord&logo=Discord
-[fishtest-badge]:     https://img.shields.io/website?style=for-the-badge&down_color=red&down_message=Offline&label=Fishtest&up_color=success&up_message=Online&url=https%3A%2F%2Ftests.stockfishchess.org%2Ftests%2Ffinished
-[license-badge]:      https://img.shields.io/github/license/official-stockfish/Stockfish?style=for-the-badge&label=license&color=success
-[release-badge]:      https://img.shields.io/github/v/release/official-stockfish/Stockfish?style=for-the-badge&label=official%20release
-[website-badge]:      https://img.shields.io/website?style=for-the-badge&down_color=red&down_message=Offline&label=website&up_color=success&up_message=Online&url=https%3A%2F%2Fstockfishchess.org
+```rust
+use axum::{Router, routing::get};
+use tokio::net::TcpListener;
+use tokio::sync::Mutex;
+
+#[tokio::main]
+async fn main() {
+    let engine = Arc::new(Mutex::new(Engine::new()));
+
+    let app = Router::new()
+        .route("/ping", get(ping))
+        .route("/generate", get(generate_move))
+        .route("/act", get(make_move))
+        .route("/reset", get(reset))
+        .route("/game", get(game))
+        .route("/undo", get(undo_move))
+        .with_state(engine);
+
+    let listener = TcpListener::bind("0.0.0.0:4000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
+```
+
+* **`/generate`** — Computes the best move via `engine.best_move()`, applies it, and returns the move and updated board.
+* **`/act?move=e2e4`** — Validates and applies the given move (e.g. long algebraic notation), returns board and check status.
+* **`/reset`** — Resets the game to the starting position.
+* **`/game`** — Returns the current game state (e.g. playing, draw, checkmate).
+* **`/undo`** — Undoes the last two half-moves.
+
+The engine is stored in `Arc<Mutex<Engine>>` so all handlers share one game.
+
+### Chess Engine
+
+#### Structure
+
+* **`engine.rs`** — Main API: `new()`, `from_fen()`, `reset()`, `make_move()`, `act()`, `undo()`, `game_state()`, `to_board_string()`, `is_check()`, and evaluation/search helpers.
+* **`search/mod.rs`** — `Search` trait implemented for `Engine`: `max_search`, `minimax_search`, `alpha_beta_search`, `best_move()`.
+* **`chess/chessboard.rs`** — Board representation, castling rights, move application and undo.
+* **`chess/move_generator.rs`** — Legal move generation for all piece types.
+* **`chess/move.rs`** — `Move` type (from/to squares, promotion).
+* **`chess/bitboard.rs`** — `Bitboard` and bit operations.
+* **`chess/constants.rs`** — Precomputed magic bitboards and related tables.
+* **`chess/pieces.rs`** — Piece sets (white/black, by type) and board occupancy.
+* **`chess/square.rs`** — Square indexing and notation.
+
+#### Bitboards
+
+Board state is represented with 64-bit bitboards: one bit per square. For example, piece sets and occupancy:
+
+```rust
+pub struct Pieces {
+    pub pawns: Bitboard,
+    pub knights: Bitboard,
+    pub bishops: Bitboard,
+    pub rooks: Bitboard,
+    pub queens: Bitboard,
+    pub kings: Bitboard,
+    pub white_pieces: Bitboard,
+    pub black_pieces: Bitboard,
+    pub all_pieces: Bitboard,
+    pub en_passant: Bitboard,
+}
+```
+
+Square tests and updates use bit operations:
+
+```rust
+bitboard & (1 << index) != 0
+bitboard |= 1 << index;
+```
+
+Count and LSB use standard library helpers:
+
+```rust
+pub fn count(&self) -> u32 {
+    self.bitboard.count_ones()
+}
+
+pub fn get_lsb(&self) -> u8 {
+    self.bitboard.trailing_zeros() as u8
+}
+```
+
+#### Move Generation
+
+Kings and knights use O(1) lookup tables. Pawns use bit masks for advances and captures. For example, white pawn one- and two-step moves:
+
+```rust
+let one_step_moves = (from_mask >> 8) & !all_pieces.bitboard;
+let two_step_moves = ((one_step_moves & (0xFFu64 << 40)) >> 8) & !all_pieces.bitboard;
+```
+
+Sliding pieces (rooks, bishops) use **magic bitboards**: precomputed tables indexed by square and blocker pattern. A magic number hashes the blocker configuration into a compact index:
+
+``` rust
+for i in (rank + 1)..8 {
+    moves.bitboard |= 1 << (8 * i + file);
+    if all_pieces.bitboard & (1 << (8 * i + file)) != 0 {
+        break;
+    }
+}
+```
+
+However, this is extremely inefficient. For faster generation, a lookup table with indices that encode blocker positions are devised, called **Magic Bitboards**.
+
+Given the blocker positions, the legal moves for rooks and bishops in every square and every possible combination of blockers can be precomputed. The difficulty lies in the storage of this information. Using the square and the blocker bitboard as indices to a 2D array is simply too inefficient, since it would require up to $64 \times 2^{64}$ long long integers to be stored in memory. Instead, for each square, a magic number is computed to scale down the size of the array. The blocker is multiplied with this magic number, and then right-shifted to reduce the index value.
+
+``` rust
+let key = (blockers * BISHOP_MAGIC_NUMBERS[square as usize]) >> (64 - BISHOP_SHIFT_BITS[square as usize]);
+```
+
+With this key generation procedure, the full move set is precomputed as follows:
+
+``` rust
+for square in 0..64 {
+    for i in 0..(1 << BISHOP_SHIFT_BITS[square]) {
+        let blockers = get_blockers(i, BISHOP_MASKS[square]);
+        let key = (blockers * BISHOP_MAGIC_NUMBERS[square]) >> (64 - BISHOP_SHIFT_BITS[square]);
+        BISHOP_TABLE[square][key as usize] = generate_bishop_moves_slow(Square::from(square), Bitboard::from(blockers));
+    }
+}
+```
+
+Then the move sets can be retrieved by recomputing the key and performing a lookup:
+
+``` rust
+let blockers = all_pieces.bitboard & BISHOP_MASKS[from.square as usize].bitboard;
+let key = (blockers * BISHOP_MAGIC_NUMBERS[from.square as usize]) >> (64 - BISHOP_SHIFT_BITS[from.square as usize]);
+BISHOP_TABLE[from.square as usize][key as usize]
+```
+
+After generating candidate moves, castling is added, and moves that leave the king in check are removed. Promotions are then added to produce the final legal move list.
