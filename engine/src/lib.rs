@@ -3,7 +3,7 @@ pub mod search;
 use std::fmt;
 
 use crate::chess::AttackState;
-use crate::chess::chessboard::{Castling, ChessBoard};
+use crate::chess::chessboard::ChessBoard;
 use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Piece, Pieces};

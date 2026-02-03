@@ -48,18 +48,12 @@ impl ChessBoard {
     pub fn new() -> Self {
         let pieces = Pieces::new();
         let state_history = Vec::with_capacity(8192);
-        let mut position_history = Vec::with_capacity(8192);
+        let position_history = Vec::with_capacity(8192);
         let player = Player::White;
         let castling_rights = CastlingRights::new();
         let hasher = Zobrist::new();
-        position_history.push(hasher.full_hash(
-            &pieces,
-            player,
-            castling_rights,
-            pieces.en_passant(),
-        ));
 
-        Self {
+        let mut chessboard = Self {
             move_history: MoveList::new(),
             fifty_move_rule: 0,
             castling_rights,
@@ -69,7 +63,13 @@ impl ChessBoard {
             state_history,
             position_history,
             material_score: 0,
-        }
+        };
+
+        chessboard
+            .position_history
+            .push(chessboard.hasher.full_hash(&chessboard));
+
+        chessboard
     }
 
     pub fn load_from_fen(fen: &str) -> Self {
@@ -127,12 +127,7 @@ impl ChessBoard {
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
         chessboard
             .position_history
-            .push(chessboard.hasher.full_hash(
-                &chessboard.pieces,
-                chessboard.player,
-                chessboard.castling_rights,
-                chessboard.pieces.en_passant(),
-            ));
+            .push(chessboard.hasher.full_hash(&chessboard));
 
         chessboard
     }
@@ -297,6 +292,10 @@ impl ChessBoard {
         self.position_history.last().copied().unwrap()
     }
 
+    pub fn castling_rights(&self) -> CastlingRights {
+        self.castling_rights
+    }
+
     pub fn score(&self) -> i32 {
         if self.player == Player::Black {
             -self.material_score
@@ -422,12 +421,7 @@ mod tests {
         board.act("e2e3".parse::<Move>().unwrap());
         board.act("e7e6".parse::<Move>().unwrap());
         let incr_hash_1 = board.position_hash();
-        let full_hash_1 = board.hasher.full_hash(
-            &board.pieces(),
-            board.player(),
-            board.castling_rights,
-            board.pieces.en_passant(),
-        );
+        let full_hash_1 = board.hasher.full_hash(&board);
         assert_eq!(
             incr_hash_1, full_hash_1,
             "incremental hash should equal full hash"
@@ -441,12 +435,7 @@ mod tests {
         board.act("d3f1".parse::<Move>().unwrap());
         board.act("d6f8".parse::<Move>().unwrap());
         let incr_hash_2 = board.position_hash();
-        let full_hash_2 = board.hasher.full_hash(
-            &board.pieces(),
-            board.player(),
-            board.castling_rights,
-            board.pieces.en_passant(),
-        );
+        let full_hash_2 = board.hasher.full_hash(&board);
         assert_eq!(
             incr_hash_1, incr_hash_2,
             "incremental hash should equal full hash"
