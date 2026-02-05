@@ -121,6 +121,7 @@ impl Engine {
         self.board = ChessBoard::new();
         self.game_state = GameState::Playing;
         self.attack_state = AttackState::default();
+        self.search = Search::new();
     }
 
     pub fn make_move(&mut self, r#move: Move) -> bool {
