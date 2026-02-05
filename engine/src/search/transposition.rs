@@ -35,12 +35,14 @@ impl Default for Entry {
 }
 
 impl TranspositionTable {
+    /// Transposition table is implemented as a preallocated vector of size 4MB. The key of each entry is the zobrist hash of the position.
     pub fn new() -> Self {
         Self {
             table: vec![Entry::default(); TRANSPOSITION_TABLE_SIZE],
         }
     }
 
+    /// Probe the transposition table for a score. If the entry is not found or the depth is less than the stored depth, None is returned. Return only when bound is useful for pruning.
     pub fn probe(&self, hash: u64, depth: u8, alpha: i32, beta: i32) -> Option<i32> {
         let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
         let entry = &self.table[idx];

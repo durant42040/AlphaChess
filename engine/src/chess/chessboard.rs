@@ -141,8 +141,8 @@ impl ChessBoard {
         let moving_piece = self.pieces.piece(from);
         let captured_piece = self.pieces.piece(to);
 
-        // king must not be captured
         debug_assert!(moving_piece.is_some());
+        // king must not be captured
         debug_assert!(!self.pieces.kings().get_square(to));
 
         if let Some((piece, color)) = captured_piece {
