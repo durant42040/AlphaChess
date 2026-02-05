@@ -16,7 +16,7 @@ jobs:
       - name: fmt check
         run: cargo fmt --manifest-path ./engine/Cargo.toml -- --check
       - name: Run test
-        run: cargo test --test '*' --manifest-path ./engine/Cargo.toml
+        run: cargo test --release --manifest-path ./engine/Cargo.toml
   server-test:
     runs-on: ubuntu-latest
     steps:
