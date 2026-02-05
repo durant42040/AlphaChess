@@ -1,6 +1,7 @@
 use crate::chess::Bitboard;
 use crate::chess::Player;
 use crate::chess::Square;
+use std::ops::Not;
 
 /// Represents the color of a chess piece.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -32,6 +33,14 @@ impl Color {
 
     /// Get the opposite color.
     pub fn opposite(self) -> Self {
+        !self
+    }
+}
+
+impl Not for Color {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
         match self {
             Color::White => Color::Black,
             Color::Black => Color::White,
@@ -62,12 +71,12 @@ pub enum Piece {
 impl Piece {
     pub fn value(self) -> i32 {
         match self {
-            Piece::Pawn => 100,
-            Piece::Knight => 320,
-            Piece::Bishop => 330,
-            Piece::Rook => 500,
-            Piece::Queen => 900,
-            Piece::King => 10000,
+            Piece::Pawn => 1,
+            Piece::Knight => 3,
+            Piece::Bishop => 3,
+            Piece::Rook => 5,
+            Piece::Queen => 9,
+            Piece::King => 100,
         }
     }
 
@@ -231,7 +240,7 @@ impl Pieces {
     }
 
     /// Get the `(Piece, Color)` at index `i`, if any.
-    pub fn get_piece(&self, i: Square) -> Option<(Piece, Color)> {
+    pub fn piece(&self, i: Square) -> Option<(Piece, Color)> {
         let piece = if self.pawns.get_square(i) {
             Piece::Pawn
         } else if self.knights.get_square(i) {
@@ -256,9 +265,17 @@ impl Pieces {
         Some((piece, color))
     }
 
+    pub fn value(&self, i: Square) -> i32 {
+        if let Some((piece, _)) = self.piece(i) {
+            piece.value()
+        } else {
+            0
+        }
+    }
+
     /// Convenience helper to get a FEN-style character for the board display.
     pub fn get_char(&self, i: u8) -> char {
-        if let Some((piece, color)) = self.get_piece(Square::from(i)) {
+        if let Some((piece, color)) = self.piece(Square::from(i)) {
             piece.to_char(color)
         } else {
             '.'

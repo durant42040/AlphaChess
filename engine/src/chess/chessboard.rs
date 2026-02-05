@@ -129,6 +129,8 @@ impl ChessBoard {
             .position_history
             .push(chessboard.hasher.full_hash(&chessboard));
 
+        debug_assert!(chessboard.pieces.kings().count() == 2);
+
         chessboard
     }
 
@@ -136,8 +138,8 @@ impl ChessBoard {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
-        let moving_piece = self.pieces.get_piece(from);
-        let captured_piece = self.pieces.get_piece(to);
+        let moving_piece = self.pieces.piece(from);
+        let captured_piece = self.pieces.piece(to);
 
         // king must not be captured
         debug_assert!(moving_piece.is_some());
@@ -168,7 +170,7 @@ impl ChessBoard {
         self.pieces.update_en_passant(from, to);
         self.castle(from, to);
         self.pieces.update(from, to);
-        self.switch_player();
+        self.player = !self.player;
         self.move_history.push(r#move);
         let prev_hash = self.position_history.last().unwrap();
         let new_hash = self.hasher.hash(
@@ -207,13 +209,13 @@ impl ChessBoard {
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
             let captured_square = Square::new(from.rank, to.file);
             self.pieces
-                .set(Piece::Pawn, self.player.to_color(), captured_square.square);
+                .set(Piece::Pawn, self.player.color(), captured_square.square);
         }
 
         self.pieces.set_en_passant(state.prev_en_passant);
         self.castling_rights = state.prev_castling_rights;
         self.fifty_move_rule = state.prev_fifty_move_rule;
-        self.switch_player();
+        self.player = !self.player;
         self.state_history.pop();
         self.position_history.pop();
     }
@@ -238,12 +240,16 @@ impl ChessBoard {
         }
     }
 
-    pub fn player(&self) -> Player {
-        self.player
+    pub fn pieces_of_color(&self, color: Color) -> Bitboard {
+        if color == Color::White {
+            self.pieces.white_pieces()
+        } else {
+            self.pieces.black_pieces()
+        }
     }
 
-    pub fn switch_player(&mut self) {
-        self.player = self.player.switch();
+    pub fn player(&self) -> Player {
+        self.player
     }
 
     pub fn is_draw(&self) -> bool {

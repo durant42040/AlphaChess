@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::Not;
 
 use crate::chess::Color;
 
@@ -34,17 +35,21 @@ pub enum Player {
 }
 
 impl Player {
-    pub fn switch(&self) -> Self {
-        match self {
-            Player::White => Player::Black,
-            Player::Black => Player::White,
-        }
-    }
-
-    pub fn to_color(self) -> Color {
+    pub fn color(self) -> Color {
         match self {
             Player::White => Color::White,
             Player::Black => Color::Black,
+        }
+    }
+}
+
+impl Not for Player {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Player::White => Player::Black,
+            Player::Black => Player::White,
         }
     }
 }

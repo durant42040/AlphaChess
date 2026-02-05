@@ -57,7 +57,7 @@ impl Engine {
             let mut empty_count = 0;
             for file in 0..8 {
                 let square = rank * 8 + file;
-                if let Some((piece, color)) = pieces.get_piece(Square::from(square)) {
+                if let Some((piece, color)) = pieces.piece(Square::from(square)) {
                     if empty_count > 0 {
                         fen.push_str(&empty_count.to_string());
                         empty_count = 0;
@@ -135,6 +135,7 @@ impl Engine {
     }
 
     pub fn act(&mut self, r#move: Move) {
+        debug_assert!(!r#move.is_none());
         self.board.act(r#move);
         self.update_attack_state();
         self.update_game_state();
@@ -190,7 +191,7 @@ impl Engine {
             if self.is_under_attack(
                 Square::from(our_king),
                 self.board.pieces().all_pieces(),
-                self.board.player().switch().into(),
+                (!self.board.player()).into(),
             ) {
                 legal_moves.clear_square(to);
             } else {

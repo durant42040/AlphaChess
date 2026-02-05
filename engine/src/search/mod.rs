@@ -1,5 +1,6 @@
 pub mod eval;
 pub mod perft;
+pub mod see;
 pub mod transposition;
 
 use std::cmp::max;
@@ -35,7 +36,7 @@ impl Search for Engine {
             let is_capture = self.board.their_pieces().get_square(r#move.to);
 
             let value = if is_capture {
-                pieces.get_piece(r#move.to).unwrap().0.value()
+                pieces.value(r#move.to)
             } else if is_en_passant {
                 Piece::Pawn.value()
             } else {
@@ -89,19 +90,24 @@ impl Search for Engine {
         let mut best_move = Move::none();
 
         let mut moves = self.generate_all_legal_moves();
-        let tt_move = self.transposition_table.get_best_move(hash);
+        let tt_move: Move = self.transposition_table.get_best_move(hash);
 
-        self.act(tt_move);
-        let score = self
-            .alpha_beta_search(depth - 1, -beta, -alpha)
-            .saturating_neg();
-        self.undo();
+        if !tt_move.is_none() {
+            self.act(tt_move);
+            let tt_score = self
+                .alpha_beta_search(depth - 1, -beta, -alpha)
+                .saturating_neg();
+            self.undo();
 
-        if score > best_score {
-            best_score = score;
-            best_move = tt_move;
+            if tt_score > best_score {
+                best_score = tt_score;
+                best_move = tt_move;
+            }
+            alpha = max(alpha, tt_score);
+            if alpha >= beta {
+                return best_score;
+            }
         }
-        alpha = max(alpha, score);
 
         self.order_moves(&mut moves);
 

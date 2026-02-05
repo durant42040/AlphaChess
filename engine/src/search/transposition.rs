@@ -1,5 +1,5 @@
-use crate::chess::constants::TRANSPOSITION_TABLE_SIZE;
 use crate::chess::Move;
+use crate::chess::constants::TRANSPOSITION_TABLE_SIZE;
 
 pub struct TranspositionTable {
     table: Vec<Entry>,

@@ -27,7 +27,7 @@ impl Engine {
     }
 
     /// returns all attackers to the given square
-    fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
+    pub fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
         let pieces = self.pieces();
         let their_pieces = if color == Color::White {
             pieces.black_pieces()

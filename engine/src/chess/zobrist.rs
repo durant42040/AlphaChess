@@ -33,7 +33,7 @@ impl Zobrist {
         let mut hash = 0u64;
         for sq in 0..64u8 {
             let square = Square::from(sq);
-            if let Some((piece, color)) = board.pieces().get_piece(square) {
+            if let Some((piece, color)) = board.pieces().piece(square) {
                 hash ^= self.piece[color as usize][piece as usize][sq as usize];
             }
         }
