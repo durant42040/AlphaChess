@@ -135,7 +135,7 @@ impl Engine {
     }
 
     pub fn act(&mut self, r#move: Move) {
-        debug_assert!(!r#move.is_none());
+        assert!(!r#move.is_none());
         self.board.act(r#move);
         self.update_attack_state();
     }

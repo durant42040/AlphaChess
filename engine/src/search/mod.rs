@@ -30,7 +30,7 @@ impl Search {
             transposition_table: TranspositionTable::new(),
             nodes: 0,
             start_time: Instant::now(),
-            time_limit: Duration::from_millis(1500),
+            time_limit: Duration::from_secs(1),
             max_depth_reached: 0,
         }
     }
@@ -105,7 +105,7 @@ impl Engine {
         ordered_moves
     }
 
-    /// alpha-beta search for the captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
+    /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
         if self.search.time_up() {
             return self.board.score();
@@ -187,9 +187,10 @@ impl Engine {
             }
         }
 
-        let tt_move: Move = self.search.transposition_table.get_best_move(hash);
+        let tt_move = self.search.transposition_table.get_best_move(hash);
 
-        if !tt_move.is_none() {
+        // Validate that the transposition table move is legal before playing it
+        if !tt_move.is_none() && moves.contains(&tt_move) {
             self.act(tt_move);
             let tt_score = self
                 .alpha_beta_search(depth - 1, -beta, -alpha)
@@ -245,14 +246,13 @@ impl Engine {
     }
 
     pub fn best_move(&mut self) -> Move {
-        debug_assert!(self.game_state == GameState::Playing);
+        assert!(self.game_state == GameState::Playing);
         self.search.nodes = 0;
         let hash = self.board.position_hash();
 
         let alpha = i32::MAX.saturating_neg();
         let beta = i32::MIN.saturating_neg();
 
-        // set a fixed 1-second search time using iterative deepening
         self.search.reset_timer(Duration::from_secs(1));
 
         let mut best_move = Move::none();
