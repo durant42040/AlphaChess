@@ -4,8 +4,8 @@ use axum::{
     http::StatusCode,
     routing::get,
 };
-use engine::chess::Move;
 use engine::Engine;
+use engine::chess::Move;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;

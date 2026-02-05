@@ -50,6 +50,12 @@ impl Search {
     }
 }
 
+impl Default for Search {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Engine {
     /// Move ordering improves search efficiency by prioritizing moves likely to cause beta cutoffs.
     /// Moves are sorted as follows:
