@@ -1,9 +1,9 @@
-use engine::Engine;
+use engine::{Engine, chess::Move};
 
 /// Helper function to make a move and assert it's valid
 fn make_move(engine: &mut Engine, move_str: &str) {
     assert!(
-        engine.make_move(move_str),
+        engine.make_move(Move::from(move_str)),
         "Move {} should be valid",
         move_str
     );
@@ -13,7 +13,7 @@ fn make_move(engine: &mut Engine, move_str: &str) {
 /// Helper function to make a move and assert it's invalid
 fn assert_invalid_move(engine: &mut Engine, move_str: &str) {
     assert!(
-        !engine.make_move(move_str),
+        !engine.make_move(Move::from(move_str)),
         "Move {} should be invalid",
         move_str
     );

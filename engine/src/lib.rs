@@ -123,8 +123,7 @@ impl Engine {
         self.attack_state = AttackState::default();
     }
 
-    pub fn make_move(&mut self, move_string: &str) -> bool {
-        let r#move = move_string.parse::<Move>().unwrap();
+    pub fn make_move(&mut self, r#move: Move) -> bool {
         if !self.is_legal_move(r#move) {
             return false;
         }
@@ -138,7 +137,6 @@ impl Engine {
         debug_assert!(!r#move.is_none());
         self.board.act(r#move);
         self.update_attack_state();
-        self.update_game_state();
     }
 
     pub fn undo(&mut self) -> bool {
@@ -147,7 +145,6 @@ impl Engine {
         }
         self.board.undo();
         self.update_attack_state();
-        self.game_state = GameState::Playing;
         true
     }
 

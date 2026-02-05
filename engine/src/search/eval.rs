@@ -5,7 +5,7 @@ pub trait Evaluation {
 }
 
 impl Evaluation for Engine {
-    /// Evaluate the position as white
+    /// Evaluate the position
     fn eval(&self) -> i32 {
         if self.game_state == GameState::Draw {
             return 0;

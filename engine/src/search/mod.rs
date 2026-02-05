@@ -11,7 +11,7 @@ pub use transposition::TranspositionTable;
 
 use crate::Engine;
 use crate::chess::r#move::MoveList;
-use crate::chess::{Move, Piece};
+use crate::chess::{GameState, Move, Piece};
 use crate::search::transposition::Bound;
 
 pub trait Search {
@@ -56,29 +56,37 @@ impl Search for Engine {
             } else {
                 quiet_moves.push(r#move);
             }
-
         }
         good_captures.sort_by_key(|(score, _)| -score);
         bad_captures.sort_by_key(|(score, _)| -score);
 
         let mut ordered_moves = MoveList::new();
         ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
-        ordered_moves.extend(quiet_moves.iter().map(|r#move| *r#move));
+        ordered_moves.extend(quiet_moves);
         ordered_moves.extend(bad_captures.iter().map(|(_, r#move)| *r#move));
+
         debug_assert_eq!(ordered_moves.len(), moves.len());
+
         ordered_moves
     }
 
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
-        let score = self.eval();
+        let score = self.board.score();
         if score >= beta {
             return score;
         }
         alpha = max(alpha, score);
 
-        let moves = self.generate_all_capture_moves();
+        let capture_moves = self.generate_all_capture_moves();
+        if capture_moves.is_empty() && self.generate_all_legal_moves().is_empty() {
+            if self.is_check() {
+                return i32::MIN;
+            } else {
+                return 0;
+            }
+        }
 
-        for r#move in moves {
+        for r#move in capture_moves {
             if self.see(r#move) < 0 {
                 continue;
             }
@@ -94,7 +102,7 @@ impl Search for Engine {
         alpha
     }
 
-    /// Performs alpha-beta pruning search.
+    /// Performs alpha-beta pruning search. Returns the best score for the current player.
     ///
     /// - `alpha`: minimum score for the maximizing player
     /// - `beta`: maximum score for the minimizing player
@@ -114,6 +122,16 @@ impl Search for Engine {
         let mut best_move = Move::none();
 
         let moves = self.generate_all_legal_moves();
+
+        // if there are no legal moves, check for checkmate or stalemate
+        if moves.is_empty() {
+            if self.is_check() {
+                return i32::MIN;
+            } else {
+                return 0;
+            }
+        }
+
         let tt_move: Move = self.transposition_table.get_best_move(hash);
 
         if !tt_move.is_none() {
@@ -171,6 +189,7 @@ impl Search for Engine {
     }
 
     fn best_move(&mut self) -> Move {
+        debug_assert!(self.game_state == GameState::Playing);
         let depth = 6;
         let hash = self.board.position_hash();
         let alpha = i32::MAX.saturating_neg();

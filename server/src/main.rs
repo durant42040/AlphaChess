@@ -4,6 +4,7 @@ use axum::{
     http::StatusCode,
     routing::get,
 };
+use engine::chess::Move;
 use engine::{Engine, Search};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -20,7 +21,7 @@ struct MoveQuery {
 async fn generate_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json<Value>) {
     let mut engine = state.lock().await;
     let best_move = engine.best_move();
-    engine.act(best_move);
+    engine.make_move(best_move);
     println!("{}", engine);
 
     (
@@ -45,7 +46,7 @@ async fn make_move(
         );
     }
 
-    if !engine.make_move(&move_string) {
+    if !engine.make_move(Move::from(&move_string)) {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "Illegal move" })),

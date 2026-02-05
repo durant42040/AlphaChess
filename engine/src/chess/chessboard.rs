@@ -424,22 +424,22 @@ mod tests {
     #[test]
     fn zobrist_basic() {
         let mut board = ChessBoard::new();
-        board.act("e2e3".parse::<Move>().unwrap());
-        board.act("e7e6".parse::<Move>().unwrap());
+        board.act(Move::from("e2e3"));
+        board.act(Move::from("e7e6"));
         let incr_hash_1 = board.position_hash();
         let full_hash_1 = board.hasher.full_hash(&board);
         assert_eq!(
             incr_hash_1, full_hash_1,
             "incremental hash should equal full hash"
         );
-        board.act("g1f3".parse::<Move>().unwrap());
-        board.act("b8c6".parse::<Move>().unwrap());
-        board.act("f1d3".parse::<Move>().unwrap());
-        board.act("f8d6".parse::<Move>().unwrap());
-        board.act("f3g1".parse::<Move>().unwrap());
-        board.act("c6b8".parse::<Move>().unwrap());
-        board.act("d3f1".parse::<Move>().unwrap());
-        board.act("d6f8".parse::<Move>().unwrap());
+        board.act(Move::from("g1f3"));
+        board.act(Move::from("b8c6"));
+        board.act(Move::from("f1d3"));
+        board.act(Move::from("f8d6"));
+        board.act(Move::from("f3g1"));
+        board.act(Move::from("c6b8"));
+        board.act(Move::from("d3f1"));
+        board.act(Move::from("d6f8"));
         let incr_hash_2 = board.position_hash();
         let full_hash_2 = board.hasher.full_hash(&board);
         assert_eq!(
@@ -453,7 +453,7 @@ mod tests {
     fn zobrist_undo() {
         let mut board = ChessBoard::new();
         let hash_initial = board.position_hash();
-        let r#move = "e2e4".parse::<Move>().unwrap();
+        let r#move = Move::from("e2e4");
         board.act(r#move);
         let hash_after = board.position_hash();
         board.undo();
@@ -501,7 +501,7 @@ mod tests {
             "g1f3", "b8c6", "f3g1", "c6b8", "g1f3", "b8c6", "f3g1", "c6b8",
         ];
         for r#move in &moves {
-            board.act(r#move.parse::<Move>().unwrap());
+            board.act(Move::from(r#move));
         }
         assert!(
             board.repetition_count() >= 2,

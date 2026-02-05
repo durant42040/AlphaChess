@@ -10,14 +10,14 @@ impl Engine {
     pub fn see(&mut self, r#move: Move) -> i32 {
         let from = r#move.from;
         let to = r#move.to;
-        let mut pieces = self.pieces().clone();
+        let mut pieces = self.pieces();
         debug_assert!(self.is_legal_move(r#move), "Move is not legal");
 
         let mut color: Color = self.board.player().color();
         let mut occupied = pieces.all_pieces() & !Bitboard::from(from);
         let mut all_attackers = self.generate_attacks(to, occupied, Color::White)
             | self.generate_attacks(to, occupied, Color::Black);
-            
+
         let mut gain = [0i32; 32];
         gain[0] = pieces.value(to);
         gain[1] = pieces.value(from) - pieces.value(to);
@@ -106,7 +106,6 @@ impl Engine {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,7 +113,7 @@ mod tests {
     #[test]
     fn test_see_1() {
         let mut engine = Engine::from_fen("1k2q3/1ppn3p/pr6/4b3/5B2/P2N2P1/1PP1Q2P/2K5 w - - 0 1");
-        let r#move = "d3e5".parse::<Move>().unwrap();
+        let r#move = Move::from("d3e5");
         let see = engine.see(r#move);
         assert_eq!(see, 3);
     }
@@ -122,7 +121,7 @@ mod tests {
     #[test]
     fn test_see_2() {
         let mut engine = Engine::from_fen("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -");
-        let r#move = "d3e5".parse::<Move>().unwrap();
+        let r#move = Move::from("d3e5");
         let see = engine.see(r#move);
         assert_eq!(see, -2);
     }
@@ -130,7 +129,7 @@ mod tests {
     #[test]
     fn test_see_3() {
         let mut engine = Engine::from_fen("1kr2R2/1b6/8/5B2/8/8/8/1K6 w - - 0 1");
-        let r#move = "f8c8".parse::<Move>().unwrap();
+        let r#move = Move::from("f8c8");
         let see = engine.see(r#move);
         assert_eq!(see, 0);
     }

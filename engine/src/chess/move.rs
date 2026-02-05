@@ -22,6 +22,10 @@ impl Move {
         }
     }
 
+    pub fn from(move_string: &str) -> Self {
+        move_string.parse::<Move>().unwrap()
+    }
+
     pub fn none() -> Self {
         Self {
             from: Square::from(0),
@@ -97,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_move_without_promotion() {
-        let r#move = "e2e4".parse::<Move>().unwrap();
+        let r#move = Move::from("e2e4");
         let move_string = format!("{}", r#move);
 
         assert_eq!(r#move.from, "e2".parse::<Square>().unwrap());
@@ -108,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_move_with_promotion() {
-        let r#move = "e7e8q".parse::<Move>().unwrap();
+        let r#move = Move::from("e7e8q");
         let move_string = format!("{}", r#move);
 
         assert_eq!(r#move.from, "e7".parse::<Square>().unwrap());
