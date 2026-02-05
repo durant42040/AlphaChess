@@ -39,7 +39,6 @@ impl Engine {
             depth += 1;
 
             if our_attackers.intersects(pieces.pawns()) {
-                println!("{:?} Pawn", color);
                 let pawns = pieces.pawns() & our_attackers;
                 let pawn = pawns.get_lsb();
 
@@ -51,7 +50,6 @@ impl Engine {
 
                 gain[depth] = Piece::Pawn.value() - gain[depth - 1];
             } else if our_attackers.intersects(pieces.knights()) {
-                println!("{:?} Knight", color);
                 let knights = pieces.knights() & our_attackers;
                 let knight = knights.get_lsb();
 
@@ -60,7 +58,6 @@ impl Engine {
 
                 gain[depth] = Piece::Knight.value() - gain[depth - 1];
             } else if our_attackers.intersects(pieces.bishops()) {
-                println!("{:?} Bishop", color);
                 let bishops = pieces.bishops() & our_attackers;
                 let bishop = bishops.get_lsb();
 
@@ -72,7 +69,6 @@ impl Engine {
 
                 gain[depth] = Piece::Bishop.value() - gain[depth - 1];
             } else if our_attackers.intersects(pieces.rooks()) {
-                println!("{:?} Rook", color);
                 let rooks = pieces.rooks() & our_attackers;
                 let rook = rooks.get_lsb();
 
@@ -84,7 +80,6 @@ impl Engine {
 
                 gain[depth] = Piece::Rook.value() - gain[depth - 1];
             } else if our_attackers.intersects(pieces.queens()) {
-                println!("{:?} Queen", color);
                 let queens = pieces.queens() & our_attackers;
                 let queen = queens.get_lsb();
 

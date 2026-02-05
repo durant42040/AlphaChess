@@ -15,7 +15,7 @@ use crate::chess::{Move, Piece};
 use crate::search::transposition::Bound;
 
 pub trait Search {
-    fn order_moves(&mut self, moves: &mut MoveList);
+    fn order_moves(&mut self, moves: &MoveList) -> MoveList;
     fn quiescence_search(&mut self, alpha: i32, beta: i32) -> i32;
     fn alpha_beta_search(&mut self, depth: u8, alpha: i32, beta: i32) -> i32;
     fn best_move(&mut self) -> Move;
@@ -25,26 +25,48 @@ impl Search for Engine {
     /// Move ordering improves search efficiency by prioritizing moves likely to cause beta cutoffs.
     /// Moves are sorted as follows:
     ///
-    /// - **Captures**: Moves that capture opponent pieces are given higher priority, and within captures,
-    ///   the most valuable victim is sorted first (MVV: Most Valuable Victim principle).
-    fn order_moves(&mut self, moves: &mut MoveList) {
+    /// - good captures: moves that are captures and have a SEE score > 0
+    /// - equal captures: moves that are captures and have a SEE score = 0
+    /// - quiet moves: moves that are not captures
+    /// - bad captures: moves that are captures and have a SEE score < 0
+    fn order_moves(&mut self, moves: &MoveList) -> MoveList {
         let pieces = self.pieces();
+        let our_pawns = pieces.pawns();
+        let en_passant = pieces.en_passant();
+        let their_pieces = self.board.their_pieces();
 
-        moves.sort_by_key(|r#move| {
+        let mut good_captures = Vec::with_capacity(moves.len());
+        let mut bad_captures = Vec::with_capacity(moves.len());
+        let mut quiet_moves = Vec::with_capacity(moves.len());
+
+        for &r#move in moves.iter() {
             let is_en_passant =
-                pieces.pawns().get_square(r#move.from) && pieces.en_passant().get_square(r#move.to);
-            let is_capture = self.board.their_pieces().get_square(r#move.to);
+                our_pawns.get_square(r#move.from) && en_passant.get_square(r#move.to);
+            let is_capture = their_pieces.get_square(r#move.to);
 
-            let value = if is_capture {
-                pieces.value(r#move.to)
+            if is_capture {
+                let score = self.see(r#move);
+                if score >= 0 {
+                    good_captures.push((score, r#move));
+                } else {
+                    bad_captures.push((score, r#move));
+                }
             } else if is_en_passant {
-                Piece::Pawn.value()
+                good_captures.push((Piece::Pawn.value(), r#move));
             } else {
-                0
-            };
+                quiet_moves.push(r#move);
+            }
 
-            (!is_capture && !is_en_passant, -value)
-        });
+        }
+        good_captures.sort_by_key(|(score, _)| -score);
+        bad_captures.sort_by_key(|(score, _)| -score);
+
+        let mut ordered_moves = MoveList::new();
+        ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
+        ordered_moves.extend(quiet_moves.iter().map(|r#move| *r#move));
+        ordered_moves.extend(bad_captures.iter().map(|(_, r#move)| *r#move));
+        debug_assert_eq!(ordered_moves.len(), moves.len());
+        ordered_moves
     }
 
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
@@ -54,10 +76,12 @@ impl Search for Engine {
         }
         alpha = max(alpha, score);
 
-        let mut moves = self.generate_all_capture_moves();
-        self.order_moves(&mut moves);
+        let moves = self.generate_all_capture_moves();
 
         for r#move in moves {
+            if self.see(r#move) < 0 {
+                continue;
+            }
             self.act(r#move);
             let score = self.quiescence_search(-beta, -alpha).saturating_neg();
             self.undo();
@@ -89,7 +113,7 @@ impl Search for Engine {
         let mut best_score = i32::MIN;
         let mut best_move = Move::none();
 
-        let mut moves = self.generate_all_legal_moves();
+        let moves = self.generate_all_legal_moves();
         let tt_move: Move = self.transposition_table.get_best_move(hash);
 
         if !tt_move.is_none() {
@@ -109,9 +133,9 @@ impl Search for Engine {
             }
         }
 
-        self.order_moves(&mut moves);
+        let ordered_moves = self.order_moves(&moves);
 
-        for r#move in moves {
+        for r#move in ordered_moves {
             if r#move == tt_move {
                 continue;
             }
