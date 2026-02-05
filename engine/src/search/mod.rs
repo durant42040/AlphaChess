@@ -4,6 +4,7 @@ pub mod see;
 pub mod transposition;
 
 use std::cmp::max;
+use std::time::{Duration, Instant};
 
 pub use eval::Evaluation;
 pub use perft::Perft;
@@ -14,27 +15,38 @@ use crate::chess::{GameState, Move, Piece};
 use crate::search::transposition::{Bound, TranspositionTable};
 
 pub struct Search {
-    transposition_table: TranspositionTable,
-    depth: u8,
-    nodes: u64,
+    pub max_depth: u8,
+    pub transposition_table: TranspositionTable,
+    pub nodes: u64,
+    pub start_time: Instant,
+    pub time_limit: Duration,
+    pub max_depth_reached: u8,
 }
 
 impl Search {
     pub fn new() -> Self {
         Self {
+            max_depth: u8::MAX,
             transposition_table: TranspositionTable::new(),
-            depth: 7,
             nodes: 0,
+            start_time: Instant::now(),
+            time_limit: Duration::from_millis(1500),
+            max_depth_reached: 0,
         }
     }
 
-    pub fn with_depth(mut self, depth: u8) -> Self {
-        self.depth = depth;
-        self
+    pub fn set_max_depth(&mut self, max_depth: u8) {
+        self.max_depth = max_depth;
     }
 
-    pub fn nodes(&self) -> u64 {
-        self.nodes
+    pub fn reset_timer(&mut self, time_limit: Duration) {
+        self.start_time = Instant::now();
+        self.time_limit = time_limit;
+        self.max_depth_reached = 0;
+    }
+
+    pub fn time_up(&self) -> bool {
+        self.start_time.elapsed() >= self.time_limit
     }
 }
 
@@ -89,6 +101,9 @@ impl Engine {
 
     /// alpha-beta search for the captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
+        if self.search.time_up() {
+            return self.board.score();
+        }
         self.search.nodes += 1;
         let score = self.board.score();
         if score >= beta {
@@ -133,6 +148,9 @@ impl Engine {
     /// 2. Lower: the score is a lower bound of the position, and is stopped early when `score <= alpha`.
     /// 3. Upper: the score is a upper bound of the position, when `score >= beta`.
     fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
+        if self.search.time_up() {
+            return self.board.score();
+        }
         self.search.nodes += 1;
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
@@ -228,11 +246,30 @@ impl Engine {
         let alpha = i32::MAX.saturating_neg();
         let beta = i32::MIN.saturating_neg();
 
-        self.alpha_beta_search(self.search.depth, alpha, beta);
+        // set a fixed 1-second search time using iterative deepening
+        self.search.reset_timer(Duration::from_secs(1));
 
-        let best_move = self.search.transposition_table.get_best_move(hash);
-        println!("searched {} nodes", self.search.nodes);
-        debug_assert!(!best_move.is_none(), "Best move is none");
+        let mut best_move = Move::none();
+
+        let mut depth: u8 = 1;
+        while !self.search.time_up() {
+            self.alpha_beta_search(depth, alpha, beta);
+
+            self.search.max_depth_reached = depth;
+
+            if self.search.time_up() {
+                break;
+            }
+            best_move = self.search.transposition_table.get_best_move(hash);
+
+            depth += 1;
+        }
+
+        println!(
+            "searched {} nodes\nmax depth: {}",
+            self.search.nodes, self.search.max_depth_reached
+        );
+        assert!(!best_move.is_none(), "Best move is none");
         best_move
     }
 }
