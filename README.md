@@ -8,7 +8,7 @@ A chess engine who is better than dhgf.
 
 ```bash
 cd client
-trunk serve
+pnpm dev
 ```
 
 **Server**

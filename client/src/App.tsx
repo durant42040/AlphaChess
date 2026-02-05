@@ -32,7 +32,7 @@ export default function App() {
   const [positionFrom, setPositionFrom] = useState<Coord | null>(null);
   const [positionTo, setPositionTo] = useState<Coord | null>(null);
   const [side, setSide] = useState<'w' | 'b'>('w');
-  const [game, setGame] = useState<'w' | 'b' | null>(null);
+  const [game, setGame] = useState<'w' | 'b' | null | 'self'>(null);
   const [gameOver, setGameOver] = useState<GameOver>('No');
 
   const resetBoard = useCallback(() => {
@@ -50,7 +50,7 @@ export default function App() {
       player?: 'w' | 'b'
     ) => {
       const sideNow = sideToMove ?? side;
-      const human = player ?? game;
+      const human = game === 'self' ? null : player ?? game;
       api
         .gameState()
         .then((gameState) => {
@@ -64,8 +64,8 @@ export default function App() {
             return;
           }
           setGameOver('No');
-          if (human === null) return;
-          if (sideNow === human) return;
+          // In self-play mode, there is no human side, so always let engine move.
+          if (human !== null && sideNow === human) return;
           setTimeout(() => {
             const boardBefore =
               boardBeforeEngine ?? board.map((row) => row.map((p) => p));
@@ -97,14 +97,22 @@ export default function App() {
   );
 
   const handleChooseSide = useCallback(
-    (chosen: 'w' | 'b') => {
-      setGame(chosen);
+    (chosen: 'w' | 'b' | null) => {
+      const mode = chosen === null ? 'self' : chosen;
+      setGame(mode);
       preload();
       play('start');
       resetBoard();
       api
         .reset()
-        .then(() => pollGame(undefined, 'w', chosen))
+        .then(() => {
+          if (mode === 'self') {
+            // In self-play, start with engine as white.
+            pollGame(undefined, 'w', undefined);
+          } else {
+            pollGame(undefined, 'w', chosen ?? undefined);
+          }
+        })
         .catch((e) => console.error('reset failed:', e));
     },
     [resetBoard, pollGame]
@@ -177,9 +185,10 @@ export default function App() {
   );
 
   const handleRematch = useCallback(() => {
-    setGame((g) => (g === 'w' ? 'b' : 'w'));
+    setGame((g) => (g === 'w' ? 'b' : g === 'b' ? 'w' : g));
     resetBoard();
-    const nextPlayer = game === 'w' ? 'b' : 'w';
+    const nextPlayer =
+      game === 'w' ? 'b' : game === 'b' ? 'w' : game === 'self' ? undefined : 'w';
     api
       .reset()
       .then(() => pollGame(undefined, 'w', nextPlayer))
@@ -191,7 +200,7 @@ export default function App() {
       .undo()
       .then((r) => {
         setBoard(toBoard(r.board));
-        setSide(game ?? 'w');
+        setSide(game === 'b' ? 'b' : 'w');
         setPositionFrom(null);
         setPositionTo(null);
         setGameOver('No');

@@ -1,12 +1,8 @@
 interface StartPageProps {
-  onChoose: (side: 'w' | 'b') => void;
+  onChoose: (side: 'w' | 'b' | null) => void;
 }
 
 export function StartPage({ onChoose }: StartPageProps) {
-  const onRandom = () => {
-    onChoose(Math.random() < 0.5 ? 'w' : 'b');
-  };
-
   return (
     <div className="start">
       <h1>AlphaChess</h1>
@@ -18,8 +14,8 @@ export function StartPage({ onChoose }: StartPageProps) {
         <button type="button" className="button" onClick={() => onChoose('b')}>
           Black
         </button>
-        <button type="button" className="button" onClick={onRandom}>
-          Random
+        <button type="button" className="button" onClick={() => onChoose(null)}>
+          Self-play
         </button>
       </div>
     </div>
