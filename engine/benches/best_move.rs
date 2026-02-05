@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use engine::{Engine, Search};
+use engine::Engine;
 use std::hint::black_box;
 
 fn best_move_benchmark(c: &mut Criterion) {

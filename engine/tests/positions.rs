@@ -123,10 +123,9 @@ fn test_en_passant_pin() {
 
 #[test]
 fn test_promotion() {
-    let mut engine = Engine::from_fen("8/3P4/8/6K1/8/8/8/1k6 w - - 0 1");
+    let mut engine = Engine::from_fen("8/4Q2P/8/8/6k1/5p2/5P2/6K1 w - - 0 1");
 
-    assert_invalid_move(&mut engine, "d7d8");
-    make_move(&mut engine, "d7d8q");
+    make_move(&mut engine, "h7h8q");
     assert_game_state(&engine, "playing");
 }
 

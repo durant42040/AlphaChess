@@ -8,16 +8,16 @@ use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
-use crate::search::TranspositionTable;
+use crate::search::Search;
 
-pub use search::{Perft, Search};
+pub use search::Perft;
 
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
     game_state: GameState,
     attack_state: AttackState,
-    transposition_table: TranspositionTable,
+    search: Search,
 }
 
 impl Engine {
@@ -29,7 +29,7 @@ impl Engine {
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
             attack_state: AttackState::default(),
-            transposition_table: TranspositionTable::new(),
+            search: Search::new(),
         }
     }
 
@@ -41,7 +41,7 @@ impl Engine {
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
             attack_state: AttackState::default(),
-            transposition_table: TranspositionTable::new(),
+            search: Search::new(),
         };
 
         engine.update_attack_state();

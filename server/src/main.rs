@@ -5,7 +5,7 @@ use axum::{
     routing::get,
 };
 use engine::chess::Move;
-use engine::{Engine, Search};
+use engine::Engine;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
