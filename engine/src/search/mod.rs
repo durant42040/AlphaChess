@@ -262,6 +262,10 @@ impl Engine {
             }
             best_move = self.search.transposition_table.get_best_move(hash);
 
+            if depth == self.search.max_depth {
+                break;
+            }
+
             depth += 1;
         }
 
