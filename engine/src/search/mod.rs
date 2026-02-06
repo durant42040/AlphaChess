@@ -253,10 +253,11 @@ impl Engine {
         self.search.reset_timer();
 
         let mut best_move = Move::none();
+        let mut best_score = 0;
 
         let mut depth: u8 = 1;
         while !self.search.time_up() {
-            self.alpha_beta_search(depth, alpha, beta);
+            best_score = self.alpha_beta_search(depth, alpha, beta);
 
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
@@ -271,8 +272,9 @@ impl Engine {
         println!(
             "\x1b[1;32m[Search]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
         \x1b[1;32m[Search]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
-        \x1b[1;32m[Search]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m",
-            self.search.nodes, self.search.max_depth_reached, best_move
+        \x1b[1;32m[Search]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
+        \x1b[1;32m[Search]\x1b[0m \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
+            self.search.nodes, self.search.max_depth_reached, best_move, best_score
         );
         println!();
 

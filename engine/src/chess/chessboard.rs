@@ -191,7 +191,10 @@ impl ChessBoard {
             self.fifty_move_rule = 0;
         }
 
-        self.pieces.promote(promotion, from);
+        if let Some(promotion) = promotion {
+            self.pieces.promote(promotion, from);
+            self.material_score += promotion.value() - Piece::Pawn.value();
+        }
         self.pieces.update_en_passant(from, to);
         self.castle(from, to);
         self.pieces.update(from, to);
@@ -217,6 +220,7 @@ impl ChessBoard {
         let promotion = r#move.promotion;
         if promotion.is_some() {
             self.pieces.undo_promote(to);
+            self.material_score -= promotion.unwrap().value() - Piece::Pawn.value();
         }
 
         self.pieces.update(to, from);

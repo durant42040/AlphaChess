@@ -295,11 +295,7 @@ impl Pieces {
         num_white_bishops + num_white_knights > 1 || num_black_bishops + num_black_knights > 1
     }
 
-    pub fn promote(&mut self, promotion: Option<Piece>, from: Square) {
-        let Some(promotion) = promotion else {
-            return;
-        };
-
+    pub fn promote(&mut self, promotion: Piece, from: Square) {
         match promotion {
             Piece::Queen => self.queens.set_square(from),
             Piece::Rook => self.rooks.set_square(from),

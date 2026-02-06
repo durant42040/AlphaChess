@@ -5,5 +5,13 @@ fn main() {
     let summary = play_one(&config);
     println!("Result: {}, plies: {}", summary.result, summary.plies);
     println!("Board: {}", summary.board);
-    println!("Moves: {}", summary.moves.len());
+    println!(
+        "Moves: {}",
+        summary
+            .moves
+            .iter()
+            .map(|m| m.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
 }
