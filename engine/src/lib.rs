@@ -1,6 +1,6 @@
 pub mod chess;
+pub mod play;
 pub mod search;
-pub mod selfplay;
 
 use std::{fmt, time::Duration};
 

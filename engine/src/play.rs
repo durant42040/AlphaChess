@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use stockfish::Stockfish;
+
 use crate::Engine;
 use crate::chess::{GameState, Move};
 
@@ -64,4 +66,41 @@ pub fn play_many(num_games: u32, base_config: &SelfPlayConfig) -> Vec<GameSummar
     }
 
     results
+}
+
+pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
+    let mut engine = Engine::new();
+    engine.set_search_time_limit(config.time_per_move);
+
+    let mut stockfish = Stockfish::new("stockfish").unwrap();
+    stockfish.setup_for_new_game().unwrap();
+    stockfish.set_depth(8);
+
+    let mut moves = Vec::new();
+    let mut plies: u32 = 0;
+
+    while engine.game_state() == GameState::Playing {
+        if plies % 2 == 0 {
+            let best_move = engine.best_move();
+            engine.make_move(best_move);
+            stockfish.play_move(&best_move.to_string()).unwrap();
+            moves.push(best_move);
+        } else {
+            let stockfish_output = stockfish.go().unwrap();
+            let move_string = stockfish_output.best_move();
+            let best_move = Move::from(&move_string);
+            engine.make_move(best_move);
+            stockfish.play_move(&move_string).unwrap();
+            moves.push(best_move);
+        }
+        println!("{}", engine);
+        plies += 1;
+    }
+
+    GameSummary {
+        result: engine.game_state(),
+        plies,
+        moves,
+        board: engine.to_string(),
+    }
 }
