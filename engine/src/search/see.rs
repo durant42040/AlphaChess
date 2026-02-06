@@ -115,7 +115,7 @@ mod tests {
         let mut engine = Engine::from_fen("1k2q3/1ppn3p/pr6/4b3/5B2/P2N2P1/1PP1Q2P/2K5 w - - 0 1");
         let r#move = Move::from("d3e5");
         let see = engine.see(r#move);
-        assert_eq!(see, 3);
+        assert_eq!(see, 330);
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
         let mut engine = Engine::from_fen("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -");
         let r#move = Move::from("d3e5");
         let see = engine.see(r#move);
-        assert_eq!(see, -2);
+        assert_eq!(see, -220);
     }
 
     #[test]

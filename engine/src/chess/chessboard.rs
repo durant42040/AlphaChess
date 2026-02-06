@@ -222,14 +222,14 @@ impl ChessBoard {
         let from = r#move.from;
         let to = r#move.to;
         let promotion = r#move.promotion;
-        if promotion.is_some() {
+        if let Some(promotion) = promotion {
             if self.player == Player::White {
-                self.material_score += promotion.unwrap().value() - Piece::Pawn.value();
+                self.material_score += promotion.value() - Piece::Pawn.value();
             } else {
-                self.material_score -= promotion.unwrap().value() - Piece::Pawn.value();
+                self.material_score -= promotion.value() - Piece::Pawn.value();
             }
             self.pieces.undo_promote(to);
-            self.material_score -= promotion.unwrap().value() - Piece::Pawn.value();
+            self.material_score -= promotion.value() - Piece::Pawn.value();
         }
 
         self.pieces.update(to, from);
