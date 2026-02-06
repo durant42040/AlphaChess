@@ -107,9 +107,6 @@ impl Engine {
 
     /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
-        if self.search.time_up() {
-            return self.board.score();
-        }
         self.search.nodes += 1;
         let score = self.board.score();
         if score >= beta {
@@ -154,9 +151,6 @@ impl Engine {
     /// 2. Lower: the score is a lower bound of the position, and is stopped early when `score <= alpha`.
     /// 3. Upper: the score is a upper bound of the position, when `score >= beta`.
     fn alpha_beta_search(&mut self, depth: u8, mut alpha: i32, beta: i32) -> i32 {
-        if self.search.time_up() {
-            return self.board.score();
-        }
         self.search.nodes += 1;
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
@@ -190,7 +184,7 @@ impl Engine {
         let tt_move = self.search.transposition_table.get_best_move(hash);
 
         // Validate that the transposition table move is legal before playing it
-        if !tt_move.is_none() && moves.contains(&tt_move) {
+        if !tt_move.is_none() && self.is_legal_move(tt_move) {
             self.act(tt_move);
             let tt_score = self
                 .alpha_beta_search(depth - 1, -beta, -alpha)
@@ -213,6 +207,7 @@ impl Engine {
             if r#move == tt_move {
                 continue;
             }
+            debug_assert!(self.is_legal_move(r#move));
             self.act(r#move);
             let score = self
                 .alpha_beta_search(depth - 1, -beta, -alpha)
@@ -241,7 +236,6 @@ impl Engine {
         self.search
             .transposition_table
             .store(hash, depth, best_score, bound, best_move);
-
         best_score
     }
 
@@ -262,10 +256,6 @@ impl Engine {
             self.alpha_beta_search(depth, alpha, beta);
 
             self.search.max_depth_reached = depth;
-
-            if self.search.time_up() {
-                break;
-            }
             best_move = self.search.transposition_table.get_best_move(hash);
 
             if depth == self.search.max_depth {
@@ -276,10 +266,27 @@ impl Engine {
         }
 
         println!(
-            "searched {} nodes\nmax depth: {}",
-            self.search.nodes, self.search.max_depth_reached
+            "\x1b[1;32m[Search]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
+        \x1b[1;32m[Search]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
+        \x1b[1;32m[Search]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m",
+            self.search.nodes, self.search.max_depth_reached, best_move
         );
+        println!();
+
         assert!(!best_move.is_none(), "Best move is none");
         best_move
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Engine;
+
+    #[test]
+    fn test_alpha_beta_search() {
+        let mut engine =
+            Engine::from_fen("rnbqkbnr/5ppp/1p6/4p3/p1p5/8/PPPPPPPP/1NBQKBNR b Kkq - 0 1");
+        let best_move = engine.best_move();
+        println!("best move: {}", best_move);
     }
 }
