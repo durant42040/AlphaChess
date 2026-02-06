@@ -3,7 +3,7 @@ use std::ops::Not;
 
 use crate::chess::Color;
 
-#[derive(Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameState {
     #[default]
     Playing,

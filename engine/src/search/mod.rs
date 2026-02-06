@@ -11,7 +11,7 @@ pub use perft::Perft;
 
 use crate::Engine;
 use crate::chess::r#move::MoveList;
-use crate::chess::{GameState, Move, Piece};
+use crate::chess::{GameState, Move, Piece, Player};
 use crate::search::transposition::{Bound, TranspositionTable};
 
 pub struct Search {
@@ -107,6 +107,9 @@ impl Engine {
     /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
         self.search.nodes += 1;
+        if self.board.is_draw() {
+            return 0;
+        }
         let score = self.eval();
         if score >= beta {
             return score;
@@ -120,9 +123,7 @@ impl Engine {
             } else {
                 return 0;
             }
-        } else if self.board.is_draw() {
-            return 0;
-        }
+        } 
 
         for r#move in capture_moves {
             if self.see(r#move) < 0 {
@@ -156,6 +157,10 @@ impl Engine {
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
 
+        if self.board.is_draw() {
+            return 0;
+        }
+
         if let Some(score) = self
             .search
             .transposition_table
@@ -180,8 +185,6 @@ impl Engine {
             } else {
                 return 0;
             }
-        } else if self.board.is_draw() {
-            return 0;
         }
 
         let tt_move = self.search.transposition_table.get_best_move(hash);
@@ -265,16 +268,20 @@ impl Engine {
             if depth == self.search.max_depth {
                 break;
             }
-
             depth += 1;
         }
+        let eval = if self.board.player() == Player::White {
+            best_score
+        } else {
+            -best_score
+        };
 
         println!(
             "\x1b[1;32m[Search]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
         \x1b[1;32m[Search]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
         \x1b[1;32m[Search]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
         \x1b[1;32m[Search]\x1b[0m \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
-            self.search.nodes, self.search.max_depth_reached, best_move, best_score
+            self.search.nodes, self.search.max_depth_reached, best_move, eval
         );
         println!();
 
@@ -285,13 +292,26 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use crate::Engine;
+    use crate::{Engine, chess::GameState};
 
     #[test]
-    fn test_alpha_beta_search() {
+    fn test_middlegame() {
         let mut engine =
             Engine::from_fen("rnbqkbnr/5ppp/1p6/4p3/p1p5/8/PPPPPPPP/1NBQKBNR b Kkq - 0 1");
         let best_move = engine.best_move();
         println!("best move: {}", best_move);
+    }
+
+    #[test]
+    fn test_endgame() {
+        let mut engine =
+            Engine::from_fen("3q5/3k5/8/8/8/8/8/3K5 b - - 0 1");
+        while engine.game_state() == GameState::Playing {
+            let best_move = engine.best_move();
+            engine.act(best_move);
+            engine.update_game_state();
+            println!("{}", engine);
+        }
+        assert_eq!(engine.game_state(), GameState::BlackWin);
     }
 }
