@@ -108,7 +108,7 @@ impl Engine {
     /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
     fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
         self.search.nodes += 1;
-        let score = self.board.score();
+        let score = self.eval();
         if score >= beta {
             return score;
         }
@@ -121,6 +121,8 @@ impl Engine {
             } else {
                 return 0;
             }
+        } else if self.board.is_draw() {
+            return 0;
         }
 
         for r#move in capture_moves {
@@ -179,6 +181,8 @@ impl Engine {
             } else {
                 return 0;
             }
+        } else if self.board.is_draw() {
+            return 0;
         }
 
         let tt_move = self.search.transposition_table.get_best_move(hash);
@@ -247,7 +251,7 @@ impl Engine {
         let alpha = i32::MAX.saturating_neg();
         let beta = i32::MIN.saturating_neg();
 
-        self.search.reset_timer(Duration::from_secs(1));
+        self.search.reset_timer(self.search.time_limit);
 
         let mut best_move = Move::none();
 

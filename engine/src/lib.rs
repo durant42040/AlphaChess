@@ -1,6 +1,8 @@
 pub mod chess;
 pub mod search;
-use std::fmt;
+pub mod selfplay;
+
+use std::{fmt, time::Duration};
 
 use crate::chess::AttackState;
 use crate::chess::chessboard::ChessBoard;
@@ -122,6 +124,10 @@ impl Engine {
         self.game_state = GameState::Playing;
         self.attack_state = AttackState::default();
         self.search = Search::new();
+    }
+
+    pub fn set_search_time_limit(&mut self, time_limit: Duration) {
+        self.search.time_limit = time_limit;
     }
 
     pub fn make_move(&mut self, r#move: Move) -> bool {

@@ -1,0 +1,5 @@
+[alias]
+play = "run --manifest-path engine/Cargo.toml --bin play --release"
+fmte = "fmt --manifest-path engine/Cargo.toml"
+fmts = "fmt --manifest-path server/Cargo.toml"
+

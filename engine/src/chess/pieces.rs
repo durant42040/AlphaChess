@@ -71,12 +71,12 @@ pub enum Piece {
 impl Piece {
     pub fn value(self) -> i32 {
         match self {
-            Piece::Pawn => 1,
-            Piece::Knight => 3,
-            Piece::Bishop => 3,
-            Piece::Rook => 5,
-            Piece::Queen => 9,
-            Piece::King => 100,
+            Piece::Pawn => 100,
+            Piece::Knight => 320,
+            Piece::Bishop => 330,
+            Piece::Rook => 500,
+            Piece::Queen => 900,
+            Piece::King => 10000,
         }
     }
 
