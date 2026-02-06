@@ -1,4 +1,4 @@
-use crate::{Engine, GameState, chess::Square};
+use crate::{Engine, chess::Square};
 
 pub trait Evaluation {
     fn mobility_score(&self) -> i32;
@@ -25,16 +25,6 @@ impl Evaluation for Engine {
 
     /// Evaluate the position
     fn eval(&self) -> i32 {
-        if self.game_state == GameState::Draw {
-            return 0;
-        }
-        if self.game_state == GameState::WhiteWin {
-            return i32::MAX;
-        }
-        if self.game_state == GameState::BlackWin {
-            return i32::MIN;
-        }
-
         self.board.score() + self.mobility_score()
     }
 }

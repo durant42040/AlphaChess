@@ -191,7 +191,14 @@ impl ChessBoard {
             self.fifty_move_rule = 0;
         }
 
-        self.pieces.promote(promotion, from);
+        if let Some(promotion) = promotion {
+            if self.player == Player::White {
+                self.material_score += promotion.value() - Piece::Pawn.value();
+            } else {
+                self.material_score -= promotion.value() - Piece::Pawn.value();
+            }
+            self.pieces.promote(promotion, from);
+        }
         self.pieces.update_en_passant(from, to);
         self.castle(from, to);
         self.pieces.update(from, to);
@@ -216,6 +223,11 @@ impl ChessBoard {
         let to = r#move.to;
         let promotion = r#move.promotion;
         if promotion.is_some() {
+            if self.player == Player::White {
+                self.material_score += promotion.unwrap().value() - Piece::Pawn.value();
+            } else {
+                self.material_score -= promotion.unwrap().value() - Piece::Pawn.value();
+            }
             self.pieces.undo_promote(to);
         }
 
