@@ -13,7 +13,7 @@ impl Engine {
         let mut pieces = self.pieces();
         debug_assert!(self.is_legal_move(r#move), "Move is not legal");
 
-        let mut color: Color = self.board.player().color();
+        let mut color = self.board.player().color();
         let mut occupied = pieces.all_pieces() & !Bitboard::from(from);
         let mut all_attackers = self.generate_attacks(to, occupied, Color::White)
             | self.generate_attacks(to, occupied, Color::Black);

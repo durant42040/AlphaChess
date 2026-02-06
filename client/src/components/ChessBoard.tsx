@@ -19,7 +19,8 @@ export function ChessBoard({
   onDragStart,
   onDrop,
 }: ChessBoardProps) {
-  const order = game === 'w' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+  // In self-play mode, show board from white's perspective
+  const order = game === 'b'? [7, 6, 5, 4, 3, 2, 1, 0] :  [0, 1, 2, 3, 4, 5, 6, 7];
 
   return (
     <div>

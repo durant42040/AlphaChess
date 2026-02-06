@@ -125,6 +125,8 @@ impl ChessBoard {
         }
 
         chessboard.fifty_move_rule = parts.next().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
+        chessboard.material_score = chessboard.compute_material_score();
+
         chessboard
             .position_history
             .push(chessboard.hasher.full_hash(&chessboard));
@@ -132,6 +134,29 @@ impl ChessBoard {
         debug_assert!(chessboard.pieces.kings().count() == 2);
 
         chessboard
+    }
+
+    fn compute_material_score(&self) -> i32 {
+        let pieces = self.pieces;
+
+        let white = pieces.white_pieces();
+        let black = pieces.black_pieces();
+
+        let white_score = (pieces.pawns() & white).count() as i32 * Piece::Pawn.value()
+            + (pieces.knights() & white).count() as i32 * Piece::Knight.value()
+            + (pieces.bishops() & white).count() as i32 * Piece::Bishop.value()
+            + (pieces.rooks() & white).count() as i32 * Piece::Rook.value()
+            + (pieces.queens() & white).count() as i32 * Piece::Queen.value()
+            + (pieces.kings() & white).count() as i32 * Piece::King.value();
+
+        let black_score = (pieces.pawns() & black).count() as i32 * Piece::Pawn.value()
+            + (pieces.knights() & black).count() as i32 * Piece::Knight.value()
+            + (pieces.bishops() & black).count() as i32 * Piece::Bishop.value()
+            + (pieces.rooks() & black).count() as i32 * Piece::Rook.value()
+            + (pieces.queens() & black).count() as i32 * Piece::Queen.value()
+            + (pieces.kings() & black).count() as i32 * Piece::King.value();
+
+        white_score - black_score
     }
 
     pub fn act(&mut self, r#move: Move) {

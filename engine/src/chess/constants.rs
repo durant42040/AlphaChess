@@ -579,4 +579,4 @@ pub const BLACK_QUEENSIDE_ROOK_CASTLE_TO: u8 = 59;
 
 pub const MAX_LEGAL_MOVES: usize = 256;
 
-pub const TRANSPOSITION_TABLE_SIZE: usize = 0x400000; // 4MB
+pub const TRANSPOSITION_TABLE_SIZE: usize = 0x4000000; // 64MB
