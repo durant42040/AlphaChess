@@ -229,7 +229,6 @@ impl ChessBoard {
                 self.material_score -= promotion.value() - Piece::Pawn.value();
             }
             self.pieces.undo_promote(to);
-            self.material_score -= promotion.value() - Piece::Pawn.value();
         }
 
         self.pieces.update(to, from);

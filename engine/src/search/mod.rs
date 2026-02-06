@@ -123,7 +123,7 @@ impl Engine {
             } else {
                 return 0;
             }
-        } 
+        }
 
         for r#move in capture_moves {
             if self.see(r#move) < 0 {
@@ -304,8 +304,7 @@ mod tests {
 
     #[test]
     fn test_endgame() {
-        let mut engine =
-            Engine::from_fen("3q5/3k5/8/8/8/8/8/3K5 b - - 0 1");
+        let mut engine = Engine::from_fen("3q5/3k5/8/8/8/8/8/3K5 b - - 0 1");
         while engine.game_state() == GameState::Playing {
             let best_move = engine.best_move();
             engine.act(best_move);
