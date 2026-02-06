@@ -30,7 +30,7 @@ impl Search {
             transposition_table: TranspositionTable::new(),
             nodes: 0,
             start_time: Instant::now(),
-            time_limit: Duration::from_secs(1),
+            time_limit: Duration::from_millis(100),
             max_depth_reached: 0,
         }
     }
@@ -39,9 +39,8 @@ impl Search {
         self.max_depth = max_depth;
     }
 
-    pub fn reset_timer(&mut self, time_limit: Duration) {
+    pub fn reset_timer(&mut self) {
         self.start_time = Instant::now();
-        self.time_limit = time_limit;
         self.max_depth_reached = 0;
     }
 
@@ -251,7 +250,7 @@ impl Engine {
         let alpha = i32::MAX.saturating_neg();
         let beta = i32::MIN.saturating_neg();
 
-        self.search.reset_timer(self.search.time_limit);
+        self.search.reset_timer();
 
         let mut best_move = Move::none();
 

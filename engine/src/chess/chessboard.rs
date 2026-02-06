@@ -2,7 +2,6 @@ use std::fmt;
 
 use crate::chess::castling::CastlingRights;
 use crate::chess::constants::*;
-use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Color, Piece, Pieces};
 use crate::chess::zobrist::Zobrist;
 use crate::chess::{Bitboard, Move, Player, Square};
@@ -33,7 +32,7 @@ impl State {
 
 #[derive(Default)]
 pub struct ChessBoard {
-    move_history: MoveList,
+    move_history: Vec<Move>,
     fifty_move_rule: u8,
     castling_rights: CastlingRights,
     player: Player,
@@ -49,12 +48,13 @@ impl ChessBoard {
         let pieces = Pieces::new();
         let state_history = Vec::with_capacity(8192);
         let position_history = Vec::with_capacity(8192);
+        let move_history = Vec::with_capacity(8192);
         let player = Player::White;
         let castling_rights = CastlingRights::new();
         let hasher = Zobrist::new();
 
         let mut chessboard = Self {
-            move_history: MoveList::new(),
+            move_history,
             fifty_move_rule: 0,
             castling_rights,
             player,
