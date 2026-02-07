@@ -1,9 +1,6 @@
 use crate::chess::{Bitboard, Piece};
 use crate::constants::{
-    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE,
-    DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KNIGHT_SCORE,
-    OPEN_FILE_BONUS, PASSED_PAWN_BONUS, RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_BISHOP_SCORE,
-    WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
+    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KING_SHIELD_BONUS, KNIGHT_SCORE, MOBILITY_SCALE, OPEN_FILE_BONUS, PASSED_PAWN_BONUS, RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_BISHOP_SCORE, WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE
 };
 use crate::{
     Engine,
@@ -18,6 +15,7 @@ pub trait Evaluation {
     fn isolated_pawn_penalty(&self) -> i32;
     fn passed_pawn_bonus(&self) -> i32;
     fn rook_open_file_bonus(&self) -> i32;
+    fn king_safety(&self) -> i32;
     fn eval(&self) -> i32;
 }
 
@@ -40,7 +38,7 @@ impl Evaluation for Engine {
             let moves = self.generate_moves(Square::from(from));
             score -= moves.count() as i32;
         }
-        score
+        score * MOBILITY_SCALE
     }
 
     fn positional_score(&self) -> i32 {
@@ -76,10 +74,11 @@ impl Evaluation for Engine {
 
     fn double_pawn_penalty(&self) -> i32 {
         let mut score = 0;
-        for i in 0..8 {
+        
+        for file in &FILE_MASKS {
             let white_pawns = self.pieces().white_pieces()
                 & self.pieces().pawns()
-                & Bitboard::from(FILE_MASKS[i]);
+                & Bitboard::from(*file);
             let white_pawns_count = white_pawns.count();
             if white_pawns_count > 1 {
                 score += DOUBLE_PAWN_PENALTY * (white_pawns_count - 1) as i32;
@@ -87,7 +86,7 @@ impl Evaluation for Engine {
 
             let black_pawns = self.pieces().black_pieces()
                 & self.pieces().pawns()
-                & Bitboard::from(FILE_MASKS[i]);
+                & Bitboard::from(*file);
             let black_pawns_count = black_pawns.count();
             if black_pawns_count > 1 {
                 score -= DOUBLE_PAWN_PENALTY * (black_pawns_count - 1) as i32;
@@ -166,6 +165,40 @@ impl Evaluation for Engine {
         score
     }
 
+    fn king_safety(&self) -> i32 {
+        let mut score = 0;
+        let white_king = self.pieces().white_pieces() & self.pieces().kings();
+        let black_king = self.pieces().black_pieces() & self.pieces().kings();
+        let white_pawns = self.pieces().white_pieces() & self.pieces().pawns();
+        let black_pawns = self.pieces().black_pieces() & self.pieces().pawns();
+        
+        // The king shield is the number of friendly pieces near the king
+        score += (self.move_generator.generate_king_moves(Square::from(white_king)) & self.pieces().white_pieces()).count() as i32 * KING_SHIELD_BONUS;
+        score -= (self.move_generator.generate_king_moves(Square::from(black_king)) & self.pieces().black_pieces()).count() as i32 * KING_SHIELD_BONUS;
+        
+        // semi-open and open file penalties
+        let square = Square::from(white_king);
+        let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+        if !white_pawns.intersects(file_mask) {
+            score -= SEMI_OPEN_FILE_BONUS;
+            if !black_pawns.intersects(file_mask) {
+                score -= OPEN_FILE_BONUS;
+            }
+        }
+        let square = Square::from(black_king);
+        let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+        if !black_pawns.intersects(file_mask) {
+            score += SEMI_OPEN_FILE_BONUS;
+            if !white_pawns.intersects(file_mask) {
+                score += OPEN_FILE_BONUS;
+            }
+        }
+
+        // king zone attacks
+        
+        score
+    }
+
     /// Evaluate the position
     fn eval(&self) -> i32 {
         let score = self.material_score()
@@ -175,7 +208,7 @@ impl Evaluation for Engine {
             + self.passed_pawn_bonus()
             + self.isolated_pawn_penalty()
             + self.rook_open_file_bonus();
-            
+
         if self.board.player() == Player::White {
             score
         } else {

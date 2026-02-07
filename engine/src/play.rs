@@ -131,17 +131,6 @@ pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
     }
 }
 
-/// Run multiple self-play games and return their summaries.
-pub fn play_many(num_games: u32, base_config: &SelfPlayConfig) -> Vec<GameSummary> {
-    let mut results = Vec::with_capacity(num_games as usize);
-
-    for _ in 0..num_games {
-        results.push(self_play(base_config));
-    }
-
-    results
-}
-
 pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
     let mut engine = Engine::new();
     engine.set_search_time_limit(config.ponder_time);
