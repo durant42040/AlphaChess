@@ -1,6 +1,9 @@
 use crate::chess::{Bitboard, Piece};
 use crate::constants::{
-    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KNIGHT_SCORE, PASSED_PAWN_BONUS, WHITE_BISHOP_SCORE, WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE
+    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE,
+    DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KNIGHT_SCORE,
+    OPEN_FILE_BONUS, PASSED_PAWN_BONUS, RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_BISHOP_SCORE,
+    WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
 };
 use crate::{
     Engine,
@@ -14,29 +17,26 @@ pub trait Evaluation {
     fn double_pawn_penalty(&self) -> i32;
     fn isolated_pawn_penalty(&self) -> i32;
     fn passed_pawn_bonus(&self) -> i32;
+    fn rook_open_file_bonus(&self) -> i32;
     fn eval(&self) -> i32;
 }
 
 impl Evaluation for Engine {
     fn material_score(&self) -> i32 {
-        if self.board.player() == Player::White {
-            self.board.material_score()
-        } else {
-            -self.board.material_score()
-        }
+        self.board.material_score()
     }
 
     fn mobility_score(&self) -> i32 {
         let mut score = 0;
-        let our_mobile_pieces =
-            self.board.our_pieces() & !self.pieces().kings() & !self.pieces().pawns();
-        for from in our_mobile_pieces.iter() {
+        let white_mobile_pieces =
+            self.pieces().white_pieces() & !self.pieces().kings() & !self.pieces().pawns();
+        for from in white_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score += moves.count() as i32;
         }
-        let their_mobile_pieces =
-            self.board.their_pieces() & !self.pieces().kings() & !self.pieces().pawns();
-        for from in their_mobile_pieces.iter() {
+        let black_mobile_pieces =
+            self.pieces().black_pieces() & !self.pieces().kings() & !self.pieces().pawns();
+        for from in black_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score -= moves.count() as i32;
         }
@@ -71,11 +71,7 @@ impl Evaluation for Engine {
             }
         }
 
-        if self.board.player() == Player::White {
-            score
-        } else {
-            -score
-        }
+        score
     }
 
     fn double_pawn_penalty(&self) -> i32 {
@@ -97,11 +93,7 @@ impl Evaluation for Engine {
                 score -= DOUBLE_PAWN_PENALTY * (black_pawns_count - 1) as i32;
             }
         }
-        if self.board.player() == Player::White {
-            score
-        } else {
-            -score
-        }
+        score
     }
 
     fn passed_pawn_bonus(&self) -> i32 {
@@ -118,11 +110,7 @@ impl Evaluation for Engine {
                 score -= PASSED_PAWN_BONUS[7 - (square / 8) as usize];
             }
         }
-        if self.board.player() == Player::White {
-            score
-        } else {
-            -score
-        }
+        score
     }
 
     fn isolated_pawn_penalty(&self) -> i32 {
@@ -139,20 +127,59 @@ impl Evaluation for Engine {
                 score -= ISOLATED_PAWN_PENALTY;
             }
         }
-        if self.board.player() == Player::White {
-            score
-        } else {
-            -score
+        score
+    }
+
+    fn rook_open_file_bonus(&self) -> i32 {
+        let mut score = 0;
+        let white_rooks = self.pieces().white_pieces() & self.pieces().rooks();
+        let white_pawns = self.pieces().white_pieces() & self.pieces().pawns();
+        let black_rooks = self.pieces().black_pieces() & self.pieces().rooks();
+        let black_pawns = self.pieces().black_pieces() & self.pieces().pawns();
+        for idx in white_rooks.iter() {
+            let square = Square::from(idx);
+            let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+            if !white_pawns.intersects(file_mask) {
+                score += SEMI_OPEN_FILE_BONUS;
+                if !black_pawns.intersects(file_mask) {
+                    score += OPEN_FILE_BONUS;
+                }
+            }
+            // bonus for rooks on the 7th rank
+            if square.rank == 6 {
+                score += RANK_7_BONUS;
+            }
         }
+        for idx in black_rooks.iter() {
+            let square = Square::from(idx);
+            let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+            if !black_pawns.intersects(file_mask) {
+                score -= SEMI_OPEN_FILE_BONUS;
+                if !white_pawns.intersects(file_mask) {
+                    score -= OPEN_FILE_BONUS;
+                }
+            }
+            if square.rank == 1 {
+                score -= RANK_7_BONUS;
+            }
+        }
+        score
     }
 
     /// Evaluate the position
     fn eval(&self) -> i32 {
-        self.material_score()
+        let score = self.material_score()
             + self.mobility_score()
             + self.positional_score()
             + self.double_pawn_penalty()
             + self.passed_pawn_bonus()
             + self.isolated_pawn_penalty()
+            + self.rook_open_file_bonus();
+            
+        if self.board.player() == Player::White {
+            score
+        } else {
+            -score
+        }
     }
 }

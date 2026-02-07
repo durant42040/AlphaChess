@@ -917,3 +917,8 @@ pub const PASSED_PAWN_BONUS: [i32; 8] = [0, 10, 30, 50, 75, 100, 150, 0];
 pub const DOUBLE_PAWN_PENALTY: i32 = -50;
 
 pub const ISOLATED_PAWN_PENALTY: i32 = -10;
+
+pub const SEMI_OPEN_FILE_BONUS: i32 = 10;
+pub const OPEN_FILE_BONUS: i32 = 10;
+
+pub const RANK_7_BONUS: i32 = 15;
