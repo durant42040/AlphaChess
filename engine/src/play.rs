@@ -7,17 +7,43 @@ use stockfish::Stockfish;
 use crate::Engine;
 use crate::chess::{GameState, Move};
 
+/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count, default 1).
+pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
+    let mut ponder_ms = None;
+    let mut num_games = None;
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if (a == "--ponder" || a == "-p") && args.get(i + 1).is_some() {
+            ponder_ms = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--games" || a == "-n") && args.get(i + 1).is_some() {
+            num_games = args[i + 1].parse().ok();
+            i += 1;
+        }
+        i += 1;
+    }
+    if let Some(num) = num_games {
+        config.num_games = num;
+    }
+    if let Some(ms) = ponder_ms {
+        config.ponder_time = Duration::from_millis(ms);
+    }
+}
+
 /// Configuration for a self-play game.
 pub struct SelfPlayConfig {
-    pub time_per_move: Duration,
+    pub ponder_time: Duration,
     pub start_fen: Option<String>,
+    pub num_games: u32,
 }
 
 impl Default for SelfPlayConfig {
     fn default() -> Self {
         Self {
-            time_per_move: Duration::from_millis(10),
+            ponder_time: Duration::from_millis(10),
             start_fen: None,
+            num_games: 1,
         }
     }
 }
@@ -51,15 +77,38 @@ pub struct GameSummary {
     pub pgn: String,
 }
 
+/// Print overall result summary (white wins, black wins, draws).
+pub fn print_overall_result(summaries: &[GameSummary]) {
+    let white = summaries
+        .iter()
+        .filter(|s| s.result == GameState::WhiteWin)
+        .count();
+    let black = summaries
+        .iter()
+        .filter(|s| s.result == GameState::BlackWin)
+        .count();
+    let draws = summaries
+        .iter()
+        .filter(|s| s.result == GameState::Draw)
+        .count();
+    println!(
+        "\nOverall: {} games — White {}, Black {}, Draw {}",
+        summaries.len(),
+        white,
+        black,
+        draws
+    );
+}
+
 /// Run a single self-play game where the engine plays both sides.
-pub fn play_one(config: &SelfPlayConfig) -> GameSummary {
+pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
     let mut engine = if let Some(fen) = &config.start_fen {
         Engine::from_fen(fen)
     } else {
         Engine::new()
     };
 
-    engine.set_search_time_limit(config.time_per_move);
+    engine.set_search_time_limit(config.ponder_time);
 
     let mut moves = Vec::new();
     let mut plies: u32 = 0;
@@ -87,7 +136,7 @@ pub fn play_many(num_games: u32, base_config: &SelfPlayConfig) -> Vec<GameSummar
     let mut results = Vec::with_capacity(num_games as usize);
 
     for _ in 0..num_games {
-        results.push(play_one(base_config));
+        results.push(self_play(base_config));
     }
 
     results
@@ -95,11 +144,11 @@ pub fn play_many(num_games: u32, base_config: &SelfPlayConfig) -> Vec<GameSummar
 
 pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
     let mut engine = Engine::new();
-    engine.set_search_time_limit(config.time_per_move);
+    engine.set_search_time_limit(config.ponder_time);
 
     let mut stockfish = Stockfish::new("stockfish").unwrap();
     stockfish.setup_for_new_game().unwrap();
-    stockfish.set_depth(8);
+    stockfish.set_depth(7);
 
     let mut moves = Vec::new();
     let mut plies: u32 = 0;
@@ -120,7 +169,7 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
         }
         let stockfish_eval = stockfish.go().unwrap().eval().value();
         println!(
-            "\x1b[1;31m[Stockfish]\x1b[0m \x1b[1mstockfish eval\x1b[0m \x1b[1;34m{}\x1b[0m",
+            "\x1b[1;31m[Stockfish]\x1b[0m\n\x1b[1mstockfish eval\x1b[0m \x1b[1;34m{}\x1b[0m",
             stockfish_eval
         );
         println!("{}", engine);

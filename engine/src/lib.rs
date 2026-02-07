@@ -128,7 +128,7 @@ impl Engine {
     }
 
     pub fn set_search_time_limit(&mut self, time_limit: Duration) {
-        self.search.time_limit = time_limit;
+        self.search.ponder_time = time_limit;
     }
 
     pub fn make_move(&mut self, r#move: Move) -> bool {

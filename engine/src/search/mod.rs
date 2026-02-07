@@ -19,7 +19,7 @@ pub struct Search {
     pub transposition_table: TranspositionTable,
     pub nodes: u64,
     pub start_time: Instant,
-    pub time_limit: Duration,
+    pub ponder_time: Duration,
     pub max_depth_reached: u8,
 }
 
@@ -30,7 +30,7 @@ impl Search {
             transposition_table: TranspositionTable::new(),
             nodes: 0,
             start_time: Instant::now(),
-            time_limit: Duration::from_millis(100),
+            ponder_time: Duration::from_millis(100),
             max_depth_reached: 0,
         }
     }
@@ -45,7 +45,7 @@ impl Search {
     }
 
     pub fn time_up(&self) -> bool {
-        self.start_time.elapsed() >= self.time_limit
+        self.start_time.elapsed() >= self.ponder_time
     }
 }
 
@@ -277,10 +277,10 @@ impl Engine {
         };
 
         println!(
-            "\x1b[1;32m[Engine]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
-        \x1b[1;32m[Engine]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
-        \x1b[1;32m[Engine]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
-        \x1b[1;32m[Engine]\x1b[0m \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
+            "\x1b[1;32m[Engine]\x1b[0m\n\x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
+          \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
             self.search.nodes, self.search.max_depth_reached, best_move, eval
         );
 
