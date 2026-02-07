@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use shakmaty::san::San;
+use shakmaty::{Chess, Position, uci::UciMove};
 use stockfish::Stockfish;
 
 use crate::Engine;
@@ -14,18 +16,40 @@ pub struct SelfPlayConfig {
 impl Default for SelfPlayConfig {
     fn default() -> Self {
         Self {
-            time_per_move: Duration::from_millis(100),
+            time_per_move: Duration::from_millis(10),
             start_fen: None,
         }
     }
+}
+
+pub fn pgn(moves: &Vec<Move>) -> String {
+    let mut pgn = String::new();
+    let mut pos = Chess::default();
+
+    for i in 0..moves.len() {
+        let r#move = moves[i];
+        if i.is_multiple_of(2) {
+            pgn.push_str(&format!("\n{}.", i / 2 + 1));
+        } else {
+            pgn.push_str(" ");
+        }
+        let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
+        let m = uci.to_move(&pos).expect("illegal move for position");
+        let san = San::from_move(&pos, m.into());
+        pgn.push_str(&san.to_string());
+        pos.play_unchecked(m.into());
+        pgn.push_str(" ");
+    }
+
+    pgn
 }
 
 /// Summary of a completed self-play game.
 pub struct GameSummary {
     pub result: GameState,
     pub plies: u32,
-    pub moves: Vec<Move>,
     pub board: String,
+    pub pgn: String,
 }
 
 /// Run a single self-play game where the engine plays both sides.
@@ -49,11 +73,13 @@ pub fn play_one(config: &SelfPlayConfig) -> GameSummary {
         plies += 1;
     }
 
+    let pgn = pgn(&moves);
+
     GameSummary {
         result: engine.game_state(),
         plies,
-        moves,
         board: engine.to_string(),
+        pgn,
     }
 }
 
@@ -80,7 +106,7 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
     let mut plies: u32 = 0;
 
     while engine.game_state() == GameState::Playing {
-        if plies % 2 == 0 {
+        if plies.is_multiple_of(2) {
             let best_move = engine.best_move();
             engine.make_move(best_move);
             stockfish.play_move(&best_move.to_string()).unwrap();
@@ -88,19 +114,26 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
         } else {
             let stockfish_output = stockfish.go().unwrap();
             let move_string = stockfish_output.best_move();
-            let best_move = Move::from(&move_string);
+            let best_move = Move::from(move_string);
             engine.make_move(best_move);
-            stockfish.play_move(&move_string).unwrap();
+            stockfish.play_move(move_string).unwrap();
             moves.push(best_move);
         }
+        let stockfish_eval = stockfish.go().unwrap().eval().value();
+        println!(
+            "\x1b[1;31m[Stockfish]\x1b[0m \x1b[1mstockfish eval\x1b[0m \x1b[1;34m{}\x1b[0m",
+            stockfish_eval
+        );
         println!("{}", engine);
         plies += 1;
     }
 
+    let pgn = pgn(&moves);
+
     GameSummary {
         result: engine.game_state(),
         plies,
-        moves,
         board: engine.to_string(),
+        pgn,
     }
 }
