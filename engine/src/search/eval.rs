@@ -1,11 +1,11 @@
 use crate::chess::Piece;
 use crate::constants::{
-    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE,
-    WHITE_BISHOP_SCORE, WHITE_KING_SCORE, KNIGHT_SCORE, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
+    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, KNIGHT_SCORE,
+    WHITE_BISHOP_SCORE, WHITE_KING_SCORE, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
 };
 use crate::{
     Engine,
-    chess::{Player, Square, Color},
+    chess::{Color, Player, Square},
 };
 
 pub trait Evaluation {

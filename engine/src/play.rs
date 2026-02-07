@@ -22,23 +22,22 @@ impl Default for SelfPlayConfig {
     }
 }
 
-pub fn pgn(moves: &Vec<Move>) -> String {
+pub fn pgn(moves: &[Move]) -> String {
     let mut pgn = String::new();
     let mut pos = Chess::default();
 
-    for i in 0..moves.len() {
-        let r#move = moves[i];
+    for (i, r#move) in moves.iter().enumerate() {
         if i.is_multiple_of(2) {
             pgn.push_str(&format!("\n{}.", i / 2 + 1));
         } else {
-            pgn.push_str(" ");
+            pgn.push(' ');
         }
         let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
         let m = uci.to_move(&pos).expect("illegal move for position");
-        let san = San::from_move(&pos, m.into());
+        let san = San::from_move(&pos, m);
         pgn.push_str(&san.to_string());
-        pos.play_unchecked(m.into());
-        pgn.push_str(" ");
+        pos.play_unchecked(m);
+        pgn.push(' ');
     }
 
     pgn
