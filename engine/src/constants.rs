@@ -913,3 +913,7 @@ pub const BLACK_PASSED_MASK: [u64; 64] = [
 ];
 
 pub const PASSED_PAWN_BONUS: [i32; 8] = [0, 10, 30, 50, 75, 100, 150, 0];
+
+pub const DOUBLE_PAWN_PENALTY: i32 = -50;
+
+pub const ISOLATED_PAWN_PENALTY: i32 = -10;

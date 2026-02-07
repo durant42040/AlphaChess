@@ -1,8 +1,6 @@
 use crate::chess::{Bitboard, Piece};
 use crate::constants::{
-    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE,
-    FILE_MASKS, ISOLATED_MASK, KNIGHT_SCORE, PASSED_PAWN_BONUS, WHITE_BISHOP_SCORE,
-    WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
+    BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_PASSED_MASK, BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KNIGHT_SCORE, PASSED_PAWN_BONUS, WHITE_BISHOP_SCORE, WHITE_KING_SCORE, WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE
 };
 use crate::{
     Engine,
@@ -88,7 +86,7 @@ impl Evaluation for Engine {
                 & Bitboard::from(FILE_MASKS[i]);
             let white_pawns_count = white_pawns.count();
             if white_pawns_count > 1 {
-                score -= 50 * (white_pawns_count - 1) as i32;
+                score += DOUBLE_PAWN_PENALTY * (white_pawns_count - 1) as i32;
             }
 
             let black_pawns = self.pieces().black_pieces()
@@ -96,7 +94,7 @@ impl Evaluation for Engine {
                 & Bitboard::from(FILE_MASKS[i]);
             let black_pawns_count = black_pawns.count();
             if black_pawns_count > 1 {
-                score += 50 * (black_pawns_count - 1) as i32;
+                score -= DOUBLE_PAWN_PENALTY * (black_pawns_count - 1) as i32;
             }
         }
         if self.board.player() == Player::White {
@@ -133,12 +131,12 @@ impl Evaluation for Engine {
         let mut score = 0;
         for square in white_pawns.iter() {
             if !white_pawns.intersects(Bitboard::from(ISOLATED_MASK[square as usize])) {
-                score -= 10;
+                score += ISOLATED_PAWN_PENALTY;
             }
         }
         for square in black_pawns.iter() {
             if !black_pawns.intersects(Bitboard::from(ISOLATED_MASK[square as usize])) {
-                score += 10;
+                score -= ISOLATED_PAWN_PENALTY;
             }
         }
         if self.board.player() == Player::White {
