@@ -1,5 +1,6 @@
 [alias]
 play = "run --manifest-path Cargo.toml --bin play --release"
+stockfish = "run --manifest-path Cargo.toml --bin play_stockfish --release"
 fmte = "fmt --manifest-path engine/Cargo.toml"
 fmts = "fmt --manifest-path server/Cargo.toml"
 

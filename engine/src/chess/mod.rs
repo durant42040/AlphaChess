@@ -2,7 +2,6 @@ pub mod attack;
 pub mod bitboard;
 pub mod castling;
 pub mod chessboard;
-pub mod constants;
 pub mod game;
 pub mod r#move;
 pub mod move_generator;

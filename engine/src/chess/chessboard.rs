@@ -1,10 +1,10 @@
 use std::fmt;
 
 use crate::chess::castling::CastlingRights;
-use crate::chess::constants::*;
 use crate::chess::pieces::{Color, Piece, Pieces};
 use crate::chess::zobrist::Zobrist;
 use crate::chess::{Bitboard, Move, Player, Square};
+use crate::constants::*;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct State {
@@ -339,12 +339,8 @@ impl ChessBoard {
         self.castling_rights
     }
 
-    pub fn score(&self) -> i32 {
-        if self.player == Player::Black {
-            -self.material_score
-        } else {
-            self.material_score
-        }
+    pub fn material_score(&self) -> i32 {
+        self.material_score
     }
 }
 

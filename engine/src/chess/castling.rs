@@ -1,6 +1,7 @@
 use crate::{
     Engine,
-    chess::{Bitboard, Square, constants::*},
+    chess::{Bitboard, Square},
+    constants::*,
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]

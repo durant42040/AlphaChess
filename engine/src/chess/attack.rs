@@ -1,9 +1,7 @@
 use crate::{
     Engine,
-    chess::{
-        Bitboard, Color, Square,
-        constants::{BLACK_PAWN_CAPTURES, WHITE_PAWN_CAPTURES},
-    },
+    chess::{Bitboard, Color, Square},
+    constants::{BLACK_PAWN_CAPTURES, WHITE_PAWN_CAPTURES},
 };
 
 #[derive(Default)]

@@ -1,4 +1,5 @@
 pub mod chess;
+pub mod constants;
 pub mod play;
 pub mod search;
 
@@ -6,10 +7,10 @@ use std::{fmt, time::Duration};
 
 use crate::chess::AttackState;
 use crate::chess::chessboard::ChessBoard;
-use crate::chess::constants::*;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
+use crate::constants::*;
 use crate::search::Search;
 
 pub use search::Perft;

@@ -277,13 +277,12 @@ impl Engine {
         };
 
         println!(
-            "\x1b[1;32m[Search]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
-        \x1b[1;32m[Search]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
-        \x1b[1;32m[Search]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
-        \x1b[1;32m[Search]\x1b[0m \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
+            "\x1b[1;32m[Engine]\x1b[0m \x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
+        \x1b[1;32m[Engine]\x1b[0m \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
+        \x1b[1;32m[Engine]\x1b[0m \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
+        \x1b[1;32m[Engine]\x1b[0m \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
             self.search.nodes, self.search.max_depth_reached, best_move, eval
         );
-        println!();
 
         assert!(!best_move.is_none(), "Best move is none");
         best_move

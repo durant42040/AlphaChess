@@ -4,7 +4,7 @@ use arrayvec::ArrayVec;
 
 use crate::chess::Piece;
 use crate::chess::Square;
-use crate::chess::constants::MAX_LEGAL_MOVES;
+use crate::constants::MAX_LEGAL_MOVES;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Move {
