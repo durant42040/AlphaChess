@@ -12,6 +12,7 @@ pub use perft::Perft;
 use crate::Engine;
 use crate::chess::r#move::MoveList;
 use crate::chess::{GameState, Move, Piece, Player};
+use crate::constants::MATE_SCORE;
 use crate::search::transposition::{Bound, TranspositionTable};
 
 pub struct Search {
@@ -119,7 +120,7 @@ impl Engine {
         let capture_moves = self.generate_all_capture_moves();
         if capture_moves.is_empty() && self.generate_all_legal_moves().is_empty() {
             if self.is_check() {
-                return i32::MIN;
+                return -MATE_SCORE;
             } else {
                 return 0;
             }
@@ -156,7 +157,6 @@ impl Engine {
         self.search.nodes += 1;
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
-
         if self.board.is_draw() {
             return 0;
         }
@@ -179,9 +179,10 @@ impl Engine {
         let moves = self.generate_all_legal_moves();
 
         // if there are no legal moves, check for checkmate or stalemate
+        // mate in 1 have higher score than mate in 2
         if moves.is_empty() {
             if self.is_check() {
-                return i32::MIN;
+                return -MATE_SCORE - depth as i32;
             } else {
                 return 0;
             }
@@ -311,5 +312,15 @@ mod tests {
             println!("{}", engine);
         }
         assert_eq!(engine.game_state(), GameState::WhiteWin);
+    }
+
+    #[test]
+    fn test_mate_in_one() {
+        let mut engine = Engine::from_fen("8/8/8/8/8/q6k/8/7K b - - 0 1");
+        let best_move = engine.best_move();
+        engine.act(best_move);
+        engine.update_game_state();
+        println!("{}", engine);
+        assert_eq!(engine.game_state(), GameState::BlackWin);
     }
 }

@@ -300,7 +300,7 @@ impl ChessBoard {
     }
 
     pub fn repetition_count(&self) -> u8 {
-        if self.position_history.len() <= 2 {
+        if self.position_history.len() <= 2 || self.fifty_move_rule == 0 {
             return 0;
         }
 
