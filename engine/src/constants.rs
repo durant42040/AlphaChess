@@ -1061,3 +1061,5 @@ pub const KING_SHIELD_BONUS: i32 = 5;
 
 pub const MOBILITY_SCALE: i32 = 2;
 pub const KING_VIRTUAL_MOBILITY_BONUS: i32 = 5;
+
+pub const ATTACK_WEIGHT: [i32; 16] = [0, 0, 50, 75, 88, 94, 97, 99, 99, 99, 99, 99, 99, 99, 99, 99];

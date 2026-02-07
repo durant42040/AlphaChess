@@ -80,6 +80,16 @@ impl Piece {
         }
     }
 
+    pub fn attack_value(self) -> i32 {
+        match self {
+            Piece::Knight => 20,
+            Piece::Bishop => 20,
+            Piece::Rook => 40,
+            Piece::Queen => 80,
+            _ => 0,
+        }
+    }
+
     /// Create a `(Piece, Color)` pair from a FEN board character.
     pub fn from_char(c: char) -> Option<(Self, Color)> {
         let color = if c.is_uppercase() {
@@ -268,6 +278,14 @@ impl Pieces {
     pub fn value(&self, i: Square) -> i32 {
         if let Some((piece, _)) = self.piece(i) {
             piece.value()
+        } else {
+            0
+        }
+    }
+
+    pub fn attack_value(&self, i: Square) -> i32 {
+        if let Some((piece, _)) = self.piece(i) {
+            piece.attack_value()
         } else {
             0
         }
