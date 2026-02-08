@@ -88,6 +88,7 @@ impl MoveGenerator {
         }
     }
 
+    #[inline]
     pub fn generate_white_pawn_moves(
         &self,
         from: Square,
@@ -103,6 +104,7 @@ impl MoveGenerator {
         one_step_moves | two_step_moves | capture_moves
     }
 
+    #[inline]
     pub fn generate_black_pawn_moves(
         &self,
         from: Square,
@@ -118,14 +120,17 @@ impl MoveGenerator {
         one_step_moves | two_step_moves | capture_moves
     }
 
+    #[inline]
     pub fn generate_knight_moves(&self, from: Square) -> Bitboard {
         Bitboard::from(self.knight[from])
     }
 
+    #[inline]
     pub fn generate_king_moves(&self, from: Square) -> Bitboard {
         Bitboard::from(self.king[from])
     }
 
+    #[inline]
     fn generate_bishop_moves_slow(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         let rank = from.rank as i32;
         let file = from.file as i32;
@@ -138,6 +143,7 @@ impl MoveGenerator {
         moves
     }
 
+    #[inline]
     fn generate_rook_moves_slow(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         let file = from.file as i32;
         let rank = from.rank as i32;
@@ -149,6 +155,7 @@ impl MoveGenerator {
         moves
     }
 
+    #[inline]
     pub fn generate_bishop_moves(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         let blockers = all_pieces.bitboard & BISHOP_MASKS[from];
         let key = ((blockers.wrapping_mul(BISHOP_MAGIC_NUMBERS[from]))
@@ -157,6 +164,7 @@ impl MoveGenerator {
         Bitboard::from(self.bishop[from][key])
     }
 
+    #[inline]
     pub fn generate_rook_moves(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         let blockers = all_pieces.bitboard & ROOK_MASKS[from];
         let key = ((blockers.wrapping_mul(ROOK_MAGIC_NUMBERS[from]))
@@ -165,6 +173,7 @@ impl MoveGenerator {
         Bitboard::from(self.rook[from][key])
     }
 
+    #[inline]
     pub fn generate_queen_moves(&self, from: Square, all_pieces: Bitboard) -> Bitboard {
         self.generate_rook_moves(from, all_pieces) | self.generate_bishop_moves(from, all_pieces)
     }
@@ -179,12 +188,6 @@ impl Default for MoveGenerator {
 impl Engine {
     pub fn generate_moves(&self, from: Square) -> Bitboard {
         let pieces = self.pieces();
-        let our_pieces = if pieces.white_pieces().get_square(from) {
-            pieces.white_pieces()
-        } else {
-            pieces.black_pieces()
-        };
-
         let mut moves = Bitboard::zero();
 
         if pieces.pawns().get_square(from) {
@@ -218,8 +221,6 @@ impl Engine {
         } else if pieces.kings().get_square(from) {
             moves = self.move_generator.generate_king_moves(from);
         }
-
-        moves &= !our_pieces;
 
         moves
     }

@@ -1,4 +1,3 @@
-use std::time::Duration;
 
 use shakmaty::san::San;
 use shakmaty::{Chess, Position, uci::UciMove};
@@ -31,7 +30,7 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
         config.num_games = num;
     }
     if let Some(ms) = ponder_ms {
-        config.ponder_time = Duration::from_millis(ms);
+        config.ponder_time = ms;
     }
     if let Some(depth) = stockfish_depth {
         config.stockfish_depth = depth;
@@ -40,7 +39,7 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
 
 /// Configuration for a self-play game.
 pub struct SelfPlayConfig {
-    pub ponder_time: Duration,
+    pub ponder_time: u64,
     pub start_fen: Option<String>,
     pub num_games: u32,
     pub stockfish_depth: u32,
@@ -49,7 +48,7 @@ pub struct SelfPlayConfig {
 impl Default for SelfPlayConfig {
     fn default() -> Self {
         Self {
-            ponder_time: Duration::from_millis(10),
+            ponder_time: 10,
             start_fen: None,
             num_games: 1,
             stockfish_depth: 8,
@@ -117,7 +116,7 @@ pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
         Engine::new()
     };
 
-    engine.set_search_time_limit(config.ponder_time);
+    engine.set_ponder_time(config.ponder_time);
 
     let mut moves = Vec::new();
     let mut plies: u32 = 0;
@@ -142,7 +141,7 @@ pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
 
 pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
     let mut engine = Engine::new();
-    engine.set_search_time_limit(config.ponder_time);
+    engine.set_ponder_time(config.ponder_time);
 
     let mut stockfish = Stockfish::new("stockfish").unwrap();
     stockfish.setup_for_new_game().unwrap();

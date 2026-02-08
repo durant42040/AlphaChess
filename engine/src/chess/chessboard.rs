@@ -277,6 +277,7 @@ impl ChessBoard {
         }
     }
 
+    #[inline(always)]
     pub fn pieces_of_color(&self, color: Color) -> Bitboard {
         if color == Color::White {
             self.pieces.white_pieces()
@@ -285,16 +286,19 @@ impl ChessBoard {
         }
     }
 
+    #[inline(always)]
     pub fn player(&self) -> Player {
         self.player
     }
 
+    #[inline(always)]
     pub fn is_draw(&self) -> bool {
         !self.pieces.has_mating_material()
             || self.fifty_move_rule >= 100
             || self.repetition_count() >= 2
     }
 
+    #[inline(always)]
     pub fn fifty_move_rule(&self) -> u8 {
         self.fifty_move_rule
     }
@@ -326,19 +330,23 @@ impl ChessBoard {
         count
     }
 
+    #[inline(always)]
     pub fn move_history(&self) -> &[Move] {
         &self.move_history
     }
 
+    #[inline(always)]
     pub fn position_hash(&self) -> u64 {
         debug_assert!(!self.position_history.is_empty());
         self.position_history.last().copied().unwrap()
     }
 
+    #[inline(always)]
     pub fn castling_rights(&self) -> CastlingRights {
         self.castling_rights
     }
 
+    #[inline(always)]
     pub fn material_score(&self) -> i32 {
         self.material_score
     }

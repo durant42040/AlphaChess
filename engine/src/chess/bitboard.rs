@@ -12,42 +12,52 @@ pub struct Bitboard {
 }
 
 impl Bitboard {
+    #[inline(always)]
     pub fn zero() -> Self {
         Self { bitboard: 0 }
     }
 
+    #[inline(always)]
     pub fn get_square(&self, square: Square) -> bool {
         self.bitboard & (1 << square.square) != 0
     }
 
+    #[inline(always)]
     pub fn get(&self, index: u8) -> bool {
         self.bitboard & (1 << index) != 0
     }
 
+    #[inline(always)]
     pub fn set_square(&mut self, square: Square) {
         self.bitboard |= 1 << square.square;
     }
 
+    #[inline(always)]
     pub fn set(&mut self, index: u8) {
         self.bitboard |= 1 << index;
     }
 
+    #[inline(always)]
     pub fn reset(&mut self) {
         self.bitboard = 0;
     }
 
+    #[inline(always)]
     pub fn clear_square(&mut self, square: Square) {
         self.bitboard &= !(1 << square.square);
     }
 
+    #[inline(always)]
     pub fn clear(&mut self, index: u8) {
         self.bitboard &= !(1 << index);
     }
 
+    #[inline(always)]
     pub fn empty(&self) -> bool {
         self.bitboard == 0
     }
 
+    #[inline(always)]
     pub fn intersects(&self, other: Bitboard) -> bool {
         self.bitboard & other.bitboard != 0
     }
@@ -68,16 +78,20 @@ impl Bitboard {
         }
     }
 
+    #[inline(always)]
     pub fn get_lsb(&self) -> u8 {
         self.bitboard.trailing_zeros() as u8
     }
 
+    #[inline(always)]
     pub fn pop_lsb(&mut self) -> u8 {
         let lsb = self.get_lsb();
         self.clear(lsb);
         lsb
     }
 
+
+    #[inline(always)]
     pub fn count(&self) -> u8 {
         self.bitboard.count_ones() as u8
     }

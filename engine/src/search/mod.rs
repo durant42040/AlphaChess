@@ -298,6 +298,7 @@ mod tests {
     fn test_middlegame() {
         let mut engine =
             Engine::from_fen("rnbqkbnr/5ppp/1p6/4p3/p1p5/8/PPPPPPPP/1NBQKBNR b Kkq - 0 1");
+        engine.set_ponder_time(10);
         let best_move = engine.best_move();
         println!("best move: {}", best_move);
     }
@@ -305,6 +306,7 @@ mod tests {
     #[test]
     fn test_endgame() {
         let mut engine = Engine::from_fen("Q7/3k5/8/8/6KP/2p5/2P3P1/8 b - - 0 1");
+        engine.set_ponder_time(10);
         while engine.game_state() == GameState::Playing {
             let best_move = engine.best_move();
             engine.act(best_move);
@@ -317,10 +319,20 @@ mod tests {
     #[test]
     fn test_mate_in_one() {
         let mut engine = Engine::from_fen("8/8/8/8/8/q6k/8/7K b - - 0 1");
+        engine.set_ponder_time(10);
         let best_move = engine.best_move();
         engine.act(best_move);
         engine.update_game_state();
         println!("{}", engine);
         assert_eq!(engine.game_state(), GameState::BlackWin);
+    }
+
+    #[test]
+    fn test_nodes_searched() {
+        let mut engine = Engine::from_fen("rnbqkbnr/5ppp/1p6/4p3/p1p5/8/PPPPPPPP/1NBQKBNR b Kkq - 0 1");
+        engine.set_ponder_time(1000);
+        engine.best_move();
+        // 12385448
+        println!("nodes searched: {}", engine.search.nodes);
     }
 }

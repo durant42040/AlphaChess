@@ -354,53 +354,64 @@ impl Pieces {
         }
     }
 
-    // Getters for all fields
+    #[inline(always)]
     pub fn pawns(&self) -> Bitboard {
         self.pawns
     }
 
+    #[inline(always)]
     pub fn knights(&self) -> Bitboard {
         self.knights
     }
 
+    #[inline(always)]
     pub fn bishops(&self) -> Bitboard {
         self.bishops
     }
 
+    #[inline(always)]
     pub fn rooks(&self) -> Bitboard {
         self.rooks
     }
 
+    #[inline(always)]
     pub fn queens(&self) -> Bitboard {
         self.queens
     }
 
+    #[inline(always)]
     pub fn kings(&self) -> Bitboard {
         self.kings
     }
 
+    #[inline(always)]
     pub fn white_pieces(&self) -> Bitboard {
         self.white_pieces
     }
 
+    #[inline(always)]
     pub fn black_pieces(&self) -> Bitboard {
         self.black_pieces
     }
 
+    #[inline(always)]
     pub fn all_pieces(&self) -> Bitboard {
         self.all_pieces
     }
 
+    #[inline(always)]
     pub fn en_passant(&self) -> Bitboard {
         self.en_passant
     }
 
     // Setter for en_passant (needed for undo)
+    #[inline(always)]
     pub fn set_en_passant(&mut self, en_passant: Bitboard) {
         self.en_passant = en_passant;
     }
 
     // Set en_passant square (needed for FEN loading)
+    #[inline(always)]
     pub fn set_en_passant_square(&mut self, square: Square) {
         self.en_passant.set_square(square);
     }

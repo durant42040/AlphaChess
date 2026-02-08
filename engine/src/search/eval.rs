@@ -1,4 +1,4 @@
-use crate::chess::{Bitboard, Piece};
+use crate::chess::Bitboard;
 use crate::constants::{
     ATTACK_WEIGHT, BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_KING_ZONE, BLACK_PASSED_MASK,
     BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK,
@@ -8,7 +8,7 @@ use crate::constants::{
 };
 use crate::{
     Engine,
-    chess::{Color, Player, Square},
+    chess::{Player, Square},
 };
 
 pub trait Evaluation {
@@ -30,14 +30,15 @@ impl Evaluation for Engine {
 
     fn mobility_score(&self) -> i32 {
         let mut score = 0;
+        let pieces = self.pieces();
         let white_mobile_pieces =
-            self.pieces().white_pieces() & !self.pieces().kings() & !self.pieces().pawns();
+            pieces.white_pieces() & !pieces.kings() & !pieces.pawns();
         for from in white_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score += moves.count() as i32;
         }
         let black_mobile_pieces =
-            self.pieces().black_pieces() & !self.pieces().kings() & !self.pieces().pawns();
+            pieces.black_pieces() & !pieces.kings() & !pieces.pawns();
         for from in black_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score -= moves.count() as i32;
@@ -47,30 +48,45 @@ impl Evaluation for Engine {
 
     fn positional_score(&self) -> i32 {
         let pieces = self.pieces();
-        let all_pieces = self.pieces().all_pieces();
+        let white_pieces = pieces.white_pieces();
+        let black_pieces = pieces.black_pieces();
+        let pawns = pieces.pawns();
+        let knights = pieces.knights();
+        let bishops = pieces.bishops();
+        let rooks = pieces.rooks();
+        let kings = pieces.kings();
+        
         let mut score = 0;
 
-        for i in all_pieces.iter() {
-            let (piece, color) = pieces.piece(Square::from(i)).unwrap();
-
-            match color {
-                Color::White => match piece {
-                    Piece::Pawn => score += WHITE_PAWN_SCORE[i as usize],
-                    Piece::Knight => score += KNIGHT_SCORE[i as usize],
-                    Piece::Bishop => score += WHITE_BISHOP_SCORE[i as usize],
-                    Piece::Rook => score += WHITE_ROOK_SCORE[i as usize],
-                    Piece::King => score += WHITE_KING_SCORE[i as usize],
-                    Piece::Queen => {}
-                },
-                Color::Black => match piece {
-                    Piece::Pawn => score -= BLACK_PAWN_SCORE[i as usize],
-                    Piece::Knight => score -= KNIGHT_SCORE[i as usize],
-                    Piece::Bishop => score -= BLACK_BISHOP_SCORE[i as usize],
-                    Piece::Rook => score -= BLACK_ROOK_SCORE[i as usize],
-                    Piece::King => score -= BLACK_KING_SCORE[i as usize],
-                    Piece::Queen => {}
-                },
-            }
+        for i in (white_pieces & pawns).iter() {
+            score += WHITE_PAWN_SCORE[i as usize];
+        }
+        for i in (black_pieces & pawns).iter() {
+            score -= BLACK_PAWN_SCORE[i as usize];
+        }
+        for i in (white_pieces & knights).iter() {
+            score += KNIGHT_SCORE[i as usize];
+        }
+        for i in (black_pieces & knights).iter() {
+            score -= KNIGHT_SCORE[i as usize];
+        }
+        for i in (white_pieces & bishops).iter() {
+            score += WHITE_BISHOP_SCORE[i as usize];
+        }
+        for i in (black_pieces & bishops).iter() {
+            score -= BLACK_BISHOP_SCORE[i as usize];
+        }
+        for i in (white_pieces & rooks).iter() {
+            score += WHITE_ROOK_SCORE[i as usize];
+        }
+        for i in (black_pieces & rooks).iter() {
+            score -= BLACK_ROOK_SCORE[i as usize];
+        }
+        for i in (white_pieces & kings).iter() {
+            score += WHITE_KING_SCORE[i as usize];
+        }
+        for i in (black_pieces & kings).iter() {
+            score -= BLACK_KING_SCORE[i as usize];
         }
 
         score
@@ -98,8 +114,9 @@ impl Evaluation for Engine {
     }
 
     fn passed_pawn_bonus(&self) -> i32 {
-        let white_pawns = self.pieces().white_pieces() & self.pieces().pawns();
-        let black_pawns = self.pieces().black_pieces() & self.pieces().pawns();
+        let pieces = self.pieces();
+        let white_pawns = pieces.white_pieces() & pieces.pawns();
+        let black_pawns = pieces.black_pieces() & pieces.pawns();
         let mut score = 0;
         for square in white_pawns.iter() {
             if !black_pawns.intersects(Bitboard::from(WHITE_PASSED_MASK[square as usize])) {
@@ -115,8 +132,9 @@ impl Evaluation for Engine {
     }
 
     fn isolated_pawn_penalty(&self) -> i32 {
-        let white_pawns = self.pieces().white_pieces() & self.pieces().pawns();
-        let black_pawns = self.pieces().black_pieces() & self.pieces().pawns();
+        let pieces = self.pieces();
+        let white_pawns = pieces.white_pieces() & pieces.pawns();
+        let black_pawns = pieces.black_pieces() & pieces.pawns();
         let mut score = 0;
         for square in white_pawns.iter() {
             if !white_pawns.intersects(Bitboard::from(ISOLATED_MASK[square as usize])) {
@@ -133,10 +151,11 @@ impl Evaluation for Engine {
 
     fn rook_open_file_bonus(&self) -> i32 {
         let mut score = 0;
-        let white_rooks = self.pieces().white_pieces() & self.pieces().rooks();
-        let white_pawns = self.pieces().white_pieces() & self.pieces().pawns();
-        let black_rooks = self.pieces().black_pieces() & self.pieces().rooks();
-        let black_pawns = self.pieces().black_pieces() & self.pieces().pawns();
+        let pieces = self.pieces();
+        let white_rooks = pieces.white_pieces() & pieces.rooks();
+        let white_pawns = pieces.white_pieces() & pieces.pawns();
+        let black_rooks = pieces.black_pieces() & pieces.rooks();
+        let black_pawns = pieces.black_pieces() & pieces.pawns();
         for idx in white_rooks.iter() {
             let square = Square::from(idx);
             let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
@@ -169,25 +188,26 @@ impl Evaluation for Engine {
 
     fn king_safety(&self) -> i32 {
         let mut score = 0;
-        let white_pieces = self.pieces().white_pieces();
-        let black_pieces = self.pieces().black_pieces();
-        let white_king = white_pieces & self.pieces().kings();
-        let black_king = black_pieces & self.pieces().kings();
-        let white_pawns = white_pieces & self.pieces().pawns();
-        let black_pawns = black_pieces & self.pieces().pawns();
+        let pieces = self.pieces();
+        let white_pieces = pieces.white_pieces();
+        let black_pieces = pieces.black_pieces();
+        let white_king = white_pieces & pieces.kings();
+        let black_king = black_pieces & pieces.kings();
+        let white_pawns = white_pieces & pieces.pawns();
+        let black_pawns = black_pieces & pieces.pawns();
 
         // The king shield is the number of friendly pieces near the king
         score += (self
             .move_generator
             .generate_king_moves(Square::from(white_king))
-            & self.pieces().white_pieces())
-        .count() as i32
+            & white_pieces)
+            .count() as i32
             * KING_SHIELD_BONUS;
         score -= (self
             .move_generator
             .generate_king_moves(Square::from(black_king))
-            & self.pieces().black_pieces())
-        .count() as i32
+            & black_pieces)
+            .count() as i32
             * KING_SHIELD_BONUS;
 
         // semi-open and open file penalties
@@ -214,11 +234,12 @@ impl Evaluation for Engine {
         let mut attack_value = 0;
 
         for square in (black_pieces & !black_king & !black_pawns).iter() {
-            let moves = self.generate_moves(Square::from(square));
+            let square = Square::from(square);
+            let moves = self.generate_moves(square);
             if white_king_zone.intersects(moves) {
                 attack_count += 1;
                 let attacked_squares = (white_king_zone & moves).count() as i32;
-                attack_value += attacked_squares * self.pieces().attack_value(Square::from(square));
+                attack_value += attacked_squares * self.pieces().attack_value(square);
             }
         }
         score -= attack_value * ATTACK_WEIGHT[attack_count] / 100;
@@ -228,11 +249,12 @@ impl Evaluation for Engine {
         attack_value = 0;
 
         for square in (white_pieces & !white_king & !white_pawns).iter() {
-            let moves = self.generate_moves(Square::from(square));
+            let square = Square::from(square);
+            let moves = self.generate_moves(square);
             if black_king_zone.intersects(moves) {
                 attack_count += 1;
                 let attacked_squares = (black_king_zone & moves).count() as i32;
-                attack_value += attacked_squares * self.pieces().attack_value(Square::from(square));
+                attack_value += attacked_squares * self.pieces().attack_value(square);
             }
         }
         score += attack_value * ATTACK_WEIGHT[attack_count] / 100;

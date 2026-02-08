@@ -34,6 +34,7 @@ impl Move {
         }
     }
 
+    #[inline(always)]
     pub fn is_none(&self) -> bool {
         self.from.square == 0 && self.to.square == 0 && self.promotion.is_none()
     }

@@ -127,8 +127,8 @@ impl Engine {
         self.search = Search::new();
     }
 
-    pub fn set_search_time_limit(&mut self, time_limit: Duration) {
-        self.search.ponder_time = time_limit;
+    pub fn set_ponder_time(&mut self, time: u64) {
+        self.search.ponder_time = Duration::from_millis(time);
     }
 
     pub fn make_move(&mut self, r#move: Move) -> bool {
@@ -166,7 +166,15 @@ impl Engine {
 
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
+        
         let pieces = self.pieces();
+        let our_pieces = if pieces.white_pieces().get_square(from) {
+            pieces.white_pieces()
+        } else {
+            pieces.black_pieces()
+        };
+
+        legal_moves &= !our_pieces;
 
         // King moves
         if pieces.kings().get_square(from) {

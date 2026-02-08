@@ -35,6 +35,7 @@ pub enum Player {
 }
 
 impl Player {
+    #[inline(always)]
     pub fn color(self) -> Color {
         match self {
             Player::White => Color::White,
