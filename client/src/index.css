@@ -1,23 +1,27 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
   line-height: 1.5;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --bg-page: #0f0f12;
+  --bg-card: #18181c;
+  --text: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --border: #27272a;
 }
 
 #root {
   max-width: 1280px;
   margin: 0 auto;
   text-align: center;
+  background-color: var(--bg-page);
 }
 
 .app-root:focus {
   outline: none;
-}
-
-* {
-  background-color: white;
 }
 
 .row {
@@ -60,56 +64,93 @@
 }
 
 .start {
-  color: black;
+  color: var(--text);
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.start h1 {
+  font-size: 2.5rem;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem 0;
+}
+
+.start > div:first-of-type {
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
 .button {
-  margin: 5px;
-  background: #424afd;
+  margin: 6px;
+  background: var(--accent);
   color: white;
 }
 .button:hover {
-  filter: brightness(1.1);
+  background: var(--accent-hover);
 }
 
 .head {
-  color: black;
+  color: var(--text);
+  background-color: var(--bg-page);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .gameOver {
-  margin: 0 auto;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .rematch {
   margin: 10px 0;
-  background: #424afd;
+  background: var(--accent);
   color: white;
 }
 .rematch:hover {
-  filter: brightness(1.1);
+  background: var(--accent-hover);
 }
 
 .footer {
   display: flex;
   justify-content: flex-end;
+  padding: 0.75rem 0;
+  background-color: var(--bg-page);
+  border-top: 1px solid var(--border);
+}
+
+.app-root {
+  background-color: var(--bg-page);
+  min-height: 100vh;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-page);
+  color: var(--text);
 }
 
 button,
 .button,
 .rematch {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  border-radius: 0;
+  border: 1px solid var(--border);
+  padding: 0.6em 1.4em;
+  font-size: 0.95em;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
+  background-color: var(--accent);
+  transition: background-color 0.15s ease;
 }

@@ -22,10 +22,10 @@ export function Square({
   const [dragOpacity, setDragOpacity] = useState(false);
   const [rank, file] = position;
   const bg = isSelected
-    ? '#689b5f'
+    ? '#4a7c4a'
     : (rank + file) % 2 === 1
-      ? '#c78443'
-      : '#fde6bf';
+      ? '#3f3f46'
+      : '#52525b';
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
