@@ -10,7 +10,6 @@ fn main() {
         println!("=== Game {} / {} ===", game, config.num_games);
         let summary = self_play(&config);
         println!("Result: {}, plies: {}", summary.result, summary.plies);
-        println!("Board: {}", summary.board);
         println!("PGN: \n{}", summary.pgn);
         results.push(summary);
     }

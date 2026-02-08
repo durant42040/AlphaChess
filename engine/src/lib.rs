@@ -10,7 +10,7 @@ use crate::chess::chessboard::ChessBoard;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
-use crate::constants::*;
+use crate::constants::{ALL_CASTLING_RIGHTS, BLACK_CASTLE_KINGSIDE, BLACK_CASTLE_QUEENSIDE, BLACK_KING_START, WHITE_CASTLE_KINGSIDE, WHITE_CASTLE_QUEENSIDE, WHITE_KING_START};
 use crate::search::Search;
 
 pub use search::Perft;

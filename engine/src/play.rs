@@ -7,10 +7,11 @@ use stockfish::Stockfish;
 use crate::Engine;
 use crate::chess::{GameState, Move};
 
-/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count, default 1).
+/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count), `--depth`/`-d` (Stockfish depth).
 pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     let mut ponder_ms = None;
     let mut num_games = None;
+    let mut stockfish_depth = None;
     let mut i = 0;
     while i < args.len() {
         let a = &args[i];
@@ -19,6 +20,9 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
             i += 1;
         } else if (a == "--games" || a == "-n") && args.get(i + 1).is_some() {
             num_games = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--depth" || a == "-d") && args.get(i + 1).is_some() {
+            stockfish_depth = args[i + 1].parse().ok();
             i += 1;
         }
         i += 1;
@@ -29,6 +33,9 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     if let Some(ms) = ponder_ms {
         config.ponder_time = Duration::from_millis(ms);
     }
+    if let Some(depth) = stockfish_depth {
+        config.stockfish_depth = depth;
+    }
 }
 
 /// Configuration for a self-play game.
@@ -36,6 +43,7 @@ pub struct SelfPlayConfig {
     pub ponder_time: Duration,
     pub start_fen: Option<String>,
     pub num_games: u32,
+    pub stockfish_depth: u32,
 }
 
 impl Default for SelfPlayConfig {
@@ -44,6 +52,7 @@ impl Default for SelfPlayConfig {
             ponder_time: Duration::from_millis(10),
             start_fen: None,
             num_games: 1,
+            stockfish_depth: 8,
         }
     }
 }
@@ -137,7 +146,7 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
 
     let mut stockfish = Stockfish::new("stockfish").unwrap();
     stockfish.setup_for_new_game().unwrap();
-    stockfish.set_depth(7);
+    stockfish.set_depth(config.stockfish_depth);
 
     let mut moves = Vec::new();
     let mut plies: u32 = 0;

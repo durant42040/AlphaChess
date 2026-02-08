@@ -73,7 +73,7 @@ fn perft_nodes_per_second(c: &mut Criterion) {
             b.iter(|| {
                 let mut perft = Perft::new(starting_fen);
                 let nodes = perft.search(black_box(*depth));
-                let _nps = nodes; // Calculate NPS from timing
+                let _nps = nodes;
                 nodes
             })
         });
