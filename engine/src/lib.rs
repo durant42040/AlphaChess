@@ -10,7 +10,10 @@ use crate::chess::chessboard::ChessBoard;
 use crate::chess::r#move::MoveList;
 use crate::chess::pieces::{Piece, Pieces};
 use crate::chess::{Bitboard, GameState, Move, MoveGenerator, Player, Square};
-use crate::constants::{ALL_CASTLING_RIGHTS, BLACK_CASTLE_KINGSIDE, BLACK_CASTLE_QUEENSIDE, BLACK_KING_START, WHITE_CASTLE_KINGSIDE, WHITE_CASTLE_QUEENSIDE, WHITE_KING_START};
+use crate::constants::{
+    ALL_CASTLING_RIGHTS, BLACK_CASTLE_KINGSIDE, BLACK_CASTLE_QUEENSIDE, BLACK_KING_START,
+    WHITE_CASTLE_KINGSIDE, WHITE_CASTLE_QUEENSIDE, WHITE_KING_START,
+};
 use crate::search::Search;
 
 pub use search::Perft;
@@ -166,7 +169,7 @@ impl Engine {
 
     pub fn generate_legal_moves(&mut self, from: Square) -> Bitboard {
         let mut legal_moves = self.generate_moves(from);
-        
+
         let pieces = self.pieces();
         let our_pieces = if pieces.white_pieces().get_square(from) {
             pieces.white_pieces()

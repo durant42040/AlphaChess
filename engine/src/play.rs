@@ -1,4 +1,3 @@
-
 use shakmaty::san::San;
 use shakmaty::{Chess, Position, uci::UciMove};
 use stockfish::Stockfish;

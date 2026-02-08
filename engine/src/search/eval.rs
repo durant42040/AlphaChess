@@ -31,14 +31,12 @@ impl Evaluation for Engine {
     fn mobility_score(&self) -> i32 {
         let mut score = 0;
         let pieces = self.pieces();
-        let white_mobile_pieces =
-            pieces.white_pieces() & !pieces.kings() & !pieces.pawns();
+        let white_mobile_pieces = pieces.white_pieces() & !pieces.kings() & !pieces.pawns();
         for from in white_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score += moves.count() as i32;
         }
-        let black_mobile_pieces =
-            pieces.black_pieces() & !pieces.kings() & !pieces.pawns();
+        let black_mobile_pieces = pieces.black_pieces() & !pieces.kings() & !pieces.pawns();
         for from in black_mobile_pieces.iter() {
             let moves = self.generate_moves(Square::from(from));
             score -= moves.count() as i32;
@@ -55,7 +53,7 @@ impl Evaluation for Engine {
         let bishops = pieces.bishops();
         let rooks = pieces.rooks();
         let kings = pieces.kings();
-        
+
         let mut score = 0;
 
         for i in (white_pieces & pawns).iter() {

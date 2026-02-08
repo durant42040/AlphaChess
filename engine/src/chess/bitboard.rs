@@ -90,7 +90,6 @@ impl Bitboard {
         lsb
     }
 
-
     #[inline(always)]
     pub fn count(&self) -> u8 {
         self.bitboard.count_ones() as u8
