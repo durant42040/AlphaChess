@@ -50,6 +50,10 @@ impl Search {
     pub fn time_up(&self) -> bool {
         self.start_time.elapsed() >= self.ponder_time
     }
+
+    fn is_killer_move(&self, r#move: Move, ply: usize) -> bool {
+        self.killer_moves[ply][0] == r#move || self.killer_moves[ply][1] == r#move
+    }
 }
 
 impl Default for Search {
@@ -62,11 +66,13 @@ impl Engine {
     /// Move ordering improves search efficiency by prioritizing moves likely to cause beta cutoffs.
     /// Moves are sorted as follows:
     ///
+    /// - promotion moves: moves that are promotions
     /// - good captures: moves that are captures and have a SEE score > 0
     /// - equal captures: moves that are captures and have a SEE score = 0
+    /// - killer moves: quiet moves that causes a beta cutoff
     /// - quiet moves: moves that are not captures
     /// - bad captures: moves that are captures and have a SEE score < 0
-    fn order_moves(&mut self, moves: &MoveList, ply: usize) -> MoveList {
+    fn order_moves(&mut self, moves: &MoveList, ply: usize) -> (MoveList, usize, usize) {
         let pieces = self.pieces();
         let our_pawns = pieces.pawns();
         let en_passant = pieces.en_passant();
@@ -94,9 +100,7 @@ impl Engine {
                 }
             } else if is_en_passant {
                 good_captures.push((Piece::Pawn.value(), r#move));
-            } else if self.search.killer_moves[ply][0] == r#move
-                || self.search.killer_moves[ply][1] == r#move
-            {
+            } else if self.search.is_killer_move(r#move, ply) {
                 killer_moves.push(r#move);
             } else {
                 quiet_moves.push(r#move);
@@ -108,13 +112,15 @@ impl Engine {
         let mut ordered_moves = MoveList::new();
         ordered_moves.extend(promotion_moves);
         ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
+        let quiet_start = ordered_moves.len();
         ordered_moves.extend(killer_moves);
         ordered_moves.extend(quiet_moves);
+        let quiet_end = ordered_moves.len();
         ordered_moves.extend(bad_captures.iter().map(|(_, r#move)| *r#move));
 
         debug_assert_eq!(ordered_moves.len(), moves.len());
 
-        ordered_moves
+        (ordered_moves, quiet_start, quiet_end)
     }
 
     /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
@@ -220,17 +226,38 @@ impl Engine {
             }
         }
 
-        let ordered_moves = self.order_moves(&moves, ply);
+        let (ordered_moves, quiet_start, quiet_end) = self.order_moves(&moves, ply);
 
-        for r#move in ordered_moves {
+        for (i, &r#move) in ordered_moves.iter().enumerate() {
             if r#move == tt_move {
                 continue;
             }
             debug_assert!(self.is_legal_move(r#move));
             self.act(r#move);
-            let score = self
-                .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                .saturating_neg();
+
+            let mut score;
+            if depth >= 5
+                // TODO: order quiet moves
+                && i >= quiet_start + 2
+                && i < quiet_end
+                && !self.search.is_killer_move(r#move, ply)
+                && !self.is_check()
+            {
+                // Move reduction: If a quiet move is not a killer move and not a check, search at reduced depth
+                let r: u8 = 1;
+                score = self
+                    .alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha)
+                    .saturating_neg();
+                if score > alpha {
+                    score = self
+                        .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
+                        .saturating_neg();
+                }
+            } else {
+                score = self
+                    .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
+                    .saturating_neg();
+            }
             self.undo();
 
             if score > best_score {
@@ -241,11 +268,7 @@ impl Engine {
 
             if alpha >= beta {
                 // record killer moves for quiet moves (not captures, not promotions, not en passant)
-                if r#move.promotion.is_none()
-                    && !self.pieces().all_pieces().get_square(r#move.to)
-                    && !(self.pieces().pawns().get_square(r#move.from)
-                        && self.pieces().en_passant().get_square(r#move.to))
-                {
+                if i >= quiet_start && i < quiet_end {
                     let k = &mut self.search.killer_moves[ply];
                     if k[0] != r#move {
                         k[1] = k[0];
@@ -358,7 +381,7 @@ mod tests {
             Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
         engine.set_ponder_time(1000);
         engine.alpha_beta_search(8, 0, i32::MAX.saturating_neg(), i32::MIN.saturating_neg());
-        // 14235563
+        // 2191248 
         println!("nodes searched: {}", engine.search.nodes);
     }
 }
