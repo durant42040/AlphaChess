@@ -69,6 +69,7 @@ pub enum Piece {
 }
 
 impl Piece {
+    #[inline(always)]
     pub fn value(self) -> i32 {
         match self {
             Piece::Pawn => 100,
@@ -80,6 +81,7 @@ impl Piece {
         }
     }
 
+    #[inline(always)]
     pub fn attack_value(self) -> i32 {
         match self {
             Piece::Knight => 20,

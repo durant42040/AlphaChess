@@ -73,10 +73,16 @@ impl Engine {
     /// - quiet moves: moves that are not captures
     /// - bad captures: moves that are captures and have a SEE score < 0
     fn order_moves(&mut self, moves: &MoveList, ply: usize) -> (MoveList, usize, usize) {
+        let mut ordered_moves = MoveList::new();
         let pieces = self.pieces();
         let our_pawns = pieces.pawns();
         let en_passant = pieces.en_passant();
         let their_pieces = self.board.their_pieces();
+
+        let tt_move = self.search.transposition_table.get_best_move(self.board.position_hash());
+        if !tt_move.is_none() && self.is_legal_move(tt_move) {
+            ordered_moves.push(tt_move);
+        }
 
         let mut promotion_moves = Vec::with_capacity(moves.len());
         let mut good_captures = Vec::with_capacity(moves.len());
@@ -85,6 +91,9 @@ impl Engine {
         let mut quiet_moves = Vec::with_capacity(moves.len());
 
         for &r#move in moves.iter() {
+            if r#move == tt_move {
+                continue;
+            }
             let is_capture = their_pieces.get_square(r#move.to);
             let is_en_passant =
                 our_pawns.get_square(r#move.from) && en_passant.get_square(r#move.to);
@@ -100,21 +109,26 @@ impl Engine {
                 }
             } else if is_en_passant {
                 good_captures.push((Piece::Pawn.value(), r#move));
-            } else if self.search.is_killer_move(r#move, ply) {
-                killer_moves.push(r#move);
+            } else if r#move == self.search.killer_moves[ply][0] {
+                killer_moves.push((1, r#move));
+            } else if r#move == self.search.killer_moves[ply][1] {
+                killer_moves.push((0, r#move));
             } else {
+                // TODO: order quiet moves by history
                 quiet_moves.push(r#move);
             }
         }
         good_captures.sort_by_key(|(score, _)| -score);
         bad_captures.sort_by_key(|(score, _)| -score);
+        killer_moves.sort_by_key(|(score, _)| -score);
 
-        let mut ordered_moves = MoveList::new();
         ordered_moves.extend(promotion_moves);
         ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
         let quiet_start = ordered_moves.len();
-        ordered_moves.extend(killer_moves);
+        
+        ordered_moves.extend(killer_moves.iter().map(|(_, r#move)| *r#move));
         ordered_moves.extend(quiet_moves);
+
         let quiet_end = ordered_moves.len();
         ordered_moves.extend(bad_captures.iter().map(|(_, r#move)| *r#move));
 
@@ -206,32 +220,9 @@ impl Engine {
             }
         }
 
-        let tt_move = self.search.transposition_table.get_best_move(hash);
-
-        // Validate that the transposition table move is legal before playing it
-        if !tt_move.is_none() && self.is_legal_move(tt_move) {
-            self.act(tt_move);
-            let tt_score = self
-                .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                .saturating_neg();
-            self.undo();
-
-            if tt_score > best_score {
-                best_score = tt_score;
-                best_move = tt_move;
-            }
-            alpha = max(alpha, tt_score);
-            if alpha >= beta {
-                return best_score;
-            }
-        }
-
         let (ordered_moves, quiet_start, quiet_end) = self.order_moves(&moves, ply);
 
         for (i, &r#move) in ordered_moves.iter().enumerate() {
-            if r#move == tt_move {
-                continue;
-            }
             debug_assert!(self.is_legal_move(r#move));
             self.act(r#move);
 
