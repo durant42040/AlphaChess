@@ -50,10 +50,6 @@ impl Search {
     pub fn time_up(&self) -> bool {
         self.start_time.elapsed() >= self.ponder_time
     }
-
-    fn is_killer_move(&self, r#move: Move, ply: usize) -> bool {
-        self.killer_moves[ply][0] == r#move || self.killer_moves[ply][1] == r#move
-    }
 }
 
 impl Default for Search {
@@ -125,7 +121,7 @@ impl Engine {
         ordered_moves.extend(promotion_moves);
         ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
         let quiet_start = ordered_moves.len();
-        
+
         ordered_moves.extend(killer_moves.iter().map(|(_, r#move)| *r#move));
         ordered_moves.extend(quiet_moves);
 
@@ -211,7 +207,7 @@ impl Engine {
         let moves = self.generate_all_legal_moves();
 
         // if there are no legal moves, check for checkmate or stalemate
-        // mate in 1 have higher score than mate in 2
+        // mate in 1 have higher score than mate in 2 to encourage engine to find fastest checkmate
         if moves.is_empty() {
             if self.is_check() {
                 return -MATE_SCORE - depth as i32;
@@ -229,12 +225,11 @@ impl Engine {
             let mut score;
             if depth >= 5
                 // TODO: order quiet moves
+                // Move reduction: If a quiet move is not a killer move and not a check, search at reduced depth
                 && i >= quiet_start + 2
                 && i < quiet_end
-                && !self.search.is_killer_move(r#move, ply)
                 && !self.is_check()
             {
-                // Move reduction: If a quiet move is not a killer move and not a check, search at reduced depth
                 let r: u8 = 1;
                 score = self
                     .alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha)
@@ -358,7 +353,7 @@ mod tests {
     #[test]
     fn test_mate_in_one() {
         let mut engine = Engine::from_fen("8/8/8/8/8/q6k/8/7K b - - 0 1");
-        engine.set_ponder_time(10);
+        engine.set_ponder_time(1000);
         let best_move = engine.best_move();
         engine.act(best_move);
         engine.update_game_state();
