@@ -15,8 +15,8 @@ fn perft_benchmark(c: &mut Criterion) {
             BenchmarkId::new("starting_position", depth),
             &depth,
             |b, &depth| {
+                let mut perft = Perft::new(starting_fen);
                 b.iter(|| {
-                    let mut perft = Perft::new(starting_fen);
                     let nodes = perft.search(black_box(depth));
                     assert_eq!(nodes, expected_nodes[(depth - 1) as usize]);
                     nodes
@@ -31,8 +31,8 @@ fn perft_benchmark(c: &mut Criterion) {
 
     for depth in 1..=4 {
         group.bench_with_input(BenchmarkId::new("kiwipete", depth), &depth, |b, &depth| {
+            let mut perft = Perft::new(kiwipete_fen);
             b.iter(|| {
-                let mut perft = Perft::new(kiwipete_fen);
                 let nodes = perft.search(black_box(depth));
                 assert_eq!(nodes, kiwipete_nodes[(depth - 1) as usize]);
                 nodes
@@ -49,8 +49,8 @@ fn perft_benchmark(c: &mut Criterion) {
             BenchmarkId::new("position_3", depth),
             &depth,
             |b, &depth| {
+                let mut perft = Perft::new(pos3_fen);
                 b.iter(|| {
-                    let mut perft = Perft::new(pos3_fen);
                     let nodes = perft.search(black_box(depth));
                     assert_eq!(nodes, pos3_nodes[(depth - 1) as usize]);
                     nodes
@@ -70,8 +70,8 @@ fn perft_nodes_per_second(c: &mut Criterion) {
 
     for depth in 3..=5 {
         group.bench_with_input(BenchmarkId::new("nps", depth), &depth, |b, depth| {
+            let mut perft = Perft::new(starting_fen);
             b.iter(|| {
-                let mut perft = Perft::new(starting_fen);
                 let nodes = perft.search(black_box(*depth));
                 let _nps = nodes;
                 nodes
