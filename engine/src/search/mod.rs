@@ -134,7 +134,7 @@ impl Engine {
     }
 
     /// alpha-beta search for captures only. bad captures are pruned. Capture scores are compared against current position evaluation.
-    fn quiescence_search(&mut self, mut alpha: i32, beta: i32) -> i32 {
+    fn quiescence_search(&mut self, ply: usize, mut alpha: i32, beta: i32) -> i32 {
         self.search.nodes += 1;
         if self.board.is_draw() {
             return 0;
@@ -148,7 +148,7 @@ impl Engine {
         let capture_moves = self.generate_all_capture_moves();
         if capture_moves.is_empty() && self.generate_all_legal_moves().is_empty() {
             if self.is_check() {
-                return -MATE_SCORE;
+                return -MATE_SCORE + ply as i32;
             } else {
                 return 0;
             }
@@ -159,7 +159,7 @@ impl Engine {
                 continue;
             }
             self.act(r#move);
-            let score = self.quiescence_search(-beta, -alpha).saturating_neg();
+            let score = self.quiescence_search(ply + 1, -beta, -alpha).saturating_neg();
             self.undo();
             if score >= beta {
                 return beta;
@@ -198,7 +198,7 @@ impl Engine {
         }
 
         if depth == 0 {
-            return self.quiescence_search(alpha, beta);
+            return self.quiescence_search(ply, alpha, beta);
         }
 
         let mut best_score = i32::MIN;
@@ -210,7 +210,7 @@ impl Engine {
         // mate in 1 have higher score than mate in 2 to encourage engine to find fastest checkmate
         if moves.is_empty() {
             if self.is_check() {
-                return -MATE_SCORE - depth as i32;
+                return -MATE_SCORE + ply as i32;
             } else {
                 return 0;
             }
@@ -300,7 +300,7 @@ impl Engine {
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
 
-            if depth == self.search.max_depth {
+            if depth == self.search.max_depth || best_score >= MATE_SCORE {
                 break;
             }
             depth += 1;
