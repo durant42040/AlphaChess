@@ -241,7 +241,7 @@ impl Engine {
 
             if alpha >= beta {
                 // record killer moves for quiet moves (not captures, not promotions, not en passant)
-                if !r#move.promotion.is_some()
+                if r#move.promotion.is_none()
                     && !self.pieces().all_pieces().get_square(r#move.to)
                     && !(self.pieces().pawns().get_square(r#move.from)
                         && self.pieces().en_passant().get_square(r#move.to))
@@ -273,7 +273,7 @@ impl Engine {
     pub fn best_move(&mut self) -> Move {
         assert!(self.game_state == GameState::Playing);
         self.search.nodes = 0;
-        
+
         let hash = self.board.position_hash();
 
         let alpha = i32::MAX.saturating_neg();
