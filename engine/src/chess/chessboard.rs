@@ -245,9 +245,15 @@ impl ChessBoard {
         let state = self.state_history.last().unwrap();
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
-            let captured_square = Square::new(from.rank, to.file);
+            let to = Square::new(from.rank, to.file);
+            let color = self.player.color();
             self.pieces
-                .set(Piece::Pawn, self.player.color(), captured_square.square);
+                .set(Piece::Pawn, color, to.square);
+            if color == Color::White {
+                self.material_score += Piece::Pawn.value();
+            } else {
+                self.material_score -= Piece::Pawn.value();
+            }
         }
 
         self.pieces.set_en_passant(state.prev_en_passant);

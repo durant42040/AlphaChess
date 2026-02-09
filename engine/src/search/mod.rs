@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn test_middlegame() {
         let mut engine =
-            Engine::from_fen("rnbqkbnr/5ppp/1p6/4p3/p1p5/8/PPPPPPPP/1NBQKBNR b Kkq - 0 1");
+            Engine::from_fen("r1b2rk1/p1pp1p2/2p2p1p/2b5/4P3/2N5/PPP2PPP/R3KB1R w KQ - 0 11");
         engine.set_ponder_time(10);
         let best_move = engine.best_move();
         println!("best move: {}", best_move);
