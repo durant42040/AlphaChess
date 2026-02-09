@@ -334,28 +334,6 @@ impl Pieces {
         self.knights.clear_square(to);
     }
 
-    pub fn update_en_passant(&mut self, from: Square, to: Square) {
-        if self.pawns.get_square(from) && self.en_passant.get_square(to) {
-            let captured_square = Square::new(from.rank, to.file);
-            self.pawns.clear_square(captured_square);
-            self.all_pieces.clear_square(captured_square);
-            let capturing_color = if self.white_pieces.get_square(from) {
-                Color::White
-            } else {
-                Color::Black
-            };
-            match capturing_color {
-                Color::White => self.black_pieces.clear_square(captured_square),
-                Color::Black => self.white_pieces.clear_square(captured_square),
-            }
-        }
-
-        self.en_passant.reset();
-        if self.pawns.get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
-            self.en_passant.set((from.square + to.square) / 2);
-        }
-    }
-
     #[inline(always)]
     pub fn pawns(&self) -> Bitboard {
         self.pawns

@@ -199,7 +199,7 @@ impl ChessBoard {
             }
             self.pieces.promote(promotion, from);
         }
-        self.pieces.update_en_passant(from, to);
+        self.update_en_passant(from, to);
         self.castle(from, to);
         self.pieces.update(from, to);
         self.player = !self.player;
@@ -214,6 +214,7 @@ impl ChessBoard {
             *prev_hash,
         );
         self.position_history.push(new_hash);
+        debug_assert_eq!(self.material_score, self.compute_material_score());
     }
 
     pub fn undo(&mut self) {
@@ -255,6 +256,32 @@ impl ChessBoard {
         self.player = !self.player;
         self.state_history.pop();
         self.position_history.pop();
+    }
+
+    pub fn update_en_passant(&mut self, from: Square, to: Square) {
+        let pieces = self.pieces;
+        if pieces.pawns().get_square(from) && pieces.en_passant().get_square(to) {
+            let captured_square = Square::new(from.rank, to.file);
+            pieces.pawns().clear_square(captured_square);
+            pieces.all_pieces().clear_square(captured_square);
+            let capturing_color = if pieces.white_pieces().get_square(from) {
+                Color::White
+            } else {
+                Color::Black
+            };
+            if capturing_color == Color::White {
+                pieces.black_pieces().clear_square(captured_square);
+                self.material_score += Piece::Pawn.value();
+            } else {
+                pieces.white_pieces().clear_square(captured_square);
+                self.material_score -= Piece::Pawn.value();
+            }
+        }
+
+        pieces.en_passant().reset();
+        if pieces.pawns().get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
+            pieces.en_passant().set((from.square + to.square) / 2);
+        }
     }
 
     pub fn pieces(&self) -> Pieces {

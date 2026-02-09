@@ -241,18 +241,22 @@ impl Engine {
             debug_assert!(self.is_legal_move(r#move));
             self.act(r#move);
 
-            
             let mut score;
             // Principal Variation Search: Perform full search on the best move
             // Otherwise, search with null window
             if i == 0 {
                 score = self
-                .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                .saturating_neg();
-        } else {
-            // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
+                    .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
+                    .saturating_neg();
+            } else {
+                // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
                 let gives_check = self.is_check();
-                let r = if depth >= 5 && i >= quiet_start + 3 && i < quiet_end && !gives_check && !in_check {
+                let r = if depth >= 5
+                    && i >= quiet_start + 3
+                    && i < quiet_end
+                    && !gives_check
+                    && !in_check
+                {
                     1
                 } else {
                     0
@@ -347,8 +351,9 @@ impl Engine {
             "\x1b[1;32m[Engine]\x1b[0m\n\x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
           \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
           \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1mmaterial\x1b[0m \x1b[1;34m{}\x1b[0m\n\
           \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
-            self.search.nodes, self.search.max_depth_reached, best_move, eval
+            self.search.nodes, self.search.max_depth_reached, best_move, self.material_score(), eval
         );
 
         assert!(!best_move.is_none(), "Best move is none");
