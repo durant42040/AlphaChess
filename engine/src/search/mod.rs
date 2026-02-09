@@ -1,4 +1,5 @@
 pub mod eval;
+pub mod history;
 pub mod perft;
 pub mod see;
 pub mod transposition;
@@ -13,6 +14,7 @@ use crate::Engine;
 use crate::chess::r#move::MoveList;
 use crate::chess::{GameState, Move, Piece, Player};
 use crate::constants::MATE_SCORE;
+use crate::search::history::History;
 use crate::search::transposition::{Bound, TranspositionTable};
 
 pub struct Search {
@@ -23,6 +25,7 @@ pub struct Search {
     pub ponder_time: Duration,
     pub max_depth_reached: u8,
     pub killer_moves: Vec<[Move; 2]>,
+    pub history: History,
 }
 
 impl Search {
@@ -35,6 +38,7 @@ impl Search {
             ponder_time: Duration::from_millis(100),
             max_depth_reached: 0,
             killer_moves: vec![[Move::none(); 2]; 4096],
+            history: History::new(),
         }
     }
 
@@ -65,8 +69,8 @@ impl Engine {
     /// - promotion moves: moves that are promotions
     /// - good captures: moves that are captures and have a SEE score > 0
     /// - equal captures: moves that are captures and have a SEE score = 0
-    /// - killer moves: quiet moves that causes a beta cutoff
-    /// - quiet moves: moves that are not captures
+    /// - killer moves: 2 quiet moves that causes a beta cutoff
+    /// - quiet moves: moves that are not captures, ordered by history heuristic
     /// - bad captures: moves that are captures and have a SEE score < 0
     fn order_moves(&mut self, moves: &MoveList, ply: usize) -> (MoveList, usize, usize) {
         let mut ordered_moves = MoveList::new();
@@ -75,7 +79,10 @@ impl Engine {
         let en_passant = pieces.en_passant();
         let their_pieces = self.board.their_pieces();
 
-        let tt_move = self.search.transposition_table.get_best_move(self.board.position_hash());
+        let tt_move = self
+            .search
+            .transposition_table
+            .get_best_move(self.board.position_hash());
         if !tt_move.is_none() && self.is_legal_move(tt_move) {
             ordered_moves.push(tt_move);
         }
@@ -106,24 +113,30 @@ impl Engine {
             } else if is_en_passant {
                 good_captures.push((Piece::Pawn.value(), r#move));
             } else if r#move == self.search.killer_moves[ply][0] {
+                // prioritize killer move 0 over killer move 1
                 killer_moves.push((1, r#move));
             } else if r#move == self.search.killer_moves[ply][1] {
                 killer_moves.push((0, r#move));
             } else {
-                // TODO: order quiet moves by history
-                quiet_moves.push(r#move);
+                // order quiet moves by history score
+                let score = self
+                    .search
+                    .history
+                    .get(self.board.player(), r#move.from, r#move.to);
+                quiet_moves.push((score, r#move));
             }
         }
         good_captures.sort_by_key(|(score, _)| -score);
         bad_captures.sort_by_key(|(score, _)| -score);
         killer_moves.sort_by_key(|(score, _)| -score);
+        quiet_moves.sort_by_key(|(score, _)| -score);
 
         ordered_moves.extend(promotion_moves);
         ordered_moves.extend(good_captures.iter().map(|(_, r#move)| *r#move));
         let quiet_start = ordered_moves.len();
 
         ordered_moves.extend(killer_moves.iter().map(|(_, r#move)| *r#move));
-        ordered_moves.extend(quiet_moves);
+        ordered_moves.extend(quiet_moves.iter().map(|(_, r#move)| *r#move));
 
         let quiet_end = ordered_moves.len();
         ordered_moves.extend(bad_captures.iter().map(|(_, r#move)| *r#move));
@@ -159,7 +172,9 @@ impl Engine {
                 continue;
             }
             self.act(r#move);
-            let score = self.quiescence_search(ply + 1, -beta, -alpha).saturating_neg();
+            let score = self
+                .quiescence_search(ply + 1, -beta, -alpha)
+                .saturating_neg();
             self.undo();
             if score >= beta {
                 return beta;
@@ -224,9 +239,8 @@ impl Engine {
 
             let mut score;
             if depth >= 5
-                // TODO: order quiet moves
-                // Move reduction: If a quiet move is not a killer move and not a check, search at reduced depth
-                && i >= quiet_start + 2
+                // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
+                && i >= quiet_start + 3
                 && i < quiet_end
                 && !self.is_check()
             {
@@ -253,13 +267,19 @@ impl Engine {
             alpha = max(alpha, score);
 
             if alpha >= beta {
-                // record killer moves for quiet moves (not captures, not promotions, not en passant)
                 if i >= quiet_start && i < quiet_end {
+                    // record killer moves for quiet moves (not captures, not promotions, not en passant) if it causes beta cutoff
                     let k = &mut self.search.killer_moves[ply];
                     if k[0] != r#move {
                         k[1] = k[0];
                         k[0] = r#move;
                     }
+
+                    // increase history score by depth^2 for quiet moves
+                    // The shallower cutoff (>depth) prunes more nodes
+                    self.search
+                        .history
+                        .update(self.board.player(), r#move.from, r#move.to, depth);
                 }
                 break;
             }
@@ -300,7 +320,7 @@ impl Engine {
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
 
-            if depth == self.search.max_depth || best_score >= MATE_SCORE {
+            if depth == self.search.max_depth || best_score >= MATE_SCORE - 100 {
                 break;
             }
             depth += 1;
@@ -367,7 +387,7 @@ mod tests {
             Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
         engine.set_ponder_time(1000);
         engine.alpha_beta_search(8, 0, i32::MAX.saturating_neg(), i32::MIN.saturating_neg());
-        // 2191248 
+        // 2544112
         println!("nodes searched: {}", engine.search.nodes);
     }
 }

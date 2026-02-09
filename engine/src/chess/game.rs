@@ -27,6 +27,7 @@ impl fmt::Display for GameState {
     }
 }
 
+#[repr(u8)]
 #[derive(Default, Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Player {
     #[default]
