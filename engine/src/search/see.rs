@@ -93,6 +93,10 @@ impl Engine {
 
                 gain[depth] = Piece::Queen.value() - gain[depth - 1];
             } else {
+                // king can not recapture if there are still enemy attackers
+                if !(all_attackers & occupied & their_pieces).empty() {
+                    depth -= 1;
+                }
                 break;
             }
         }
@@ -132,5 +136,13 @@ mod tests {
         let r#move = Move::from("f8c8");
         let see = engine.see(r#move);
         assert_eq!(see, 0);
+    }
+
+    #[test]
+    fn test_see_4() {
+        let mut engine = Engine::from_fen("rnbqk2r/pppp1ppp/8/2bQP3/4n3/5N2/PPP2PPP/RNB1KB1R b KQkq - 2 5");
+        let r#move = Move::from("c5f2");
+        let see = engine.see(r#move);
+        assert_eq!(see, 100);
     }
 }
