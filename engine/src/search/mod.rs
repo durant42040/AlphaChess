@@ -235,21 +235,24 @@ impl Engine {
         }
 
         let (ordered_moves, quiet_start, quiet_end) = self.order_moves(&moves, ply);
+        let in_check = self.is_check();
 
         for (i, &r#move) in ordered_moves.iter().enumerate() {
             debug_assert!(self.is_legal_move(r#move));
             self.act(r#move);
 
+            
             let mut score;
             // Principal Variation Search: Perform full search on the best move
             // Otherwise, search with null window
             if i == 0 {
                 score = self
-                    .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                    .saturating_neg();
-            } else {
-                // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
-                let r = if depth >= 5 && i >= quiet_start + 3 && i < quiet_end && !self.is_check() {
+                .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
+                .saturating_neg();
+        } else {
+            // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
+                let gives_check = self.is_check();
+                let r = if depth >= 5 && i >= quiet_start + 3 && i < quiet_end && !gives_check && !in_check {
                     1
                 } else {
                     0
@@ -259,7 +262,7 @@ impl Engine {
                     .alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha)
                     .saturating_neg();
 
-                if score > alpha {
+                if score > alpha && score < beta {
                     score = self
                         .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
                         .saturating_neg();
@@ -397,6 +400,7 @@ mod tests {
         engine.alpha_beta_search(8, 0, i32::MAX.saturating_neg(), i32::MIN.saturating_neg());
         // 2233087
         println!("nodes searched: {}", engine.search.nodes);
+        // 166768
         println!("beta cutoffs: {}", engine.search.beta_cutoffs);
     }
 }
