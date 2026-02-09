@@ -26,6 +26,7 @@ pub struct Search {
     pub max_depth_reached: u8,
     pub killer_moves: Vec<[Move; 2]>,
     pub history: History,
+    pub beta_cutoffs: u64,
 }
 
 impl Search {
@@ -39,6 +40,8 @@ impl Search {
             max_depth_reached: 0,
             killer_moves: vec![[Move::none(); 2]; 4096],
             history: History::new(),
+            // used to evaluate ordering quality
+            beta_cutoffs: 0,
         }
     }
 
@@ -267,6 +270,7 @@ impl Engine {
             alpha = max(alpha, score);
 
             if alpha >= beta {
+                self.search.beta_cutoffs += 1;
                 if i >= quiet_start && i < quiet_end {
                     // record killer moves for quiet moves (not captures, not promotions, not en passant) if it causes beta cutoff
                     let k = &mut self.search.killer_moves[ply];
@@ -389,5 +393,6 @@ mod tests {
         engine.alpha_beta_search(8, 0, i32::MAX.saturating_neg(), i32::MIN.saturating_neg());
         // 2544112
         println!("nodes searched: {}", engine.search.nodes);
+        println!("beta cutoffs: {}", engine.search.beta_cutoffs);
     }
 }
