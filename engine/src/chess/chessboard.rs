@@ -233,7 +233,10 @@ impl ChessBoard {
         }
 
         self.pieces.update(to, from);
-        if let Some((piece, color)) = self.state_history.last().unwrap().captured_piece {
+        self.undo_castle(from, to);
+        let state = self.state_history.last().unwrap();
+        
+        if let Some((piece, color)) = state.captured_piece {
             self.pieces.set(piece, color, to.square);
             if color == Color::White {
                 self.material_score += piece.value();
@@ -241,8 +244,6 @@ impl ChessBoard {
                 self.material_score -= piece.value();
             }
         }
-        self.undo_castle(from, to);
-        let state = self.state_history.last().unwrap();
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
             let to = Square::new(from.rank, to.file);
@@ -262,31 +263,28 @@ impl ChessBoard {
         self.player = !self.player;
         self.state_history.pop();
         self.position_history.pop();
+        debug_assert_eq!(self.material_score, self.compute_material_score());
     }
 
     pub fn update_en_passant(&mut self, from: Square, to: Square) {
-        let pieces = self.pieces;
-        if pieces.pawns().get_square(from) && pieces.en_passant().get_square(to) {
+        if self.pieces.pawns().get_square(from) && self.pieces.en_passant().get_square(to) {
             let captured_square = Square::new(from.rank, to.file);
-            pieces.pawns().clear_square(captured_square);
-            pieces.all_pieces().clear_square(captured_square);
-            let capturing_color = if pieces.white_pieces().get_square(from) {
+            let capturing_color = if self.pieces.white_pieces().get_square(from) {
                 Color::White
             } else {
                 Color::Black
             };
+            self.pieces.clear(Piece::Pawn, !capturing_color, captured_square.square);
             if capturing_color == Color::White {
-                pieces.black_pieces().clear_square(captured_square);
                 self.material_score += Piece::Pawn.value();
             } else {
-                pieces.white_pieces().clear_square(captured_square);
                 self.material_score -= Piece::Pawn.value();
             }
         }
 
-        pieces.en_passant().reset();
-        if pieces.pawns().get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
-            pieces.en_passant().set((from.square + to.square) / 2);
+        self.pieces.set_en_passant(Bitboard::zero());
+        if self.pieces.pawns().get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
+            self.pieces.set_en_passant_square(Square::from((from.square + to.square) / 2));
         }
     }
 
