@@ -16,13 +16,12 @@ use crate::constants::{
 };
 use crate::search::Search;
 
-pub use search::Perft;
 
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
     game_state: GameState,
-    attack_state: AttackState,
+    attack_states: Vec<AttackState>,
     search: Search,
 }
 
@@ -30,13 +29,16 @@ impl Engine {
     pub fn new() -> Self {
         Bitboard::init();
 
-        Self {
+        let mut engine = Self {
             board: ChessBoard::new(),
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
-            attack_state: AttackState::default(),
+            attack_states: Vec::with_capacity(8192),
             search: Search::new(),
-        }
+        };
+
+        engine.attack_states.push(AttackState::default());
+        engine
     }
 
     pub fn from_fen(fen: &str) -> Self {
@@ -46,7 +48,7 @@ impl Engine {
             board: ChessBoard::load_from_fen(fen),
             move_generator: MoveGenerator::new(),
             game_state: GameState::Playing,
-            attack_state: AttackState::default(),
+            attack_states: Vec::with_capacity(8192),
             search: Search::new(),
         };
 
@@ -126,7 +128,8 @@ impl Engine {
     pub fn reset(&mut self) {
         self.board = ChessBoard::new();
         self.game_state = GameState::Playing;
-        self.attack_state = AttackState::default();
+        self.attack_states.clear();
+        self.update_attack_state();
         self.search = Search::new();
     }
 
@@ -155,7 +158,8 @@ impl Engine {
             return false;
         }
         self.board.undo();
-        self.update_attack_state();
+        assert!(!self.attack_states.is_empty());
+        self.attack_states.pop();
         true
     }
 
@@ -216,19 +220,20 @@ impl Engine {
             self.board.undo();
         }
 
+        let attack_state = self.attack_state();
         if self.is_check() {
             // if in double check, no legal non-king moves
-            if self.attack_state.num_checks == 2 {
+            if attack_state.num_checks == 2 {
                 return Bitboard::zero();
             }
 
             // pinned pieces cannot resolve check
-            if self.attack_state.pinned_pieces.get_square(from) {
+            if attack_state.pinned_pieces.get_square(from) {
                 return Bitboard::zero();
             }
 
             // if not double check, non-king move must block the check or capture
-            legal_moves &= self.attack_state.attack_lines | self.attack_state.attackers;
+            legal_moves &= attack_state.attack_lines | attack_state.attackers;
 
             if en_passant_legal {
                 legal_moves |= pieces.en_passant();
@@ -237,7 +242,7 @@ impl Engine {
             return legal_moves;
         }
 
-        if self.attack_state.pinned_pieces.get_square(from) {
+        if attack_state.pinned_pieces.get_square(from) {
             // if a piece is pinned, only the moves that are along the pin ray are legal
             let our_king = self.board.our_pieces() & self.pieces().kings();
             legal_moves &= Bitboard::ray(from, Square::from(our_king));
@@ -361,8 +366,12 @@ impl Engine {
         board_str
     }
 
+    pub fn attack_state(&self) -> &AttackState {
+        &self.attack_states.last().unwrap()
+    }
+
     pub fn is_check(&self) -> bool {
-        self.attack_state.num_checks > 0
+        self.attack_state().num_checks > 0
     }
 }
 

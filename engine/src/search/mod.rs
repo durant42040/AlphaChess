@@ -8,7 +8,6 @@ use std::cmp::max;
 use std::time::{Duration, Instant};
 
 pub use eval::Evaluation;
-pub use perft::Perft;
 
 use crate::Engine;
 use crate::chess::r#move::MoveList;

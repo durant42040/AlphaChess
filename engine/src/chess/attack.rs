@@ -4,7 +4,7 @@ use crate::{
     constants::{BLACK_PAWN_CAPTURES, WHITE_PAWN_CAPTURES},
 };
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct AttackState {
     pub attackers: Bitboard,
     pub num_checks: u8,
@@ -86,11 +86,13 @@ impl Engine {
         let num_checks = attackers.count();
         debug_assert!(num_checks <= 2);
 
-        self.attack_state = AttackState {
+        let attack_state = AttackState {
             attackers,
             num_checks,
             pinned_pieces,
             attack_lines,
         };
+
+        self.attack_states.push(attack_state);
     }
 }
