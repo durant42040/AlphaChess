@@ -174,9 +174,7 @@ impl Engine {
                 continue;
             }
             self.act(r#move);
-            let score = self
-                .quiescence_search(ply + 1, -beta, -alpha)
-                .saturating_neg();
+            let score = -self.quiescence_search(ply + 1, -beta, -alpha);
             self.undo();
             if score >= beta {
                 return beta;
@@ -244,9 +242,7 @@ impl Engine {
             // Principal Variation Search: Perform full search on the best move
             // Otherwise, search with null window
             if i == 0 {
-                score = self
-                    .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                    .saturating_neg();
+                score = -self.alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
             } else {
                 // Move reduction: If a quiet move is not a killer move, not a check, and not a top 3 move, search at reduced depth
                 let gives_check = self.is_check();
@@ -261,14 +257,10 @@ impl Engine {
                     0
                 };
 
-                score = self
-                    .alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha)
-                    .saturating_neg();
+                score = -self.alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha);
 
                 if score > alpha && score < beta {
-                    score = self
-                        .alpha_beta_search(depth - 1, ply + 1, -beta, -alpha)
-                        .saturating_neg();
+                    score = -self.alpha_beta_search(depth - 1, ply + 1, -beta, -alpha);
                 }
             }
 
@@ -320,8 +312,8 @@ impl Engine {
 
         let hash = self.board.position_hash();
 
-        let alpha = i32::MAX.saturating_neg();
-        let beta = i32::MIN.saturating_neg();
+        let mut alpha = -MATE_SCORE;
+        let mut beta = MATE_SCORE;
 
         self.search.reset_timer();
 
@@ -329,13 +321,24 @@ impl Engine {
         let mut best_score = 0;
 
         let mut depth: u8 = 1;
+        let delta = 50;
         while !self.search.time_up() {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);
+
+            // if the score is outside the alpha-beta window, research with full window and same depth
+            if best_score <= alpha || best_score >= beta {
+                alpha = -MATE_SCORE;
+                beta = MATE_SCORE;
+                continue;
+            }
+
+            alpha = best_score - delta;
+            beta = best_score + delta;
 
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
 
-            if depth == self.search.max_depth || best_score >= MATE_SCORE - 100 {
+            if depth >= self.search.max_depth || best_score >= MATE_SCORE - 100 {
                 break;
             }
             depth += 1;
@@ -362,7 +365,7 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Engine, chess::GameState};
+    use crate::{Engine, chess::GameState, constants::MATE_SCORE};
 
     #[test]
     fn test_middlegame() {
@@ -401,10 +404,10 @@ mod tests {
     fn test_nodes_searched() {
         let mut engine =
             Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-        engine.alpha_beta_search(8, 0, i32::MAX.saturating_neg(), i32::MIN.saturating_neg());
-        // 2233087
+        engine.alpha_beta_search(8, 0, -MATE_SCORE, MATE_SCORE);
+        // 2217059
         println!("nodes searched: {}", engine.search.nodes);
-        // 166768
+        // 165819
         println!("beta cutoffs: {}", engine.search.beta_cutoffs);
     }
 }
