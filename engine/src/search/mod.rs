@@ -327,10 +327,27 @@ impl Engine {
 
             // if the score is outside the alpha-beta window, research with full window and same depth
             if best_score <= alpha || best_score >= beta {
-                alpha = -MATE_SCORE;
-                beta = MATE_SCORE;
-                continue;
+                best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);
             }
+            
+            // It appears gradual widening window is slower than full window.
+            // loop {
+            //     // if the score is outside the alpha-beta window, research with expanded window and same depth
+            //     // At depth one, it searches the full window. So the loop will only run once.
+            //     let score = self.alpha_beta_search(depth, 0, alpha, beta);
+            //     if score <= alpha {
+            //         alpha -= window;
+            //         window *= 2;
+            //         continue;
+            //     } else if score >= beta {
+            //         beta += window;
+            //         window *= 2;
+            //         continue;
+            //     } else {
+            //         best_score = score;
+            //         break;
+            //     }
+            // }
 
             alpha = best_score - delta;
             beta = best_score + delta;
