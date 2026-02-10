@@ -25,6 +25,7 @@ pub struct Search {
     pub max_depth_reached: u8,
     pub killer_moves: Vec<[Move; 2]>,
     pub history: History,
+    /// used to evaluate ordering quality
     pub beta_cutoffs: u64,
 }
 
@@ -216,6 +217,27 @@ impl Engine {
             return self.quiescence_search(ply, alpha, beta);
         }
 
+        // Null move pruning
+        // assumes a "pass" is always worse than the best move
+        // which is generally true with the exception of pawn endgames
+        let in_check = self.is_check();
+        if depth >= 3
+            && !in_check
+            && ply > 0
+            // if there are friendly non-pawn pieces
+            && ((self.board.our_pieces() & !self.pieces().pawns() & !self.pieces().kings()).count()
+                > 0)
+        {
+            let r = 2;
+            let prev_en_passant = self.make_null_move();
+            let score = -self.alpha_beta_search(depth - 1 - r, ply + 1, -beta, -beta + 1);
+            self.undo_null_move(prev_en_passant);
+
+            if score >= beta {
+                return beta;
+            }
+        }
+
         let mut best_score = i32::MIN;
         let mut best_move = Move::none();
 
@@ -232,7 +254,6 @@ impl Engine {
         }
 
         let (ordered_moves, quiet_start, quiet_end) = self.order_moves(&moves, ply);
-        let in_check = self.is_check();
 
         for (i, &r#move) in ordered_moves.iter().enumerate() {
             debug_assert!(self.is_legal_move(r#move));
@@ -329,7 +350,7 @@ impl Engine {
             if best_score <= alpha || best_score >= beta {
                 best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);
             }
-            
+
             // It appears gradual widening window is slower than full window.
             // loop {
             //     // if the score is outside the alpha-beta window, research with expanded window and same depth
@@ -372,7 +393,11 @@ impl Engine {
           \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
           \x1b[1mmaterial\x1b[0m \x1b[1;34m{}\x1b[0m\n\
           \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
-            self.search.nodes, self.search.max_depth_reached, best_move, self.material_score(), eval
+            self.search.nodes,
+            self.search.max_depth_reached,
+            best_move,
+            self.material_score(),
+            eval
         );
 
         assert!(!best_move.is_none(), "Best move is none");
@@ -422,9 +447,9 @@ mod tests {
         let mut engine =
             Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
         engine.alpha_beta_search(8, 0, -MATE_SCORE, MATE_SCORE);
-        // 2217059
+        // 1300834
         println!("nodes searched: {}", engine.search.nodes);
-        // 165819
+        // 48471
         println!("beta cutoffs: {}", engine.search.beta_cutoffs);
     }
 }

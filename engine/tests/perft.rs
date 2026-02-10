@@ -15,7 +15,8 @@ fn test_perft_starting() {
 fn test_perft_kiwipete() {
     let results = vec![48, 2039, 97862, 4085603];
 
-    let mut engine = Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    let mut engine =
+        Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
     for depth in 1..5 {
         let nodes = engine.perft(depth);
         assert_eq!(nodes, results[(depth - 1) as usize]);
@@ -37,7 +38,8 @@ fn test_perft_3() {
 fn test_perft_4() {
     let results = vec![6, 264, 9467, 422333];
 
-    let mut engine = Engine::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+    let mut engine =
+        Engine::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
     for depth in 1..5 {
         let nodes = engine.perft(depth);
         assert_eq!(nodes, results[(depth - 1) as usize]);

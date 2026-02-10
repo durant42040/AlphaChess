@@ -32,15 +32,16 @@ impl State {
 
 #[derive(Default)]
 pub struct ChessBoard {
-    move_history: Vec<Move>,
     fifty_move_rule: u8,
     castling_rights: CastlingRights,
     player: Player,
     pieces: Pieces,
     hasher: Zobrist,
+    move_history: Vec<Move>,
     state_history: Vec<State>,
     position_history: Vec<u64>,
     material_score: i32,
+    total_material: i32,
 }
 
 impl ChessBoard {
@@ -63,6 +64,7 @@ impl ChessBoard {
             state_history,
             position_history,
             material_score: 0,
+            total_material: 8000,
         };
 
         chessboard
@@ -146,15 +148,13 @@ impl ChessBoard {
             + (pieces.knights() & white).count() as i32 * Piece::Knight.value()
             + (pieces.bishops() & white).count() as i32 * Piece::Bishop.value()
             + (pieces.rooks() & white).count() as i32 * Piece::Rook.value()
-            + (pieces.queens() & white).count() as i32 * Piece::Queen.value()
-            + (pieces.kings() & white).count() as i32 * Piece::King.value();
+            + (pieces.queens() & white).count() as i32 * Piece::Queen.value();
 
         let black_score = (pieces.pawns() & black).count() as i32 * Piece::Pawn.value()
             + (pieces.knights() & black).count() as i32 * Piece::Knight.value()
             + (pieces.bishops() & black).count() as i32 * Piece::Bishop.value()
             + (pieces.rooks() & black).count() as i32 * Piece::Rook.value()
-            + (pieces.queens() & black).count() as i32 * Piece::Queen.value()
-            + (pieces.kings() & black).count() as i32 * Piece::King.value();
+            + (pieces.queens() & black).count() as i32 * Piece::Queen.value();
 
         white_score - black_score
     }
@@ -176,6 +176,7 @@ impl ChessBoard {
             } else {
                 self.material_score += piece.value();
             }
+            self.total_material -= piece.value();
         }
 
         let prev_state = State::new(
@@ -197,6 +198,7 @@ impl ChessBoard {
             } else {
                 self.material_score -= promotion.value() - Piece::Pawn.value();
             }
+            self.total_material += promotion.value() - Piece::Pawn.value();
             self.pieces.promote(promotion, from);
         }
         self.update_en_passant(from, to);
@@ -217,6 +219,31 @@ impl ChessBoard {
         debug_assert_eq!(self.material_score, self.compute_material_score());
     }
 
+    pub fn make_null_move(&mut self) -> Bitboard {
+        let prev_en_passant = self.pieces.en_passant();
+        self.pieces.set_en_passant(Bitboard::zero());
+        self.player = !self.player;
+
+        self.fifty_move_rule += 1;
+
+        let prev_hash = self.position_history.last().unwrap();
+        let new_hash = self
+            .hasher
+            .hash_null_move(self.pieces.en_passant(), *prev_hash);
+        self.position_history.push(new_hash);
+
+        prev_en_passant
+    }
+
+    pub fn undo_null_move(&mut self, en_passant: Bitboard) {
+        self.pieces.set_en_passant(en_passant);
+        self.player = !self.player;
+
+        self.fifty_move_rule -= 1;
+
+        self.position_history.pop();
+    }
+
     pub fn undo(&mut self) {
         debug_assert!(!self.move_history.is_empty());
         let r#move = self.move_history.pop().unwrap();
@@ -229,13 +256,14 @@ impl ChessBoard {
             } else {
                 self.material_score -= promotion.value() - Piece::Pawn.value();
             }
+            self.total_material -= promotion.value() - Piece::Pawn.value();
             self.pieces.undo_promote(to);
         }
 
         self.pieces.update(to, from);
         self.undo_castle(from, to);
         let state = self.state_history.last().unwrap();
-        
+
         if let Some((piece, color)) = state.captured_piece {
             self.pieces.set(piece, color, to.square);
             if color == Color::White {
@@ -243,18 +271,19 @@ impl ChessBoard {
             } else {
                 self.material_score -= piece.value();
             }
+            self.total_material += piece.value();
         }
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
             let to = Square::new(from.rank, to.file);
             let color = self.player.color();
-            self.pieces
-                .set(Piece::Pawn, color, to.square);
+            self.pieces.set(Piece::Pawn, color, to.square);
             if color == Color::White {
                 self.material_score += Piece::Pawn.value();
             } else {
                 self.material_score -= Piece::Pawn.value();
             }
+            self.total_material += Piece::Pawn.value();
         }
 
         self.pieces.set_en_passant(state.prev_en_passant);
@@ -274,17 +303,20 @@ impl ChessBoard {
             } else {
                 Color::Black
             };
-            self.pieces.clear(Piece::Pawn, !capturing_color, captured_square.square);
+            self.pieces
+                .clear(Piece::Pawn, !capturing_color, captured_square.square);
             if capturing_color == Color::White {
                 self.material_score += Piece::Pawn.value();
             } else {
                 self.material_score -= Piece::Pawn.value();
             }
+            self.total_material -= Piece::Pawn.value();
         }
 
         self.pieces.set_en_passant(Bitboard::zero());
         if self.pieces.pawns().get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
-            self.pieces.set_en_passant_square(Square::from((from.square + to.square) / 2));
+            self.pieces
+                .set_en_passant_square(Square::from((from.square + to.square) / 2));
         }
     }
 

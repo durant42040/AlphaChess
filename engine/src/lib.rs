@@ -16,7 +16,6 @@ use crate::constants::{
 };
 use crate::search::Search;
 
-
 pub struct Engine {
     board: ChessBoard,
     move_generator: MoveGenerator,
@@ -161,6 +160,18 @@ impl Engine {
         assert!(!self.attack_states.is_empty());
         self.attack_states.pop();
         true
+    }
+
+    pub fn make_null_move(&mut self) -> Bitboard {
+        let prev_en_passant = self.board.make_null_move();
+        self.update_attack_state();
+        prev_en_passant
+    }
+
+    pub fn undo_null_move(&mut self, en_passant: Bitboard) {
+        self.board.undo_null_move(en_passant);
+        assert!(!self.attack_states.is_empty());
+        self.attack_states.pop();
     }
 
     pub fn pieces(&self) -> Pieces {

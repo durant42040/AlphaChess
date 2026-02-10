@@ -140,9 +140,19 @@ mod tests {
 
     #[test]
     fn test_see_4() {
-        let mut engine = Engine::from_fen("rnbqk2r/pppp1ppp/8/2bQP3/4n3/5N2/PPP2PPP/RNB1KB1R b KQkq - 2 5");
+        let mut engine =
+            Engine::from_fen("rnbqk2r/pppp1ppp/8/2bQP3/4n3/5N2/PPP2PPP/RNB1KB1R b KQkq - 2 5");
         let r#move = Move::from("c5f2");
         let see = engine.see(r#move);
         assert_eq!(see, 100);
+    }
+
+    #[test]
+    fn test_see_5() {
+        let mut engine =
+            Engine::from_fen("r3kbr1/1p1b1p2/4p3/p2pp3/1P2P3/P1NR1N1P/2P2P2/4K2R w Kq - 0 23");
+        let r#move = Move::from("f3e5");
+        let see = engine.see(r#move);
+        println!("see: {}", see);
     }
 }

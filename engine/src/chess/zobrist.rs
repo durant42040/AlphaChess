@@ -84,6 +84,18 @@ impl Zobrist {
 
         hash
     }
+
+    pub fn hash_null_move(&self, en_passant: Bitboard, prev_hash: u64) -> u64 {
+        let mut hash = prev_hash;
+
+        hash ^= self.color;
+
+        if !en_passant.empty() {
+            hash ^= self.en_passant[en_passant.get_lsb() as usize];
+        }
+
+        hash
+    }
 }
 
 impl Default for Zobrist {
