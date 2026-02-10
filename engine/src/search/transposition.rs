@@ -71,13 +71,13 @@ impl TranspositionTable {
 
     pub fn store(&mut self, hash: u64, depth: u8, score: i32, bound: Bound, best_move: Move) {
         let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
-        if self.table[idx].hash == hash {
-            if depth >= self.table[idx].depth || (bound == Bound::Exact && self.table[idx].bound != Bound::Exact) {
-                self.table[idx] = Entry::new(hash, depth, score, bound, best_move);
-            }
-        } else {
-            self.table[idx] = Entry::new(hash, depth, score, bound, best_move);
+        if self.table[idx].depth > depth
+            && !(bound == Bound::Exact && self.table[idx].bound != Bound::Exact)
+        {
+            return;
         }
+
+        self.table[idx] = Entry::new(hash, depth, score, bound, best_move);
     }
 }
 

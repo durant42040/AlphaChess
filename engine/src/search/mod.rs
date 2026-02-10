@@ -414,7 +414,6 @@ impl Engine {
         let mut alpha = -MATE_SCORE;
         let mut beta = MATE_SCORE;
 
-
         let mut best_move = Move::none();
         let mut best_score = 0;
 
