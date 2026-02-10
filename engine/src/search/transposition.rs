@@ -71,6 +71,7 @@ impl TranspositionTable {
 
     pub fn store(&mut self, hash: u64, depth: u8, score: i32, bound: Bound, best_move: Move) {
         let idx = hash as usize % TRANSPOSITION_TABLE_SIZE;
+        // if depth is less than the stored depth and does not improve bound
         if self.table[idx].depth > depth
             && !(bound == Bound::Exact && self.table[idx].bound != Bound::Exact)
         {

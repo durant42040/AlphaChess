@@ -87,11 +87,23 @@ impl Engine {
         };
 
         // Score in pawns with sign
-        let eval_pawns = eval as f32 / 100.0;
-        let eval_str = if eval_pawns.is_sign_negative() {
-            format!("{:.2}", eval_pawns)
+        let eval = eval as f32 / 100.0;
+        let eval_str = if eval.is_sign_negative() {
+            format!("{:.2}", eval)
         } else {
-            format!("+{:.2}", eval_pawns)
+            format!("+{:.2}", eval)
+        };
+        let material = self.material_score() as f32 / 100.0;
+        let material_str = if material.is_sign_negative() {
+            format!("{:.2}", material)
+        } else {
+            format!("+{:.2}", material)
+        };
+
+        let endgame_color = if self.is_endgame() {
+            "\x1b[32m"
+        } else {
+            "\x1b[31m"
         };
 
         println!(
@@ -110,12 +122,8 @@ impl Engine {
             eval_str,
             best_move,
             pv_str,
-            self.material_score(),
-            if self.is_endgame() {
-                "\x1b[32m"
-            } else {
-                "\x1b[31m"
-            },
+            material_str,
+            endgame_color,
             self.is_endgame()
         );
     }
@@ -368,6 +376,7 @@ impl Engine {
                 best_score = score;
                 best_move = r#move;
             }
+
             alpha = max(alpha, score);
 
             if alpha >= beta {
@@ -459,8 +468,8 @@ impl Engine {
         }
 
         self.print_search_info(best_score, best_move);
-
         assert!(!best_move.is_none(), "Best move is none");
+
         best_move
     }
 }
