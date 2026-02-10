@@ -384,6 +384,10 @@ impl Engine {
     pub fn is_check(&self) -> bool {
         self.attack_state().num_checks > 0
     }
+
+    pub fn is_endgame(&self) -> bool {
+        self.board.non_pawn_material() <= 2000
+    }
 }
 
 impl Default for Engine {

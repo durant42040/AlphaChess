@@ -41,7 +41,7 @@ pub struct ChessBoard {
     state_history: Vec<State>,
     position_history: Vec<u64>,
     material_score: i32,
-    total_material: i32,
+    pub non_pawn_material: i32,
 }
 
 impl ChessBoard {
@@ -64,7 +64,7 @@ impl ChessBoard {
             state_history,
             position_history,
             material_score: 0,
-            total_material: 8000,
+            non_pawn_material: 6400,
         };
 
         chessboard
@@ -176,7 +176,9 @@ impl ChessBoard {
             } else {
                 self.material_score += piece.value();
             }
-            self.total_material -= piece.value();
+            if piece != Piece::Pawn {
+                self.non_pawn_material -= piece.value();
+            }
         }
 
         let prev_state = State::new(
@@ -198,7 +200,7 @@ impl ChessBoard {
             } else {
                 self.material_score -= promotion.value() - Piece::Pawn.value();
             }
-            self.total_material += promotion.value() - Piece::Pawn.value();
+            self.non_pawn_material += promotion.value();
             self.pieces.promote(promotion, from);
         }
         self.update_en_passant(from, to);
@@ -256,7 +258,7 @@ impl ChessBoard {
             } else {
                 self.material_score -= promotion.value() - Piece::Pawn.value();
             }
-            self.total_material -= promotion.value() - Piece::Pawn.value();
+            self.non_pawn_material -= promotion.value();
             self.pieces.undo_promote(to);
         }
 
@@ -271,7 +273,9 @@ impl ChessBoard {
             } else {
                 self.material_score -= piece.value();
             }
-            self.total_material += piece.value();
+            if piece != Piece::Pawn {
+                self.non_pawn_material += piece.value();
+            }
         }
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
@@ -283,7 +287,6 @@ impl ChessBoard {
             } else {
                 self.material_score -= Piece::Pawn.value();
             }
-            self.total_material += Piece::Pawn.value();
         }
 
         self.pieces.set_en_passant(state.prev_en_passant);
@@ -310,7 +313,6 @@ impl ChessBoard {
             } else {
                 self.material_score -= Piece::Pawn.value();
             }
-            self.total_material -= Piece::Pawn.value();
         }
 
         self.pieces.set_en_passant(Bitboard::zero());
@@ -412,6 +414,11 @@ impl ChessBoard {
     #[inline(always)]
     pub fn material_score(&self) -> i32 {
         self.material_score
+    }
+
+    #[inline(always)]
+    pub fn non_pawn_material(&self) -> i32 {
+        self.non_pawn_material
     }
 }
 

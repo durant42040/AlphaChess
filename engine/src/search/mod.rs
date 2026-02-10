@@ -244,7 +244,7 @@ impl Engine {
         let moves = self.generate_all_legal_moves();
 
         // if there are no legal moves, check for checkmate or stalemate
-        // mate in 1 have higher score than mate in 2 to encourage engine to find fastest checkmate
+        // mate in 1 have higher score than mate in 2 to encourage finding the fastest checkmate
         if moves.is_empty() {
             if self.is_check() {
                 return -MATE_SCORE + ply as i32;
@@ -399,6 +399,7 @@ impl Engine {
             self.material_score(),
             eval
         );
+        println!("non pawn material: {}", self.board.non_pawn_material);
 
         assert!(!best_move.is_none(), "Best move is none");
         best_move
