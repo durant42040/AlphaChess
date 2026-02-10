@@ -399,7 +399,6 @@ impl Engine {
             self.material_score(),
             eval
         );
-        println!("non pawn material: {}", self.board.non_pawn_material);
 
         assert!(!best_move.is_none(), "Best move is none");
         best_move

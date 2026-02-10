@@ -41,7 +41,7 @@ pub struct ChessBoard {
     state_history: Vec<State>,
     position_history: Vec<u64>,
     material_score: i32,
-    pub non_pawn_material: i32,
+    non_pawn_material: i32,
 }
 
 impl ChessBoard {

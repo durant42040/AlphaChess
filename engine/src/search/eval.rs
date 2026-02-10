@@ -1,15 +1,28 @@
 use crate::chess::Bitboard;
 use crate::constants::{
-    ATTACK_WEIGHT, BLACK_BISHOP_SCORE, BLACK_KING_SCORE, BLACK_KING_ZONE, BLACK_PASSED_MASK,
-    BLACK_PAWN_SCORE, BLACK_ROOK_SCORE, DOUBLE_PAWN_PENALTY, FILE_MASKS, ISOLATED_MASK,
-    ISOLATED_PAWN_PENALTY, KING_SHIELD_BONUS, KNIGHT_SCORE, OPEN_FILE_BONUS, PASSED_PAWN_BONUS,
-    RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_BISHOP_SCORE, WHITE_KING_SCORE, WHITE_KING_ZONE,
-    WHITE_PASSED_MASK, WHITE_PAWN_SCORE, WHITE_ROOK_SCORE,
+    ATTACK_WEIGHT, BLACK_KING_ZONE, BLACK_PASSED_MASK, DOUBLE_PAWN_PENALTY, ENDGAME_BISHOP_SCORE,
+    ENDGAME_KING_SCORE, ENDGAME_KNIGHT_SCORE, ENDGAME_PAWN_SCORE, ENDGAME_QUEEN_SCORE,
+    ENDGAME_ROOK_SCORE, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KING_SHIELD_BONUS,
+    MIDDLEGAME_BISHOP_SCORE, MIDDLEGAME_KING_SCORE, MIDDLEGAME_KNIGHT_SCORE, MIDDLEGAME_PAWN_SCORE,
+    MIDDLEGAME_QUEEN_SCORE, MIDDLEGAME_ROOK_SCORE, OPEN_FILE_BONUS, PASSED_PAWN_BONUS,
+    RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_KING_ZONE, WHITE_PASSED_MASK,
 };
 use crate::{
     Engine,
     chess::{Player, Square},
 };
+
+#[inline(always)]
+fn piece_score_sum(white: Bitboard, black: Bitboard, score: &[i32; 64]) -> i32 {
+    let mut sum = 0;
+    for i in white.iter() {
+        sum += score[(i ^ 56) as usize];
+    }
+    for i in black.iter() {
+        sum -= score[i as usize];
+    }
+    sum
+}
 
 pub trait Evaluation {
     fn material_score(&self) -> i32;
@@ -54,42 +67,62 @@ impl Evaluation for Engine {
         let knights = pieces.knights();
         let bishops = pieces.bishops();
         let rooks = pieces.rooks();
+        let queens = pieces.queens();
         let kings = pieces.kings();
 
-        let mut score = 0;
-
-        for i in (white_pieces & pawns).iter() {
-            score += WHITE_PAWN_SCORE[i as usize];
+        if self.is_endgame() {
+            piece_score_sum(
+                white_pieces & pawns,
+                black_pieces & pawns,
+                &ENDGAME_PAWN_SCORE,
+            ) + piece_score_sum(
+                white_pieces & knights,
+                black_pieces & knights,
+                &ENDGAME_KNIGHT_SCORE,
+            ) + piece_score_sum(
+                white_pieces & bishops,
+                black_pieces & bishops,
+                &ENDGAME_BISHOP_SCORE,
+            ) + piece_score_sum(
+                white_pieces & rooks,
+                black_pieces & rooks,
+                &ENDGAME_ROOK_SCORE,
+            ) + piece_score_sum(
+                white_pieces & queens,
+                black_pieces & queens,
+                &ENDGAME_QUEEN_SCORE,
+            ) + piece_score_sum(
+                white_pieces & kings,
+                black_pieces & kings,
+                &ENDGAME_KING_SCORE,
+            )
+        } else {
+            piece_score_sum(
+                white_pieces & pawns,
+                black_pieces & pawns,
+                &MIDDLEGAME_PAWN_SCORE,
+            ) + piece_score_sum(
+                white_pieces & knights,
+                black_pieces & knights,
+                &MIDDLEGAME_KNIGHT_SCORE,
+            ) + piece_score_sum(
+                white_pieces & bishops,
+                black_pieces & bishops,
+                &MIDDLEGAME_BISHOP_SCORE,
+            ) + piece_score_sum(
+                white_pieces & rooks,
+                black_pieces & rooks,
+                &MIDDLEGAME_ROOK_SCORE,
+            ) + piece_score_sum(
+                white_pieces & queens,
+                black_pieces & queens,
+                &MIDDLEGAME_QUEEN_SCORE,
+            ) + piece_score_sum(
+                white_pieces & kings,
+                black_pieces & kings,
+                &MIDDLEGAME_KING_SCORE,
+            )
         }
-        for i in (black_pieces & pawns).iter() {
-            score -= BLACK_PAWN_SCORE[i as usize];
-        }
-        for i in (white_pieces & knights).iter() {
-            score += KNIGHT_SCORE[i as usize];
-        }
-        for i in (black_pieces & knights).iter() {
-            score -= KNIGHT_SCORE[i as usize];
-        }
-        for i in (white_pieces & bishops).iter() {
-            score += WHITE_BISHOP_SCORE[i as usize];
-        }
-        for i in (black_pieces & bishops).iter() {
-            score -= BLACK_BISHOP_SCORE[i as usize];
-        }
-        for i in (white_pieces & rooks).iter() {
-            score += WHITE_ROOK_SCORE[i as usize];
-        }
-        for i in (black_pieces & rooks).iter() {
-            score -= BLACK_ROOK_SCORE[i as usize];
-        }
-        for i in (white_pieces & kings).iter() {
-            score += WHITE_KING_SCORE[i as usize];
-        }
-        for i in (black_pieces & kings).iter() {
-            score -= BLACK_KING_SCORE[i as usize];
-        }
-
-        score
     }
 
     fn double_pawn_penalty(&self) -> i32 {
@@ -278,5 +311,17 @@ impl Evaluation for Engine {
         } else {
             -score
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Engine, search::Evaluation};
+
+    #[test]
+    fn test_eval() {
+        let engine = Engine::new();
+        let eval = engine.eval();
+        assert_eq!(eval, 0);
     }
 }
