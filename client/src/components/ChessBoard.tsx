@@ -20,17 +20,19 @@ export function ChessBoard({
   onDrop,
 }: ChessBoardProps) {
   // In self-play mode, show board from white's perspective
-  const order = game === 'b'? [7, 6, 5, 4, 3, 2, 1, 0] :  [0, 1, 2, 3, 4, 5, 6, 7];
+  const rankOrder = game === 'b' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const fileOrder = game === 'b' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
 
   return (
     <div>
-      {order.map((i) => (
-        <div className="row" key={i}>
-          {board[i].map((piece, file) => {
-            const position: Coord = [i, file];
+      {rankOrder.map((rank) => (
+        <div className="row" key={rank}>
+          {fileOrder.map((file) => {
+            const piece = board[rank][file];
+            const position: Coord = [rank, file];
             const isSelected =
               positionFrom !== null &&
-              positionFrom[0] === i &&
+              positionFrom[0] === rank &&
               positionFrom[1] === file;
             return (
               <Square
