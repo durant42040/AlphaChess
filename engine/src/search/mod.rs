@@ -36,7 +36,7 @@ impl Search {
             transposition_table: TranspositionTable::new(),
             nodes: 0,
             start_time: Instant::now(),
-            ponder_time: Duration::from_millis(100),
+            ponder_time: Duration::from_millis(1000),
             max_depth_reached: 0,
             killer_moves: vec![[Move::none(); 2]; 4096],
             history: History::new(),
@@ -515,7 +515,7 @@ mod tests {
     #[test]
     fn test_pv() {
         let mut engine =
-            Engine::from_fen("r4rk1/1p4pp/3P1p2/q2ppb2/1p6/1PnBP1B1/P4PPP/R2QK2R w KQ - 4 18");
+            Engine::from_fen("rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2");
         engine.set_ponder_time(1000);
         engine.best_move();
         let pv = engine.principal_variation();
