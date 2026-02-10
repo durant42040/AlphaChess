@@ -48,7 +48,7 @@ impl fmt::Display for Move {
                 p != Piece::Pawn && p != Piece::King,
                 "Pawn and king cannot be promoted"
             );
-            write!(f, "{}", p.to_promotion_char())?;
+            write!(f, "{}", char::from(p))?;
         }
         Ok(())
     }

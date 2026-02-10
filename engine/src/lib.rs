@@ -174,10 +174,12 @@ impl Engine {
         self.attack_states.pop();
     }
 
+    #[inline(always)]
     pub fn pieces(&self) -> Pieces {
         self.board.pieces()
     }
 
+    #[inline(always)]
     pub fn player(&self) -> Player {
         self.board.player()
     }

@@ -40,7 +40,6 @@ impl Search {
             max_depth_reached: 0,
             killer_moves: vec![[Move::none(); 2]; 4096],
             history: History::new(),
-            // used to evaluate ordering quality
             beta_cutoffs: 0,
         }
     }
@@ -127,6 +126,7 @@ impl Engine {
             self.is_endgame()
         );
     }
+
     fn principal_variation(&mut self) -> Vec<Move> {
         let mut pv = Vec::new();
         let original_hash = self.board.position_hash();
@@ -214,6 +214,7 @@ impl Engine {
                 quiet_moves.push((score, r#move));
             }
         }
+
         good_captures.sort_by_key(|(score, _)| -score);
         bad_captures.sort_by_key(|(score, _)| -score);
         killer_moves.sort_by_key(|(score, _)| -score);
@@ -286,6 +287,7 @@ impl Engine {
         self.search.nodes += 1;
         let alpha_orig = alpha;
         let hash = self.board.position_hash();
+
         if self.board.is_draw() {
             return 0;
         }
@@ -365,6 +367,7 @@ impl Engine {
 
                 score = -self.alpha_beta_search(depth - 1 - r, ply + 1, -alpha - 1, -alpha);
 
+                // full window search if score is in the alpha-beta window
                 if score > alpha && score < beta {
                     score = -self.alpha_beta_search(depth - 1, ply + 1, -beta, -alpha);
                 }
@@ -428,9 +431,12 @@ impl Engine {
 
         let mut depth: u8 = 1;
         let delta = 50;
+        
+        // Iterative deepening
         while !self.search.time_up() {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);
 
+            // Search with an aspiration window of best_score ± delta
             // if the score is outside the alpha-beta window, research with full window and same depth
             if best_score <= alpha || best_score >= beta {
                 best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);

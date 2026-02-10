@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl Engine {
-    /// Static Exchange Evaluation (SEE)
+    /// Static Exchange Evaluation (SEE): evaluates the material gain of a capture by simulating the exchange of pieces.
     pub fn see(&mut self, r#move: Move) -> i32 {
         let from = r#move.from;
         let to = r#move.to;
@@ -24,11 +24,11 @@ impl Engine {
         let mut depth = 1;
 
         loop {
-            color = color.opposite();
+            color = !color;
             all_attackers &= occupied;
 
             let our_pieces = self.board.pieces_of_color(color);
-            let their_pieces = self.board.pieces_of_color(color.opposite());
+            let their_pieces = self.board.pieces_of_color(!color);
 
             let our_attackers = all_attackers & our_pieces;
             // TODO: remove pinned pieces from all_attackers

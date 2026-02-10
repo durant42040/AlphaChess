@@ -321,11 +321,13 @@ impl ChessBoard {
                 .set_en_passant_square(Square::from((from.square + to.square) / 2));
         }
     }
-
+    
+    #[inline(always)]
     pub fn pieces(&self) -> Pieces {
         self.pieces
     }
 
+    #[inline(always)]
     pub fn our_pieces(&self) -> Bitboard {
         if self.player == Player::White {
             self.pieces.white_pieces()
@@ -334,6 +336,7 @@ impl ChessBoard {
         }
     }
 
+    #[inline(always)]
     pub fn their_pieces(&self) -> Bitboard {
         if self.player == Player::White {
             self.pieces.black_pieces()
@@ -438,8 +441,7 @@ impl Castling for ChessBoard {
         self.castling_rights.revoke_castling_rights(from, to);
 
         // Move rook if this is a castling move (king moves two squares).
-        if self.pieces.kings().get_square(from) && (from.square as i8 - to.square as i8).abs() == 2
-        {
+        if self.pieces.kings().get_square(from) {
             if from == WHITE_KING_START {
                 if to == WHITE_QUEENSIDE_CASTLE_TO {
                     self.pieces.update(
@@ -469,8 +471,7 @@ impl Castling for ChessBoard {
     }
 
     fn undo_castle(&mut self, from: Square, to: Square) {
-        if self.pieces.kings().get_square(from) && (from.square as i8 - to.square as i8).abs() == 2
-        {
+        if self.pieces.kings().get_square(from) {
             if from == WHITE_KING_START {
                 if to == WHITE_QUEENSIDE_CASTLE_TO {
                     self.pieces.update(

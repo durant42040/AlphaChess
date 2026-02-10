@@ -235,28 +235,28 @@ mod tests {
         let move_generator = MoveGenerator::new();
 
         // Test bishop moves for all squares with an empty board.
-        for sq in 0u8..64u8 {
-            let from = Square::from(sq);
-            let all_pieces = Bitboard::from(0);
+        for idx in 0..64 {
+            let from = Square::from(idx);
+            let all_pieces = Bitboard::zero();
             let fast = move_generator.generate_bishop_moves(from, all_pieces);
             let slow = move_generator.generate_bishop_moves_slow(from, all_pieces);
             assert_eq!(
                 fast, slow,
                 "Bishop mismatch at square {}: fast={:?}, slow={:?}",
-                sq, fast, slow
+                idx, fast, slow
             );
         }
 
         // Test rook moves for all squares with an empty board.
-        for sq in 0u8..64u8 {
-            let from = Square::from(sq);
-            let all_pieces = Bitboard::from(0);
+        for idx in 0..64 {
+            let from = Square::from(idx);
+            let all_pieces = Bitboard::zero();
             let fast = move_generator.generate_rook_moves(from, all_pieces);
             let slow = move_generator.generate_rook_moves_slow(from, all_pieces);
             assert_eq!(
                 fast, slow,
                 "Rook mismatch at square {}: fast={:?}, slow={:?}",
-                sq, fast, slow
+                idx, fast, slow
             );
         }
     }

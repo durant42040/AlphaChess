@@ -35,7 +35,7 @@ impl Default for Entry {
 }
 
 impl TranspositionTable {
-    /// Transposition table is implemented as a preallocated vector of size 4MB. The key of each entry is the zobrist hash of the position.
+    /// Transposition table is implemented as a preallocated vector of size 64MB. The key of each entry is the zobrist hash of the position.
     pub fn new() -> Self {
         Self {
             table: vec![Entry::default(); TRANSPOSITION_TABLE_SIZE],

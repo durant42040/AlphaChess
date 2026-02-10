@@ -20,23 +20,6 @@ impl From<Player> for Color {
     }
 }
 
-impl Color {
-    /// Convert a boolean to Color (true = White, false = Black).
-    pub fn from_bool(is_white: bool) -> Self {
-        if is_white { Color::White } else { Color::Black }
-    }
-
-    /// Convert Color to boolean (White = true, Black = false).
-    pub fn to_bool(self) -> bool {
-        matches!(self, Color::White)
-    }
-
-    /// Get the opposite color.
-    pub fn opposite(self) -> Self {
-        !self
-    }
-}
-
 impl Not for Color {
     type Output = Self;
 
@@ -48,16 +31,6 @@ impl Not for Color {
     }
 }
 
-impl From<Color> for usize {
-    fn from(color: Color) -> Self {
-        match color {
-            Color::White => 0,
-            Color::Black => 1,
-        }
-    }
-}
-
-/// Represents the type of a chess piece (color is handled separately).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Piece {
     Pawn,
@@ -139,10 +112,11 @@ impl Piece {
             _ => None,
         }
     }
+}
 
-    /// Convert this piece type into a promotion character used in move strings.
-    pub fn to_promotion_char(self) -> char {
-        match self {
+impl From<Piece> for char {
+    fn from(piece: Piece) -> Self {
+        match piece {
             Piece::Queen => 'q',
             Piece::Rook => 'r',
             Piece::Bishop => 'b',
