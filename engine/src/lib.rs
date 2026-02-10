@@ -378,7 +378,7 @@ impl Engine {
     }
 
     pub fn attack_state(&self) -> &AttackState {
-        &self.attack_states.last().unwrap()
+        self.attack_states.last().unwrap()
     }
 
     pub fn is_check(&self) -> bool {
