@@ -49,9 +49,11 @@ impl Search {
         self.max_depth = max_depth;
     }
 
-    pub fn reset_timer(&mut self) {
+    pub fn reset(&mut self) {
         self.start_time = Instant::now();
         self.max_depth_reached = 0;
+        self.nodes = 0;
+        self.beta_cutoffs = 0;
     }
 
     pub fn time_up(&self) -> bool {
@@ -399,19 +401,19 @@ impl Engine {
         self.search
             .transposition_table
             .store(hash, depth, best_score, bound, best_move);
+
         best_score
     }
 
     pub fn best_move(&mut self) -> Move {
         assert!(self.game_state == GameState::Playing);
-        self.search.nodes = 0;
+        self.search.reset();
 
         let hash = self.board.position_hash();
 
         let mut alpha = -MATE_SCORE;
         let mut beta = MATE_SCORE;
 
-        self.search.reset_timer();
 
         let mut best_move = Move::none();
         let mut best_score = 0;
