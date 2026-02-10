@@ -66,6 +66,61 @@ impl Default for Search {
 }
 
 impl Engine {
+    fn print_search_info(&mut self, best_score: i32, best_move: Move) {
+        let eval = if self.board.player() == Player::White {
+            best_score
+        } else {
+            -best_score
+        };
+
+        let pv= self.principal_variation(self.search.max_depth_reached as usize);
+        let pv_str = pv.iter()
+                .map(|m| m.to_string())
+                .collect::<Vec<_>>()
+                .join(" ");
+
+        println!(
+            "\x1b[1;32m[Engine]\x1b[0m\n\x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
+          \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1mPV\x1b[0m \x1b[33m{}\x1b[0m\n\
+          \x1b[1mmaterial\x1b[0m \x1b[1;34m{}\x1b[0m\n\
+          \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m\n\
+          \x1b[1mendgame\x1b[0m {}{}\x1b[0m\n",
+            self.search.nodes,
+            self.search.max_depth_reached,
+            best_move,
+            pv_str,
+            self.material_score(),
+            eval,
+            if self.is_endgame() { "\x1b[32m" } else { "\x1b[31m" },
+            self.is_endgame()
+        );
+    }
+    fn principal_variation(&mut self, max_len: usize) -> Vec<Move> {
+        let mut pv = Vec::new();
+        let original_hash = self.board.position_hash();
+
+        for _ in 0..max_len {
+            let hash = self.board.position_hash();
+            let r#move = self.search.transposition_table.get_best_move(hash);
+            if r#move.is_none() || !self.is_legal_move(r#move) {
+                break;
+            }
+
+            pv.push(r#move);
+            assert!(self.is_legal_move(r#move));
+            self.act(r#move);
+        }
+
+        for _ in 0..pv.len() {
+            self.undo();
+        }
+        debug_assert_eq!(self.board.position_hash(), original_hash);
+
+        pv
+    }
+
     /// Move ordering improves search efficiency by prioritizing moves likely to cause beta cutoffs.
     /// Moves are sorted as follows:
     ///
@@ -381,24 +436,8 @@ impl Engine {
             }
             depth += 1;
         }
-        let eval = if self.board.player() == Player::White {
-            best_score
-        } else {
-            -best_score
-        };
 
-        println!(
-            "\x1b[1;32m[Engine]\x1b[0m\n\x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
-          \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
-          \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
-          \x1b[1mmaterial\x1b[0m \x1b[1;34m{}\x1b[0m\n\
-          \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m",
-            self.search.nodes,
-            self.search.max_depth_reached,
-            best_move,
-            self.material_score(),
-            eval
-        );
+        self.print_search_info(best_score, best_move);
 
         assert!(!best_move.is_none(), "Best move is none");
         best_move

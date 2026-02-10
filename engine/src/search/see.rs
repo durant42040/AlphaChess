@@ -153,6 +153,6 @@ mod tests {
             Engine::from_fen("r3kbr1/1p1b1p2/4p3/p2pp3/1P2P3/P1NR1N1P/2P2P2/4K2R w Kq - 0 23");
         let r#move = Move::from("f3e5");
         let see = engine.see(r#move);
-        println!("see: {}", see);
+        assert_eq!(see, 100);
     }
 }
