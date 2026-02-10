@@ -73,35 +73,55 @@ impl Engine {
             -best_score
         };
 
-        let pv= self.principal_variation(self.search.max_depth_reached as usize);
-        let pv_str = pv.iter()
+        // Principal variation
+        let pv = self.principal_variation();
+        let pv_str = if pv.is_empty() {
+            "-".to_string()
+        } else {
+            pv.iter()
                 .map(|m| m.to_string())
                 .collect::<Vec<_>>()
-                .join(" ");
+                .join(" ")
+        };
+
+        // Score in pawns with sign
+        let eval_pawns = eval as f32 / 100.0;
+        let eval_str = if eval_pawns.is_sign_negative() {
+            format!("{:.2}", eval_pawns)
+        } else {
+            format!("+{:.2}", eval_pawns)
+        };
 
         println!(
-            "\x1b[1;32m[Engine]\x1b[0m\n\x1b[1msearched\x1b[0m \x1b[32m{}\x1b[0m nodes\n\
-          \x1b[1mmax depth\x1b[0m \x1b[33m{}\x1b[0m\n\
-          \x1b[1mbest move\x1b[0m \x1b[33m{}\x1b[0m\n\
-          \x1b[1mPV\x1b[0m \x1b[33m{}\x1b[0m\n\
-          \x1b[1mmaterial\x1b[0m \x1b[1;34m{}\x1b[0m\n\
-          \x1b[1meval\x1b[0m \x1b[1;34m{}\x1b[0m\n\
-          \x1b[1mendgame\x1b[0m {}{}\x1b[0m\n",
-            self.search.nodes,
+            "\n\x1b[1;32m[Engine]\x1b[0m\n\
+             \x1b[90m────────────────────────────────────────────\x1b[0m\n\
+             \x1b[1mDepth     \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mSearched  \x1b[0m \x1b[32m{}\x1b[0m \x1b[1mnodes\n\
+             \x1b[1mEval      \x1b[0m \x1b[1;34m{}\x1b[0m\n\
+             \x1b[1mBest Move \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mPV        \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mMaterial  \x1b[0m \x1b[1;34m{}\x1b[0m\n\
+             \x1b[1mEndgame   \x1b[0m {}{}\x1b[0m\n\
+             \x1b[90m────────────────────────────────────────────\x1b[0m",
             self.search.max_depth_reached,
+            self.search.nodes,
+            eval_str,
             best_move,
             pv_str,
             self.material_score(),
-            eval,
-            if self.is_endgame() { "\x1b[32m" } else { "\x1b[31m" },
+            if self.is_endgame() {
+                "\x1b[32m"
+            } else {
+                "\x1b[31m"
+            },
             self.is_endgame()
         );
     }
-    fn principal_variation(&mut self, max_len: usize) -> Vec<Move> {
+    fn principal_variation(&mut self) -> Vec<Move> {
         let mut pv = Vec::new();
         let original_hash = self.board.position_hash();
 
-        for _ in 0..max_len {
+        for _ in 0..self.search.max_depth_reached {
             let hash = self.board.position_hash();
             let r#move = self.search.transposition_table.get_best_move(hash);
             if r#move.is_none() || !self.is_legal_move(r#move) {
@@ -490,5 +510,21 @@ mod tests {
         println!("nodes searched: {}", engine.search.nodes);
         // 48471
         println!("beta cutoffs: {}", engine.search.beta_cutoffs);
+    }
+
+    #[test]
+    fn test_pv() {
+        let mut engine =
+            Engine::from_fen("r4rk1/1p4pp/3P1p2/q2ppb2/1p6/1PnBP1B1/P4PPP/R2QK2R w KQ - 4 18");
+        engine.set_ponder_time(1000);
+        engine.best_move();
+        let pv = engine.principal_variation();
+        println!(
+            "pv: {}",
+            pv.iter()
+                .map(|m| m.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
     }
 }
