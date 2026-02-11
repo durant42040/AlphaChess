@@ -716,7 +716,7 @@ pub const MAX_LEGAL_MOVES: usize = 256;
 pub const TRANSPOSITION_TABLE_SIZE: usize = 0x4000000; // 64MB
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_PAWN_SCORE: [i32; 64] = [
+pub const OPENING_PAWN_SCORE: [i32; 64] = [
       0,   0,   0,   0,   0,   0,   0,   0,
      98, 134,  61,  95,  68, 126,  34, -11,
      -6,   7,  26,  31,  65,  56,  25, -20,
@@ -740,7 +740,7 @@ pub const ENDGAME_PAWN_SCORE: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_KNIGHT_SCORE: [i32; 64] = [
+pub const OPENING_KNIGHT_SCORE: [i32; 64] = [
     -167, -89, -34, -49,  61, -97, -15, -107,
      -73, -41,  72,  36,  23,  62,   7,  -17,
      -47,  60,  37,  65,  84, 129,  73,   44,
@@ -764,7 +764,7 @@ pub const ENDGAME_KNIGHT_SCORE: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_BISHOP_SCORE: [i32; 64] = [
+pub const OPENING_BISHOP_SCORE: [i32; 64] = [
     -29,   4, -82, -37, -25, -42,   7,  -8,
     -26,  16, -18, -13,  30,  59,  18, -47,
     -16,  37,  43,  40,  35,  50,  37,  -2,
@@ -788,7 +788,7 @@ pub const ENDGAME_BISHOP_SCORE: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_ROOK_SCORE: [i32; 64] = [
+pub const OPENING_ROOK_SCORE: [i32; 64] = [
      32,  42,  32,  51,  63,   9,  31,  43,
      27,  32,  58,  62,  80,  67,  26,  44,
      -5,  19,  26,  36,  17,  45,  61,  16,
@@ -812,7 +812,7 @@ pub const ENDGAME_ROOK_SCORE: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_QUEEN_SCORE: [i32; 64] = [
+pub const OPENING_QUEEN_SCORE: [i32; 64] = [
     -28,   0,  29,  12,  59,  44,  43,  45,
     -24, -39,  -5,   1, -16,  57,  28,  54,
     -13, -17,   7,   8,  29,  56,  47,  57,
@@ -836,7 +836,7 @@ pub const ENDGAME_QUEEN_SCORE: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-pub const MIDDLEGAME_KING_SCORE: [i32; 64] = [
+pub const OPENING_KING_SCORE: [i32; 64] = [
     -65,  23,  16, -15, -56, -34,   2,  13,
      29,  -1, -20,  -7,  -8,  -4, -38, -29,
      -9,  24,   2, -16, -20,   6,  22, -22,
@@ -1082,7 +1082,8 @@ pub const BLACK_PASSED_MASK: [u64; 64] = [
     0x00c0c0c0c0c0c0c0,
 ];
 
-pub const PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 20, 30, 70, 150, 0];
+pub const OPENING_PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 5, 15, 30, 50, 100, 0];
+pub const ENDGAME_PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 30, 50, 100, 150, 0];
 
 pub const DOUBLE_PAWN_PENALTY: i32 = -15;
 

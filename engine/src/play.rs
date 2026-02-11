@@ -162,18 +162,18 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
             engine.make_move(best_move);
             stockfish.play_move(move_string).unwrap();
             moves.push(best_move);
+            let stockfish_eval = stockfish.go().unwrap().eval().value();
+            let stockfish_eval = stockfish_eval as f32 / 100.0;
+            let stockfish_eval_str = if stockfish_eval.is_sign_negative() {
+                format!("{:.2}", stockfish_eval)
+            } else {
+                format!("+{:.2}", stockfish_eval)
+            };
+            println!(
+                "\x1b[1;31m[Stockfish]\x1b[0m\n\x1b[1mstockfish eval\x1b[0m \x1b[1;34m{}\x1b[0m",
+                stockfish_eval_str
+            );
         }
-        let stockfish_eval = stockfish.go().unwrap().eval().value();
-        let stockfish_eval = stockfish_eval as f32 / 100.0;
-        let stockfish_eval_str = if stockfish_eval.is_sign_negative() {
-            format!("{:.2}", stockfish_eval)
-        } else {
-            format!("+{:.2}", stockfish_eval)
-        };
-        println!(
-            "\x1b[1;31m[Stockfish]\x1b[0m\n\x1b[1mstockfish eval\x1b[0m \x1b[1;34m{}\x1b[0m",
-            stockfish_eval_str
-        );
         println!("{}", engine);
         plies += 1;
     }

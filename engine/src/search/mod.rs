@@ -7,6 +7,8 @@ pub mod transposition;
 use std::cmp::max;
 use std::time::{Duration, Instant};
 
+use stockfish::Stockfish;
+
 pub use eval::Evaluation;
 
 use crate::Engine;
@@ -105,22 +107,35 @@ impl Engine {
             "\x1b[31m"
         };
 
+        // Stockfish evaluation at depth 20
+        let mut stockfish = Stockfish::new("stockfish").unwrap();
+        stockfish.set_depth(20);
+        stockfish.set_fen_position(&self.get_fen()).unwrap();
+        let sf_eval = stockfish.go().unwrap().eval().value() as f32 / 100.0;
+        let sf_str = if sf_eval.is_sign_negative() {
+            format!("{:.2}", sf_eval)
+        } else {
+            format!("+{:.2}", sf_eval)
+        };
+
         println!(
             "\n\x1b[1;32m[Engine]\x1b[0m\n\
              \x1b[90m────────────────────────────────────────────\x1b[0m\n\
              \x1b[1mDepth     \x1b[0m \x1b[33m{}\x1b[0m\n\
              \x1b[1mSearched  \x1b[0m \x1b[32m{}\x1b[0m \x1b[1mnodes\n\
-             \x1b[1mEval      \x1b[0m \x1b[1;34m{}\x1b[0m\n\
              \x1b[1mBest Move \x1b[0m \x1b[33m{}\x1b[0m\n\
              \x1b[1mPV        \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mEval      \x1b[0m \x1b[1;34m{}\x1b[0m\n\
+             \x1b[1mStockfish \x1b[0m \x1b[1;34m{}\x1b[0m \x1b[90m\x1b[0m\n\
              \x1b[1mMaterial  \x1b[0m \x1b[1;34m{}\x1b[0m\n\
              \x1b[1mEndgame   \x1b[0m {}{}\x1b[0m\n\
              \x1b[90m────────────────────────────────────────────\x1b[0m",
             self.search.max_depth_reached,
             self.search.nodes,
-            eval_str,
             best_move,
             pv_str,
+            eval_str,
+            sf_str,
             material_str,
             endgame_color,
             self.is_endgame()

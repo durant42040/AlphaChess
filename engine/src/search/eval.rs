@@ -1,11 +1,6 @@
 use crate::chess::Bitboard;
 use crate::constants::{
-    ATTACK_WEIGHT, BLACK_KING_ZONE, BLACK_PASSED_MASK, DOUBLE_PAWN_PENALTY, ENDGAME_BISHOP_SCORE,
-    ENDGAME_KING_SCORE, ENDGAME_KNIGHT_SCORE, ENDGAME_PAWN_SCORE, ENDGAME_QUEEN_SCORE,
-    ENDGAME_ROOK_SCORE, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KING_SHIELD_BONUS,
-    MIDDLEGAME_BISHOP_SCORE, MIDDLEGAME_KING_SCORE, MIDDLEGAME_KNIGHT_SCORE, MIDDLEGAME_PAWN_SCORE,
-    MIDDLEGAME_QUEEN_SCORE, MIDDLEGAME_ROOK_SCORE, OPEN_FILE_BONUS, PASSED_PAWN_BONUS,
-    RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_KING_ZONE, WHITE_PASSED_MASK,
+    ATTACK_WEIGHT, BLACK_KING_ZONE, BLACK_PASSED_MASK, DOUBLE_PAWN_PENALTY, ENDGAME_BISHOP_SCORE, ENDGAME_KING_SCORE, ENDGAME_KNIGHT_SCORE, ENDGAME_PASSED_PAWN_BONUS, ENDGAME_PAWN_SCORE, ENDGAME_QUEEN_SCORE, ENDGAME_ROOK_SCORE, FILE_MASKS, ISOLATED_MASK, ISOLATED_PAWN_PENALTY, KING_SHIELD_BONUS, OPEN_FILE_BONUS, OPENING_BISHOP_SCORE, OPENING_KING_SCORE, OPENING_KNIGHT_SCORE, OPENING_PASSED_PAWN_BONUS, OPENING_PAWN_SCORE, OPENING_QUEEN_SCORE, OPENING_ROOK_SCORE, RANK_7_BONUS, SEMI_OPEN_FILE_BONUS, WHITE_KING_ZONE, WHITE_PASSED_MASK
 };
 use crate::{
     Engine,
@@ -100,27 +95,27 @@ impl Evaluation for Engine {
             piece_score_sum(
                 white_pieces & pawns,
                 black_pieces & pawns,
-                &MIDDLEGAME_PAWN_SCORE,
+                &OPENING_PAWN_SCORE,
             ) + piece_score_sum(
                 white_pieces & knights,
                 black_pieces & knights,
-                &MIDDLEGAME_KNIGHT_SCORE,
+                &OPENING_KNIGHT_SCORE,
             ) + piece_score_sum(
                 white_pieces & bishops,
                 black_pieces & bishops,
-                &MIDDLEGAME_BISHOP_SCORE,
+                &OPENING_BISHOP_SCORE,
             ) + piece_score_sum(
                 white_pieces & rooks,
                 black_pieces & rooks,
-                &MIDDLEGAME_ROOK_SCORE,
+                &OPENING_ROOK_SCORE,
             ) + piece_score_sum(
                 white_pieces & queens,
                 black_pieces & queens,
-                &MIDDLEGAME_QUEEN_SCORE,
+                &OPENING_QUEEN_SCORE,
             ) + piece_score_sum(
                 white_pieces & kings,
                 black_pieces & kings,
-                &MIDDLEGAME_KING_SCORE,
+                &OPENING_KING_SCORE,
             )
         }
     }
@@ -153,12 +148,20 @@ impl Evaluation for Engine {
         let mut score = 0;
         for square in white_pawns.iter() {
             if !black_pawns.intersects(Bitboard::from(WHITE_PASSED_MASK[square as usize])) {
-                score += PASSED_PAWN_BONUS[(square / 8) as usize];
+                score += if self.is_endgame() {
+                    ENDGAME_PASSED_PAWN_BONUS[(square / 8) as usize]
+                } else {
+                    OPENING_PASSED_PAWN_BONUS[(square / 8) as usize]
+                };
             }
         }
         for square in black_pawns.iter() {
             if !white_pawns.intersects(Bitboard::from(BLACK_PASSED_MASK[square as usize])) {
-                score -= PASSED_PAWN_BONUS[7 - (square / 8) as usize];
+                score -= if self.is_endgame() {
+                    ENDGAME_PASSED_PAWN_BONUS[7 - (square / 8) as usize]
+                } else {
+                    OPENING_PASSED_PAWN_BONUS[7 - (square / 8) as usize]
+                };
             }
         }
         score
