@@ -1,17 +1,106 @@
-use engine::play::{SelfPlayConfig, parse_args, self_play};
+use std::io::{self, BufRead, Write};
+
+use engine::play::pgn;
+use engine::Engine;
+use engine::chess::{GameState, Move, Player};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let mut config = SelfPlayConfig::default();
-    parse_args(&args, &mut config);
+    let mut ponder_ms = 1000u64;
+    let mut user_white = true;
 
-    let mut results = Vec::with_capacity(config.num_games as usize);
-    for game in 1..=config.num_games {
-        println!("=== Game {} / {} ===", game, config.num_games);
-        let summary = self_play(&config);
-        println!("Result: {}, plies: {}", summary.result, summary.plies);
-        println!("PGN: \n{}", summary.pgn);
-        results.push(summary);
+    let mut i = 1;
+    while i < args.len() {
+        if (args[i] == "-p" || args[i] == "--ponder") && args.get(i + 1).is_some() {
+            ponder_ms = args[i + 1].parse().unwrap_or(1000);
+            i += 1;
+        } else if (args[i] == "-s" || args[i] == "--side") && args.get(i + 1).is_some() {
+            let s = args[i + 1].to_lowercase();
+            user_white = matches!(s.as_str(), "white" | "w");
+            if !matches!(s.as_str(), "white" | "w" | "black" | "b") {
+                eprintln!("Invalid side. Use white/w or black/b.");
+                std::process::exit(1);
+            }
+            i += 1;
+        }
+        i += 1;
     }
-    engine::play::print_overall_result(&results);
+
+    let mut engine = Engine::new();
+    engine.set_ponder_time(ponder_ms);
+
+    let side = if user_white { "White" } else { "Black" };
+    println!("You play as {}.", side);
+    println!("Ponder time: {} ms\n", ponder_ms);
+
+    let stdin = io::stdin();
+    let mut stdout = io::stdout();
+
+    loop {
+        println!("{}", engine);
+        let user_turn = (engine.player() == Player::White) == user_white;
+
+        if engine.game_state() != GameState::Playing {
+            match engine.game_state() {
+                GameState::WhiteWin => println!("Checkmate. White wins."),
+                GameState::BlackWin => println!("Checkmate. Black wins."),
+                GameState::Draw => println!("Draw."),
+                _ => {}
+            }
+            let moves = engine.board().move_history();
+            if !moves.is_empty() {
+                println!("\nPGN:\n{}", pgn(moves));
+            }
+            break;
+        }
+
+        if user_turn {
+            print!("Your move: ");
+            stdout.flush().unwrap();
+            let mut line = String::new();
+            stdin.lock().read_line(&mut line).unwrap();
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            if line.eq_ignore_ascii_case("resign") {
+                let winner = if user_white { "Black" } else { "White" };
+                println!("You resign. {} wins.", winner);
+                let moves = engine.board().move_history();
+                if !moves.is_empty() {
+                    println!("\nPGN:\n{}", pgn(moves));
+                }
+                std::process::exit(0);
+            }
+            if line.eq_ignore_ascii_case("undo") {
+                let n = engine.board().move_history().len();
+                if n == 0 {
+                    println!("Nothing to undo.");
+                    continue;
+                }
+                let to_undo = if n >= 2 { 2 } else { 1 };
+                for _ in 0..to_undo {
+                    engine.undo();
+                }
+                engine.update_game_state();
+                continue;
+            }
+            let mv = match line.parse::<Move>() {
+                Ok(m) => m,
+                Err(_) => {
+                    println!("Invalid move format. Use UCI (e.g. e2e4, e7e8q).");
+                    continue;
+                }
+            };
+            if !engine.make_move(mv) {
+                println!("Illegal move.");
+                continue;
+            }
+        } else {
+            stdout.flush().unwrap();
+            let best = engine.best_move();
+            engine.make_move(best);
+            println!("{}\n", best);
+        }
+    }
 }
