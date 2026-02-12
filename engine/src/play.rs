@@ -122,10 +122,12 @@ pub fn pgn(moves: &[Move]) -> String {
             pgn.push(' ');
         }
         let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
-        let m = uci.to_move(&pos).expect(&format!("illegal move for position: {}", r#move.to_string()));
-        let san = San::from_move(&pos, m);
+        let uci_move = uci
+            .to_move(&pos)
+            .unwrap_or_else(|_| panic!("illegal move for position: {}", r#move));
+        let san = San::from_move(&pos, uci_move);
         pgn.push_str(&san.to_string());
-        pos.play_unchecked(m);
+        pos.play_unchecked(uci_move);
         pgn.push(' ');
     }
 

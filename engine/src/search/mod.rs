@@ -19,6 +19,8 @@ use crate::constants::MATE_SCORE;
 use crate::search::history::History;
 use crate::search::transposition::{Bound, TranspositionTable};
 
+type SearchResult = (Move, i32, u8, u64);
+
 pub struct Search {
     pub max_depth: u8,
     pub transposition_table: Arc<TranspositionTable>,
@@ -508,7 +510,10 @@ impl Engine {
         let delta = 50;
 
         // Iterative deepening
-        while !self.search.time_up() && depth <= self.search.max_depth && best_score < MATE_SCORE - 100 {
+        while !self.search.time_up()
+            && depth <= self.search.max_depth
+            && best_score < MATE_SCORE - 100
+        {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);
 
             // Search with an aspiration window of best_score ± delta
@@ -564,8 +569,7 @@ impl Engine {
 
         let stop = Arc::new(AtomicBool::new(false));
         let mut handles = Vec::with_capacity(num_threads);
-        let results: Arc<Mutex<Vec<(Move, i32, u8, u64)>>> =
-            Arc::new(Mutex::new(Vec::new()));
+        let results: Arc<Mutex<Vec<SearchResult>>> = Arc::new(Mutex::new(Vec::new()));
 
         for thread_idx in 0..num_threads {
             let mut engine = self.worker_clone(Arc::clone(&tt));
@@ -578,7 +582,10 @@ impl Engine {
                 let (best_move, best_score, depth, nodes) =
                     engine.worker_search(&stop, delta_offset);
 
-                results.lock().unwrap().push((best_move, best_score, depth, nodes));
+                results
+                    .lock()
+                    .unwrap()
+                    .push((best_move, best_score, depth, nodes));
             }));
         }
 
@@ -623,23 +630,22 @@ impl Engine {
         best_move
     }
 
-    fn worker_search(
-        &mut self,
-        stop: &AtomicBool,
-        delta_offset: i32,
-    ) -> (Move, i32, u8, u64) {
+    fn worker_search(&mut self, stop: &AtomicBool, delta_offset: i32) -> (Move, i32, u8, u64) {
         let hash = self.board.position_hash();
 
         let mut alpha = -MATE_SCORE;
         let mut beta = MATE_SCORE;
 
         let delta = 50 + delta_offset;
-        
+
         let mut best_move = Move::none();
         let mut best_score = 0i32;
 
         let mut depth: u8 = 1;
-        while !stop.load(Ordering::Relaxed) && depth <= self.search.max_depth && best_score < MATE_SCORE - 100 {
+        while !stop.load(Ordering::Relaxed)
+            && depth <= self.search.max_depth
+            && best_score < MATE_SCORE - 100
+        {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);
             if best_score <= alpha || best_score >= beta {
                 best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);
@@ -650,11 +656,16 @@ impl Engine {
 
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
-            
+
             depth += 1;
         }
 
-        (best_move, best_score, self.search.max_depth_reached, self.search.nodes)
+        (
+            best_move,
+            best_score,
+            self.search.max_depth_reached,
+            self.search.nodes,
+        )
     }
 }
 
@@ -724,7 +735,8 @@ mod tests {
 
     #[test]
     fn test_lazy_smp() {
-        let mut engine = Engine::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let mut engine =
+            Engine::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         engine.set_ponder_time(1000);
         let start = std::time::Instant::now();
         engine.best_move();

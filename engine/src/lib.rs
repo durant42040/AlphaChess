@@ -63,8 +63,8 @@ impl Engine {
         Self {
             board: self.board.clone(),
             move_generator: MoveGenerator::new(),
-            game_state: self.game_state.clone(),
-            attack_states: vec![self.attack_state().clone()],
+            game_state: self.game_state,
+            attack_states: vec![*self.attack_state()],
             search: Search::with_tt(tt),
         }
     }
