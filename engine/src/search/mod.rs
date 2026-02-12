@@ -5,6 +5,9 @@ pub mod see;
 pub mod transposition;
 
 use std::cmp::max;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use stockfish::Stockfish;
@@ -20,7 +23,7 @@ use crate::search::transposition::{Bound, TranspositionTable};
 
 pub struct Search {
     pub max_depth: u8,
-    pub transposition_table: TranspositionTable,
+    pub transposition_table: Arc<TranspositionTable>,
     pub nodes: u64,
     pub start_time: Instant,
     pub ponder_time: Duration,
@@ -35,7 +38,22 @@ impl Search {
     pub fn new() -> Self {
         Self {
             max_depth: u8::MAX,
-            transposition_table: TranspositionTable::new(),
+            transposition_table: Arc::new(TranspositionTable::new()),
+            nodes: 0,
+            start_time: Instant::now(),
+            ponder_time: Duration::from_millis(1000),
+            max_depth_reached: 0,
+            killer_moves: vec![[Move::none(); 2]; 4096],
+            history: History::new(),
+            beta_cutoffs: 0,
+        }
+    }
+
+    /// Create Search with a shared transposition table (for Lazy SMP).
+    pub fn with_tt(tt: Arc<TranspositionTable>) -> Self {
+        Self {
+            max_depth: u8::MAX,
+            transposition_table: tt,
             nodes: 0,
             start_time: Instant::now(),
             ponder_time: Duration::from_millis(1000),
@@ -136,6 +154,60 @@ impl Engine {
             pv_str,
             eval_str,
             sf_str,
+            material_str,
+            endgame_color,
+            self.is_endgame()
+        );
+    }
+
+    /// Print parallel search info for Lazy SMP (no Stockfish, no PV).
+    fn print_parallel_search_info(
+        &self,
+        best_move: Move,
+        best_score: i32,
+        max_depth: u8,
+        total_nodes: u64,
+        num_threads: usize,
+    ) {
+        let eval = if self.board.player() == Player::White {
+            best_score
+        } else {
+            -best_score
+        };
+        let eval = eval as f32 / 100.0;
+        let eval_str = if eval.is_sign_negative() {
+            format!("{:.2}", eval)
+        } else {
+            format!("+{:.2}", eval)
+        };
+        let material = self.material_score() as f32 / 100.0;
+        let material_str = if material.is_sign_negative() {
+            format!("{:.2}", material)
+        } else {
+            format!("+{:.2}", material)
+        };
+        let endgame_color = if self.is_endgame() {
+            "\x1b[32m"
+        } else {
+            "\x1b[31m"
+        };
+
+        println!(
+            "\n\x1b[1;32m[Engine]\x1b[0m\n\
+             \x1b[90m────────────────────────────────────────────\x1b[0m\n\
+             \x1b[1mDepth     \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mThreads   \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mSearched  \x1b[0m \x1b[32m{}\x1b[0m \x1b[1mnodes\n\
+             \x1b[1mBest Move \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mEval      \x1b[0m \x1b[1;34m{}\x1b[0m\n\
+             \x1b[1mMaterial  \x1b[0m \x1b[1;34m{}\x1b[0m\n\
+             \x1b[1mEndgame   \x1b[0m {}{}\x1b[0m\n\
+             \x1b[90m────────────────────────────────────────────\x1b[0m",
+            max_depth,
+            num_threads,
+            total_nodes,
+            best_move,
+            eval_str,
             material_str,
             endgame_color,
             self.is_endgame()
@@ -451,7 +523,7 @@ impl Engine {
         let delta = 50;
 
         // Iterative deepening
-        while !self.search.time_up() {
+        while !self.search.time_up() && depth <= self.search.max_depth && best_score < MATE_SCORE - 100 {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);
 
             // Search with an aspiration window of best_score ± delta
@@ -485,9 +557,6 @@ impl Engine {
             self.search.max_depth_reached = depth;
             best_move = self.search.transposition_table.get_best_move(hash);
 
-            if depth >= self.search.max_depth || best_score >= MATE_SCORE - 100 {
-                break;
-            }
             depth += 1;
         }
 
@@ -495,6 +564,112 @@ impl Engine {
         assert!(!best_move.is_none(), "Best move is none");
 
         best_move
+    }
+
+    /// Lazy SMP: all threads search the same root position; cooperation via shared TT only.
+    /// Returns the best move by voting across thread results (Stockfish formula).
+    pub fn best_move_lazy_smp(&mut self, num_threads: usize) -> Move {
+        assert!(self.game_state() == GameState::Playing);
+        assert!(num_threads >= 1);
+        self.search.reset();
+
+        let tt = Arc::clone(&self.search.transposition_table);
+        let ponder_time = self.search.ponder_time;
+        let start = Instant::now();
+
+        let stop = Arc::new(AtomicBool::new(false));
+        let mut handles = Vec::with_capacity(num_threads);
+        let results: Arc<Mutex<Vec<(Move, i32, u8, u64)>>> =
+            Arc::new(Mutex::new(Vec::new()));
+
+        for thread_idx in 0..num_threads {
+            let mut engine = self.worker_clone(Arc::clone(&tt));
+
+            let stop = Arc::clone(&stop);
+            let results = Arc::clone(&results);
+
+            handles.push(thread::spawn(move || {
+                let delta_offset = (thread_idx % 8) as i32 * 10;
+                let (best_move, best_score, depth, nodes) =
+                    engine.worker_search(&stop, delta_offset);
+
+                results.lock().unwrap().push((best_move, best_score, depth, nodes));
+            }));
+        }
+
+        while start.elapsed() < ponder_time {
+            thread::sleep(Duration::from_millis(1));
+        }
+        stop.store(true, Ordering::Release);
+
+        for h in handles {
+            let _ = h.join();
+        }
+
+        let results = results.lock().unwrap().clone();
+        assert!(!results.is_empty());
+
+        let mut best_score = 0;
+        let mut max_depth = 0;
+        let mut total_nodes = 0u64;
+
+        let min_score = results.iter().map(|(_, s, _, _)| *s).min().unwrap();
+        let mut votes: Vec<(Move, i64)> = Vec::new();
+        for (best_move, score, depth, nodes) in &results {
+            let vote = (*score - min_score + 14) as i64 * (*depth as i64);
+            if let Some((_, v)) = votes.iter_mut().find(|(r#move, _)| *r#move == *best_move) {
+                *v += vote;
+            } else {
+                votes.push((*best_move, vote));
+            }
+            best_score = max(best_score, *score);
+            max_depth = max(max_depth, *depth);
+            total_nodes += nodes;
+        }
+
+        let best_move = votes
+            .into_iter()
+            .max_by_key(|(_, vote)| *vote)
+            .map(|(r#move, _)| r#move)
+            .unwrap();
+
+        self.print_parallel_search_info(best_move, best_score, max_depth, total_nodes, num_threads);
+
+        best_move
+    }
+
+    fn worker_search(
+        &mut self,
+        stop: &AtomicBool,
+        delta_offset: i32,
+    ) -> (Move, i32, u8, u64) {
+        let hash = self.board.position_hash();
+
+        let mut alpha = -MATE_SCORE;
+        let mut beta = MATE_SCORE;
+
+        let delta = 50 + delta_offset;
+        
+        let mut best_move = Move::none();
+        let mut best_score = 0i32;
+
+        let mut depth: u8 = 1;
+        while !stop.load(Ordering::Relaxed) && depth <= self.search.max_depth && best_score < MATE_SCORE - 100 {
+            best_score = self.alpha_beta_search(depth, 0, alpha, beta);
+            if best_score <= alpha || best_score >= beta {
+                best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);
+            }
+
+            alpha = best_score - delta;
+            beta = best_score + delta;
+
+            self.search.max_depth_reached = depth;
+            best_move = self.search.transposition_table.get_best_move(hash);
+            
+            depth += 1;
+        }
+
+        (best_move, best_score, self.search.max_depth_reached, self.search.nodes)
     }
 }
 
@@ -540,9 +715,9 @@ mod tests {
         let mut engine =
             Engine::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
         engine.alpha_beta_search(8, 0, -MATE_SCORE, MATE_SCORE);
-        // 1300834
+        // 1633875
         println!("nodes searched: {}", engine.search.nodes);
-        // 48471
+        // 76223
         println!("beta cutoffs: {}", engine.search.beta_cutoffs);
     }
 
@@ -560,5 +735,24 @@ mod tests {
                 .collect::<Vec<_>>()
                 .join(" ")
         );
+    }
+
+    #[test]
+    fn test_lazy_smp() {
+        let mut engine = Engine::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        engine.set_ponder_time(1000);
+        let start = std::time::Instant::now();
+        engine.best_move();
+        println!("Time for best_move: {:?}", start.elapsed());
+
+        let start = std::time::Instant::now();
+        engine.best_move_lazy_smp(2);
+        println!("Time for best_move_lazy_smp(2): {:?}", start.elapsed());
+
+        let start = std::time::Instant::now();
+        engine.best_move_lazy_smp(4);
+        println!("Time for best_move_lazy_smp(4): {:?}", start.elapsed());
+        // assert!(!best_move.is_none());
+        // assert!(engine.is_legal_move(best_move));
     }
 }

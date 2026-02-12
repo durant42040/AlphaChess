@@ -3,6 +3,7 @@ pub mod constants;
 pub mod play;
 pub mod search;
 
+use std::sync::Arc;
 use std::{fmt, time::Duration};
 
 use crate::chess::AttackState;
@@ -15,6 +16,7 @@ use crate::constants::{
     WHITE_CASTLE_KINGSIDE, WHITE_CASTLE_QUEENSIDE, WHITE_KING_START,
 };
 use crate::search::Search;
+use crate::search::transposition::TranspositionTable;
 
 pub struct Engine {
     board: ChessBoard,
@@ -54,6 +56,17 @@ impl Engine {
         engine.update_attack_state();
         engine.update_game_state();
         engine
+    }
+
+    /// Clone the engine's position for a worker thread, with a shared TT (for Lazy SMP).
+    pub fn worker_clone(&self, tt: Arc<TranspositionTable>) -> Self {
+        Self {
+            board: self.board.clone(),
+            move_generator: MoveGenerator::new(),
+            game_state: self.game_state.clone(),
+            attack_states: vec![self.attack_state().clone()],
+            search: Search::with_tt(tt),
+        }
     }
 
     pub fn get_fen(&self) -> String {

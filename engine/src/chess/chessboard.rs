@@ -30,7 +30,7 @@ impl State {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ChessBoard {
     fifty_move_rule: u8,
     castling_rights: CastlingRights,
