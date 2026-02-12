@@ -7,8 +7,8 @@ use crate::chess::Square;
 use crate::constants::MAX_LEGAL_MOVES;
 
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Move(u16);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Move(pub u16);
 
 impl Move {
     pub fn new(from: Square, to: Square, promotion: Option<Piece>) -> Self {
