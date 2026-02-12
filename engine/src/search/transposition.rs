@@ -160,8 +160,7 @@ impl TranspositionTable {
         if self.keys[idx].load(Ordering::Acquire) != hash {
             return Move::none();
         }
-        let best_move = unpack_move(self.table[idx].load(Ordering::Acquire));
-        best_move
+        unpack_move(self.table[idx].load(Ordering::Acquire))
     }
 
     /// Store an entry. Lock-free; safe to call from multiple threads.
@@ -201,12 +200,7 @@ mod tests {
 
     #[test]
     fn pack_unpack_roundtrip() {
-        let moves = [
-            Move::none(),
-            Move(1),
-            Move(1234),
-            Move(u16::MAX),
-        ];
+        let moves = [Move::none(), Move(1), Move(1234), Move(u16::MAX)];
 
         let depths = [0u8, 1, 10, 255];
         let scores = [-40000, -30000, -123, 0, 42, 30000, 40000];
@@ -224,8 +218,7 @@ mod tests {
 
                         let unpacked_score = unpack_score(data);
                         assert!(
-                            unpacked_score >= i16::MIN as i32 &&
-                            unpacked_score <= i16::MAX as i32
+                            unpacked_score >= i16::MIN as i32 && unpacked_score <= i16::MAX as i32
                         );
                     }
                 }
