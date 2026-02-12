@@ -116,10 +116,10 @@ impl Bitboard {
                 let s1 = Square::from(sq1 as u8);
                 let s2 = Square::from(sq2 as u8);
 
-                let rank1 = s1.rank;
-                let file1 = s1.file;
-                let rank2 = s2.rank;
-                let file2 = s2.file;
+                let rank1 = s1.rank();
+                let file1 = s1.file();
+                let rank2 = s2.rank();
+                let file2 = s2.file();
 
                 let mut between = Bitboard::zero();
 
@@ -171,10 +171,10 @@ impl Bitboard {
                 let s1 = Square::from(sq1 as u8);
                 let s2 = Square::from(sq2 as u8);
 
-                let rank1 = s1.rank;
-                let file1 = s1.file;
-                let rank2 = s2.rank;
-                let file2 = s2.file;
+                let rank1 = s1.rank();
+                let file1 = s1.file();
+                let rank2 = s2.rank();
+                let file2 = s2.file();
 
                 let mut ray = Bitboard::zero();
 

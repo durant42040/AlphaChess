@@ -272,7 +272,7 @@ impl Engine {
             for to in moves.iter() {
                 let from = Square::from(from);
                 let to = Square::from(to);
-                if (to.rank == 7 || to.rank == 0) && self.pieces().pawns().get_square(from) {
+                if (to.rank() == 7 || to.rank() == 0) && self.pieces().pawns().get_square(from) {
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Queen)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Rook)));
                     all_legal_moves.push(Move::new(from, to, Some(Piece::Bishop)));
@@ -295,7 +295,7 @@ impl Engine {
             for to in capture_moves.iter() {
                 let from = Square::from(from);
                 let to = Square::from(to);
-                if (to.rank == 7 || to.rank == 0) && self.pieces().pawns().get_square(from) {
+                if (to.rank() == 7 || to.rank() == 0) && self.pieces().pawns().get_square(from) {
                     all_capture_moves.push(Move::new(from, to, Some(Piece::Queen)));
                     all_capture_moves.push(Move::new(from, to, Some(Piece::Rook)));
                     all_capture_moves.push(Move::new(from, to, Some(Piece::Bishop)));
@@ -326,7 +326,7 @@ impl Engine {
         }
 
         // non-promotion move to promotion square is illegal
-        if is_pawn && (to.rank == 7 || to.rank == 0) && r#move.promotion.is_none() {
+        if is_pawn && (to.rank() == 7 || to.rank() == 0) && r#move.promotion.is_none() {
             return false;
         }
 

@@ -279,7 +279,7 @@ impl ChessBoard {
         }
 
         if state.prev_en_passant.get_square(to) && self.pieces.pawns().get_square(from) {
-            let to = Square::new(from.rank, to.file);
+            let to = Square::new(from.rank(), to.file());
             let color = self.player.color();
             self.pieces.set(Piece::Pawn, color, to.square);
             if color == Color::White {
@@ -300,7 +300,7 @@ impl ChessBoard {
 
     pub fn update_en_passant(&mut self, from: Square, to: Square) {
         if self.pieces.pawns().get_square(from) && self.pieces.en_passant().get_square(to) {
-            let captured_square = Square::new(from.rank, to.file);
+            let captured_square = Square::new(from.rank(), to.file());
             let capturing_color = if self.pieces.white_pieces().get_square(from) {
                 Color::White
             } else {
@@ -316,7 +316,7 @@ impl ChessBoard {
         }
 
         self.pieces.set_en_passant(Bitboard::zero());
-        if self.pieces.pawns().get_square(from) && (from.rank as i8 - to.rank as i8).abs() == 2 {
+        if self.pieces.pawns().get_square(from) && (from.rank() as i8 - to.rank() as i8).abs() == 2 {
             self.pieces
                 .set_en_passant_square(Square::from((from.square + to.square) / 2));
         }

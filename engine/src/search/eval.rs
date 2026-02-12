@@ -194,7 +194,7 @@ impl Evaluation for Engine {
         let black_pawns = pieces.black_pieces() & pieces.pawns();
         for idx in white_rooks.iter() {
             let square = Square::from(idx);
-            let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+            let file_mask = Bitboard::from(FILE_MASKS[square.file() as usize]);
             if !white_pawns.intersects(file_mask) {
                 score += SEMI_OPEN_FILE_BONUS;
                 if !black_pawns.intersects(file_mask) {
@@ -202,20 +202,20 @@ impl Evaluation for Engine {
                 }
             }
             // bonus for rooks on the 7th rank
-            if square.rank == 6 {
+            if square.rank() == 6 {
                 score += RANK_7_BONUS;
             }
         }
         for idx in black_rooks.iter() {
             let square = Square::from(idx);
-            let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+            let file_mask = Bitboard::from(FILE_MASKS[square.file() as usize]);
             if !black_pawns.intersects(file_mask) {
                 score -= SEMI_OPEN_FILE_BONUS;
                 if !white_pawns.intersects(file_mask) {
                     score -= OPEN_FILE_BONUS;
                 }
             }
-            if square.rank == 1 {
+            if square.rank() == 1 {
                 score -= RANK_7_BONUS;
             }
         }
@@ -248,7 +248,7 @@ impl Evaluation for Engine {
 
         // semi-open and open file penalties
         let square = Square::from(white_king);
-        let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+        let file_mask = Bitboard::from(FILE_MASKS[square.file() as usize]);
         if !white_pawns.intersects(file_mask) {
             score -= SEMI_OPEN_FILE_BONUS;
             if !black_pawns.intersects(file_mask) {
@@ -256,7 +256,7 @@ impl Evaluation for Engine {
             }
         }
         let square = Square::from(black_king);
-        let file_mask = Bitboard::from(FILE_MASKS[square.file as usize]);
+        let file_mask = Bitboard::from(FILE_MASKS[square.file() as usize]);
         if !black_pawns.intersects(file_mask) {
             score += SEMI_OPEN_FILE_BONUS;
             if !white_pawns.intersects(file_mask) {
