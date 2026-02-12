@@ -160,9 +160,9 @@ impl ChessBoard {
     }
 
     pub fn act(&mut self, r#move: Move) {
-        let from = r#move.from;
-        let to = r#move.to;
-        let promotion = r#move.promotion;
+        let from = r#move.from();
+        let to = r#move.to();
+        let promotion = r#move.promotion();
         let moving_piece = self.pieces.piece(from);
         let captured_piece = self.pieces.piece(to);
 
@@ -249,9 +249,9 @@ impl ChessBoard {
     pub fn undo(&mut self) {
         debug_assert!(!self.move_history.is_empty());
         let r#move = self.move_history.pop().unwrap();
-        let from = r#move.from;
-        let to = r#move.to;
-        let promotion = r#move.promotion;
+        let from = r#move.from();
+        let to = r#move.to();
+        let promotion = r#move.promotion();
         if let Some(promotion) = promotion {
             if self.player == Player::White {
                 self.material_score += promotion.value() - Piece::Pawn.value();
@@ -316,12 +316,13 @@ impl ChessBoard {
         }
 
         self.pieces.set_en_passant(Bitboard::zero());
-        if self.pieces.pawns().get_square(from) && (from.rank() as i8 - to.rank() as i8).abs() == 2 {
+        if self.pieces.pawns().get_square(from) && (from.rank() as i8 - to.rank() as i8).abs() == 2
+        {
             self.pieces
                 .set_en_passant_square(Square::from((from.square + to.square) / 2));
         }
     }
-    
+
     #[inline(always)]
     pub fn pieces(&self) -> Pieces {
         self.pieces
@@ -541,22 +542,22 @@ mod tests {
     #[test]
     fn zobrist_basic() {
         let mut board = ChessBoard::new();
-        board.act(Move::from("e2e3"));
-        board.act(Move::from("e7e6"));
+        board.act(Move::from_string("e2e3"));
+        board.act(Move::from_string("e7e6"));
         let incr_hash_1 = board.position_hash();
         let full_hash_1 = board.hasher.full_hash(&board);
         assert_eq!(
             incr_hash_1, full_hash_1,
             "incremental hash should equal full hash"
         );
-        board.act(Move::from("g1f3"));
-        board.act(Move::from("b8c6"));
-        board.act(Move::from("f1d3"));
-        board.act(Move::from("f8d6"));
-        board.act(Move::from("f3g1"));
-        board.act(Move::from("c6b8"));
-        board.act(Move::from("d3f1"));
-        board.act(Move::from("d6f8"));
+        board.act(Move::from_string("g1f3"));
+        board.act(Move::from_string("b8c6"));
+        board.act(Move::from_string("f1d3"));
+        board.act(Move::from_string("f8d6"));
+        board.act(Move::from_string("f3g1"));
+        board.act(Move::from_string("c6b8"));
+        board.act(Move::from_string("d3f1"));
+        board.act(Move::from_string("d6f8"));
         let incr_hash_2 = board.position_hash();
         let full_hash_2 = board.hasher.full_hash(&board);
         assert_eq!(
@@ -570,7 +571,7 @@ mod tests {
     fn zobrist_undo() {
         let mut board = ChessBoard::new();
         let hash_initial = board.position_hash();
-        let r#move = Move::from("e2e4");
+        let r#move = Move::from_string("e2e4");
         board.act(r#move);
         let hash_after = board.position_hash();
         board.undo();
@@ -606,7 +607,7 @@ mod tests {
             "g1f3", "b8c6", "f3g1", "c6b8", "g1f3", "b8c6", "f3g1", "c6b8",
         ];
         for r#move in &moves {
-            board.act(Move::from(r#move));
+            board.act(Move::from_string(r#move));
         }
         assert!(
             board.repetition_count() >= 2,

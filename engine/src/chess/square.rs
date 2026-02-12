@@ -37,9 +37,7 @@ impl fmt::Display for Square {
 
 impl From<u8> for Square {
     fn from(square: u8) -> Self {
-        Self {
-            square,
-        }
+        Self { square }
     }
 }
 

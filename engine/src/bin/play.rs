@@ -1,8 +1,8 @@
 use std::io::{self, BufRead, Write};
 
-use engine::play::pgn;
 use engine::Engine;
 use engine::chess::{GameState, Move, Player};
+use engine::play::pgn;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

@@ -200,11 +200,11 @@ impl Engine {
             if r#move == tt_move {
                 continue;
             }
-            let is_capture = their_pieces.get_square(r#move.to);
+            let is_capture = their_pieces.get_square(r#move.to());
             let is_en_passant =
-                our_pawns.get_square(r#move.from) && en_passant.get_square(r#move.to);
+                our_pawns.get_square(r#move.from()) && en_passant.get_square(r#move.to());
 
-            if r#move.promotion.is_some() {
+            if r#move.promotion().is_some() {
                 promotion_moves.push(r#move);
             } else if is_capture {
                 let score = self.see(r#move);
@@ -222,10 +222,10 @@ impl Engine {
                 killer_moves.push((0, r#move));
             } else {
                 // order quiet moves by history score
-                let score = self
-                    .search
-                    .history
-                    .get(self.board.player(), r#move.from, r#move.to);
+                let score =
+                    self.search
+                        .history
+                        .get(self.board.player(), r#move.from(), r#move.to());
                 quiet_moves.push((score, r#move));
             }
         }
@@ -409,9 +409,12 @@ impl Engine {
 
                     // increase history score by depth^2 for quiet moves
                     // The shallower cutoff (>depth) prunes more nodes
-                    self.search
-                        .history
-                        .update(self.board.player(), r#move.from, r#move.to, depth);
+                    self.search.history.update(
+                        self.board.player(),
+                        r#move.from(),
+                        r#move.to(),
+                        depth,
+                    );
                 }
                 break;
             }
@@ -446,7 +449,7 @@ impl Engine {
 
         let mut depth: u8 = 1;
         let delta = 50;
-        
+
         // Iterative deepening
         while !self.search.time_up() {
             best_score = self.alpha_beta_search(depth, 0, alpha, beta);

@@ -60,15 +60,15 @@ impl Zobrist {
     ) -> u64 {
         let mut hash = prev_hash;
         hash ^= self.piece[moving_piece.1 as usize][moving_piece.0 as usize]
-            [r#move.from.square as usize];
+            [r#move.from().square as usize];
 
         if let Some((captured_piece, captured_color)) = prev_state.captured_piece {
             hash ^= self.piece[captured_color as usize][captured_piece as usize]
-                [r#move.to.square as usize];
+                [r#move.to().square as usize];
         }
 
-        hash ^=
-            self.piece[moving_piece.1 as usize][moving_piece.0 as usize][r#move.to.square as usize];
+        hash ^= self.piece[moving_piece.1 as usize][moving_piece.0 as usize]
+            [r#move.to().square as usize];
 
         hash ^= self.color;
 
