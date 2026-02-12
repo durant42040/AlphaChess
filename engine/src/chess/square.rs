@@ -1,19 +1,26 @@
 use std::{fmt, ops::Index, str::FromStr};
 
+#[repr(transparent)]
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Square {
-    pub rank: u8,
-    pub file: u8,
     pub square: u8,
 }
 
 impl Square {
     pub fn new(rank: u8, file: u8) -> Self {
         Self {
-            rank,
-            file,
-            square: rank * 8 + file,
+            square: (rank << 3) | file,
         }
+    }
+
+    #[inline(always)]
+    pub fn file(self) -> u8 {
+        self.square & 7
+    }
+
+    #[inline(always)]
+    pub fn rank(self) -> u8 {
+        self.square >> 3
     }
 }
 
@@ -22,8 +29,8 @@ impl fmt::Display for Square {
         write!(
             f,
             "{}{}",
-            (self.file + b'a') as char,
-            (self.rank + b'1') as char
+            (self.file() + b'a') as char,
+            (self.rank() + b'1') as char
         )
     }
 }
@@ -31,8 +38,6 @@ impl fmt::Display for Square {
 impl From<u8> for Square {
     fn from(square: u8) -> Self {
         Self {
-            rank: square / 8,
-            file: square % 8,
             square,
         }
     }
