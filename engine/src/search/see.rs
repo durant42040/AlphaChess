@@ -8,8 +8,8 @@ use crate::{
 impl Engine {
     /// Static Exchange Evaluation (SEE): evaluates the material gain of a capture by simulating the exchange of pieces.
     pub fn see(&mut self, r#move: Move) -> i32 {
-        let from = r#move.from;
-        let to = r#move.to;
+        let from = r#move.from();
+        let to = r#move.to();
         let mut pieces = self.pieces();
         debug_assert!(self.is_legal_move(r#move), "Move is not legal");
 
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn test_see_1() {
         let mut engine = Engine::from_fen("1k2q3/1ppn3p/pr6/4b3/5B2/P2N2P1/1PP1Q2P/2K5 w - - 0 1");
-        let r#move = Move::from("d3e5");
+        let r#move = Move::from_string("d3e5");
         let see = engine.see(r#move);
         assert_eq!(see, 330);
     }
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn test_see_2() {
         let mut engine = Engine::from_fen("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -");
-        let r#move = Move::from("d3e5");
+        let r#move = Move::from_string("d3e5");
         let see = engine.see(r#move);
         assert_eq!(see, -220);
     }
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn test_see_3() {
         let mut engine = Engine::from_fen("1kr2R2/1b6/8/5B2/8/8/8/1K6 w - - 0 1");
-        let r#move = Move::from("f8c8");
+        let r#move = Move::from_string("f8c8");
         let see = engine.see(r#move);
         assert_eq!(see, 0);
     }
@@ -142,7 +142,7 @@ mod tests {
     fn test_see_4() {
         let mut engine =
             Engine::from_fen("rnbqk2r/pppp1ppp/8/2bQP3/4n3/5N2/PPP2PPP/RNB1KB1R b KQkq - 2 5");
-        let r#move = Move::from("c5f2");
+        let r#move = Move::from_string("c5f2");
         let see = engine.see(r#move);
         assert_eq!(see, 100);
     }
@@ -151,7 +151,7 @@ mod tests {
     fn test_see_5() {
         let mut engine =
             Engine::from_fen("r3kbr1/1p1b1p2/4p3/p2pp3/1P2P3/P1NR1N1P/2P2P2/4K2R w Kq - 0 23");
-        let r#move = Move::from("f3e5");
+        let r#move = Move::from_string("f3e5");
         let see = engine.see(r#move);
         assert_eq!(see, 100);
     }

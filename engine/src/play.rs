@@ -158,7 +158,7 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
         } else {
             let stockfish_output = stockfish.go().unwrap();
             let move_string = stockfish_output.best_move();
-            let best_move = Move::from(move_string);
+            let best_move = Move::from_string(move_string);
             engine.make_move(best_move);
             stockfish.play_move(move_string).unwrap();
             moves.push(best_move);

@@ -46,7 +46,7 @@ async fn make_move(
         );
     }
 
-    if !engine.make_move(Move::from(&move_string)) {
+    if !engine.make_move(Move::from_string(&move_string)) {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "Illegal move" })),

@@ -310,8 +310,8 @@ impl Engine {
     }
 
     pub fn is_legal_move(&mut self, r#move: Move) -> bool {
-        let from = r#move.from;
-        let to = r#move.to;
+        let from = r#move.from();
+        let to = r#move.to();
 
         // move from our pieces
         if !self.board.our_pieces().get_square(from) {
@@ -321,12 +321,12 @@ impl Engine {
         let is_pawn = self.pieces().pawns().get_square(from);
 
         // promotion from non-pawn piece is illegal
-        if !is_pawn && r#move.promotion.is_some() {
+        if !is_pawn && r#move.promotion().is_some() {
             return false;
         }
 
         // non-promotion move to promotion square is illegal
-        if is_pawn && (to.rank() == 7 || to.rank() == 0) && r#move.promotion.is_none() {
+        if is_pawn && (to.rank() == 7 || to.rank() == 0) && r#move.promotion().is_none() {
             return false;
         }
 
