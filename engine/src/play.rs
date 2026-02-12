@@ -55,6 +55,62 @@ impl Default for SelfPlayConfig {
     }
 }
 
+/// Configuration for best_move (single-thread) vs lazy SMP games.
+pub struct LazySmpConfig {
+    pub ponder_time: u64,
+    pub start_fen: Option<String>,
+    pub num_games: u32,
+    pub num_threads: usize,
+}
+
+impl Default for LazySmpConfig {
+    fn default() -> Self {
+        Self {
+            ponder_time: 10,
+            start_fen: None,
+            num_games: 1,
+            num_threads: 2,
+        }
+    }
+}
+
+pub fn parse_lazy_smp(args: &[String], config: &mut LazySmpConfig) {
+    let mut ponder_ms = None;
+    let mut num_games = None;
+    let mut num_threads: Option<usize> = None;
+    let mut fen = None;
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if (a == "--ponder" || a == "-p") && args.get(i + 1).is_some() {
+            ponder_ms = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--games" || a == "-n") && args.get(i + 1).is_some() {
+            num_games = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--threads" || a == "-t") && args.get(i + 1).is_some() {
+            num_threads = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--fen" || a == "-f") && args.get(i + 1).is_some() {
+            fen = Some(args[i + 1].clone());
+            i += 1;
+        }
+        i += 1;
+    }
+    if let Some(num) = num_games {
+        config.num_games = num;
+    }
+    if let Some(ms) = ponder_ms {
+        config.ponder_time = ms;
+    }
+    if let Some(t) = num_threads {
+        config.num_threads = t.max(1);
+    }
+    if let Some(f) = fen {
+        config.start_fen = Some(f);
+    }
+}
+
 pub fn pgn(moves: &[Move]) -> String {
     let mut pgn = String::new();
     let mut pos = Chess::default();
@@ -66,7 +122,7 @@ pub fn pgn(moves: &[Move]) -> String {
             pgn.push(' ');
         }
         let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
-        let m = uci.to_move(&pos).expect("illegal move for position");
+        let m = uci.to_move(&pos).expect(&format!("illegal move for position: {}", r#move.to_string()));
         let san = San::from_move(&pos, m);
         pgn.push_str(&san.to_string());
         pos.play_unchecked(m);
@@ -184,6 +240,47 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
         result: engine.game_state(),
         plies,
         board: engine.to_string(),
+        pgn,
+    }
+}
+
+pub fn best_move_vs_lazy_smp(config: &LazySmpConfig) -> GameSummary {
+    let mut engine_white = if let Some(fen) = &config.start_fen {
+        Engine::from_fen(fen)
+    } else {
+        Engine::new()
+    };
+    let mut engine_black = if let Some(fen) = &config.start_fen {
+        Engine::from_fen(fen)
+    } else {
+        Engine::new()
+    };
+
+    engine_white.set_ponder_time(config.ponder_time);
+    engine_black.set_ponder_time(config.ponder_time);
+
+    let mut moves = Vec::new();
+    let mut plies: u32 = 0;
+
+    while engine_white.game_state() == GameState::Playing {
+        let best_move = if plies.is_multiple_of(2) {
+            engine_white.best_move()
+        } else {
+            engine_black.best_move_lazy_smp(config.num_threads)
+        };
+        engine_white.make_move(best_move);
+        engine_black.make_move(best_move);
+        // println!("{}", engine_white);
+        moves.push(best_move);
+        plies += 1;
+    }
+
+    let pgn = pgn(&moves);
+
+    GameSummary {
+        result: engine_white.game_state(),
+        plies,
+        board: engine_white.to_string(),
         pgn,
     }
 }
