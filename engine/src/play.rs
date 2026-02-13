@@ -10,7 +10,7 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     let mut ponder_ms = None;
     let mut num_games = None;
     let mut stockfish_depth = None;
-    let mut use_lazy_smp = None;
+    let mut use_smp = None;
     let mut num_threads: Option<usize> = None;
     let mut i = 0;
     while i < args.len() {
@@ -25,7 +25,7 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
             stockfish_depth = args[i + 1].parse().ok();
             i += 1;
         } else if a == "--smp" || a == "-s" {
-            use_lazy_smp = Some(true);
+            use_smp = Some(true);
         } else if (a == "--threads" || a == "-t") && args.get(i + 1).is_some() {
             num_threads = args[i + 1].parse().ok();
             i += 1;
@@ -41,8 +41,8 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     if let Some(depth) = stockfish_depth {
         config.stockfish_depth = depth;
     }
-    if let Some(smp) = use_lazy_smp {
-        config.use_lazy_smp = smp;
+    if let Some(smp) = use_smp {
+        config.use_smp = smp;
     }
     if let Some(t) = num_threads {
         config.num_threads = t.max(1);
@@ -56,7 +56,7 @@ pub struct SelfPlayConfig {
     pub num_games: u32,
     pub stockfish_depth: u32,
     /// Use lazy SMP search instead of single-thread best_move.
-    pub use_lazy_smp: bool,
+    pub use_smp: bool,
     /// Number of threads for lazy SMP (when use_lazy_smp is true).
     pub num_threads: usize,
 }
@@ -68,21 +68,21 @@ impl Default for SelfPlayConfig {
             start_fen: None,
             num_games: 1,
             stockfish_depth: 8,
-            use_lazy_smp: false,
+            use_smp: false,
             num_threads: 2,
         }
     }
 }
 
 /// Configuration for best_move (single-thread) vs lazy SMP games.
-pub struct LazySmpConfig {
+pub struct SMPConfig {
     pub ponder_time: u64,
     pub start_fen: Option<String>,
     pub num_games: u32,
     pub num_threads: usize,
 }
 
-impl Default for LazySmpConfig {
+impl Default for SMPConfig {
     fn default() -> Self {
         Self {
             ponder_time: 10,
@@ -93,7 +93,7 @@ impl Default for LazySmpConfig {
     }
 }
 
-pub fn parse_lazy_smp(args: &[String], config: &mut LazySmpConfig) {
+pub fn parse_smp(args: &[String], config: &mut SMPConfig) {
     let mut ponder_ms = None;
     let mut num_games = None;
     let mut num_threads: Option<usize> = None;
@@ -198,8 +198,8 @@ pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
     let mut plies: u32 = 0;
 
     while engine.game_state() == GameState::Playing {
-        let best_move = if config.use_lazy_smp {
-            engine.best_move_lazy_smp(config.num_threads)
+        let best_move = if config.use_smp {
+            engine.best_move_smp(config.num_threads)
         } else {
             engine.best_move()
         };
@@ -232,8 +232,8 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
 
     while engine.game_state() == GameState::Playing {
         if plies.is_multiple_of(2) {
-            let best_move = if config.use_lazy_smp {
-                engine.best_move_lazy_smp(config.num_threads)
+            let best_move = if config.use_smp {
+                engine.best_move_smp(config.num_threads)
             } else {
                 engine.best_move()
             };
@@ -273,7 +273,7 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
     }
 }
 
-pub fn best_move_vs_lazy_smp(config: &LazySmpConfig) -> GameSummary {
+pub fn best_move_vs_smp(config: &SMPConfig) -> GameSummary {
     let mut engine_white = if let Some(fen) = &config.start_fen {
         Engine::from_fen(fen)
     } else {
@@ -295,7 +295,7 @@ pub fn best_move_vs_lazy_smp(config: &LazySmpConfig) -> GameSummary {
         let best_move = if plies.is_multiple_of(2) {
             engine_white.best_move()
         } else {
-            engine_black.best_move_lazy_smp(config.num_threads)
+            engine_black.best_move_smp(config.num_threads)
         };
         engine_white.make_move(best_move);
         engine_black.make_move(best_move);
