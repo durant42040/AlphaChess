@@ -367,10 +367,11 @@ impl Engine {
             return 0;
         }
 
-        if let Some(score) = self
-            .search
-            .transposition_table
-            .probe(hash, depth, alpha, beta)
+        if ply > 0
+            && let Some(score) = self
+                .search
+                .transposition_table
+                .probe(hash, depth, alpha, beta)
         {
             return score;
         }
