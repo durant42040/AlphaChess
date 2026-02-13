@@ -533,7 +533,7 @@ impl Engine {
         while start.elapsed() < ponder_time {
             thread::sleep(Duration::from_millis(1));
         }
-        
+
         stop.store(true, Ordering::Release);
 
         for h in handles {
