@@ -299,7 +299,7 @@ pub fn best_move_vs_lazy_smp(config: &LazySmpConfig) -> GameSummary {
         };
         engine_white.make_move(best_move);
         engine_black.make_move(best_move);
-        // println!("{}", engine_white);
+        println!("{}", engine_white);
         moves.push(best_move);
         plies += 1;
     }
