@@ -7,7 +7,7 @@ use crate::chess::Square;
 use crate::constants::MAX_LEGAL_MOVES;
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Move(pub u16);
 
 impl Move {

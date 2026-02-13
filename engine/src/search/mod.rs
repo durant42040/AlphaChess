@@ -5,6 +5,7 @@ pub mod see;
 pub mod transposition;
 
 use std::cmp::max;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -601,29 +602,42 @@ impl Engine {
         let results = results.lock().unwrap().clone();
         assert!(!results.is_empty());
 
-        let mut best_score = 0;
+        let min_score = results.iter().map(|(_, s, _, _)| *s).min().unwrap();
+        let max_score = results.iter().map(|(_, s, _, _)| *s).max().unwrap();
+
+        // skip voting if checkmate is found, in which case the best move is likely shallow, so voting is not necessary
+        if max_score > MATE_SCORE - 100 || min_score < -MATE_SCORE + 100 {
+            let (best_move, best_score, max_depth, total_nodes) =
+                *results.iter().max_by_key(|(_, s, _, _)| *s).unwrap();
+            self.print_parallel_search_info(
+                best_move,
+                best_score,
+                max_depth,
+                total_nodes,
+                num_threads,
+            );
+            return best_move;
+        }
+
+        // voting for best move based on score and depth
         let mut max_depth = 0;
         let mut total_nodes = 0u64;
 
-        let min_score = results.iter().map(|(_, s, _, _)| *s).min().unwrap();
-        let mut votes: Vec<(Move, i64)> = Vec::new();
+        let mut votes: HashMap<Move, i64> = HashMap::new();
         for (best_move, score, depth, nodes) in &results {
             let vote = (*score - min_score + 14) as i64 * (*depth as i64);
-            if let Some((_, v)) = votes.iter_mut().find(|(r#move, _)| *r#move == *best_move) {
-                *v += vote;
-            } else {
-                votes.push((*best_move, vote));
-            }
-            best_score = max(best_score, *score);
+            *votes.entry(*best_move).or_insert(0) += vote;
+
             max_depth = max(max_depth, *depth);
             total_nodes += nodes;
         }
 
-        let best_move = votes
-            .into_iter()
-            .max_by_key(|(_, vote)| *vote)
-            .map(|(r#move, _)| r#move)
-            .unwrap();
+        let best_move = votes.into_iter().max_by_key(|(_, vote)| *vote).unwrap().0;
+        let best_score = results
+            .iter()
+            .find(|(r#move, _, _, _)| *r#move == best_move)
+            .unwrap()
+            .1;
 
         self.print_parallel_search_info(best_move, best_score, max_depth, total_nodes, num_threads);
 
