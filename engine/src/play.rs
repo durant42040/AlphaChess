@@ -5,11 +5,13 @@ use stockfish::Stockfish;
 use crate::Engine;
 use crate::chess::{GameState, Move};
 
-/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count), `--depth`/`-d` (Stockfish depth).
+/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count), `--depth`/`-d` (Stockfish depth), `--smp`/`-s` (use lazy SMP), `--threads`/`-t` (threads for SMP).
 pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     let mut ponder_ms = None;
     let mut num_games = None;
     let mut stockfish_depth = None;
+    let mut use_lazy_smp = None;
+    let mut num_threads: Option<usize> = None;
     let mut i = 0;
     while i < args.len() {
         let a = &args[i];
@@ -21,6 +23,11 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
             i += 1;
         } else if (a == "--depth" || a == "-d") && args.get(i + 1).is_some() {
             stockfish_depth = args[i + 1].parse().ok();
+            i += 1;
+        } else if a == "--smp" || a == "-s" {
+            use_lazy_smp = Some(true);
+        } else if (a == "--threads" || a == "-t") && args.get(i + 1).is_some() {
+            num_threads = args[i + 1].parse().ok();
             i += 1;
         }
         i += 1;
@@ -34,6 +41,12 @@ pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
     if let Some(depth) = stockfish_depth {
         config.stockfish_depth = depth;
     }
+    if let Some(smp) = use_lazy_smp {
+        config.use_lazy_smp = smp;
+    }
+    if let Some(t) = num_threads {
+        config.num_threads = t.max(1);
+    }
 }
 
 /// Configuration for a self-play game.
@@ -42,6 +55,10 @@ pub struct SelfPlayConfig {
     pub start_fen: Option<String>,
     pub num_games: u32,
     pub stockfish_depth: u32,
+    /// Use lazy SMP search instead of single-thread best_move.
+    pub use_lazy_smp: bool,
+    /// Number of threads for lazy SMP (when use_lazy_smp is true).
+    pub num_threads: usize,
 }
 
 impl Default for SelfPlayConfig {
@@ -51,6 +68,8 @@ impl Default for SelfPlayConfig {
             start_fen: None,
             num_games: 1,
             stockfish_depth: 8,
+            use_lazy_smp: false,
+            num_threads: 2,
         }
     }
 }
@@ -179,7 +198,11 @@ pub fn self_play(config: &SelfPlayConfig) -> GameSummary {
     let mut plies: u32 = 0;
 
     while engine.game_state() == GameState::Playing {
-        let best_move = engine.best_move();
+        let best_move = if config.use_lazy_smp {
+            engine.best_move_lazy_smp(config.num_threads)
+        } else {
+            engine.best_move()
+        };
         engine.make_move(best_move);
         println!("{}", engine);
         moves.push(best_move);
@@ -209,7 +232,11 @@ pub fn play_stockfish(config: &SelfPlayConfig) -> GameSummary {
 
     while engine.game_state() == GameState::Playing {
         if plies.is_multiple_of(2) {
-            let best_move = engine.best_move();
+            let best_move = if config.use_lazy_smp {
+                engine.best_move_lazy_smp(config.num_threads)
+            } else {
+                engine.best_move()
+            };
             engine.make_move(best_move);
             stockfish.play_move(&best_move.to_string()).unwrap();
             moves.push(best_move);
