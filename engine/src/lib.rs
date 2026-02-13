@@ -58,7 +58,6 @@ impl Engine {
         engine
     }
 
-    /// Clone the engine's position for a worker thread, with a shared TT (for Lazy SMP).
     pub fn worker_clone(&self, tt: Arc<TranspositionTable>) -> Self {
         Self {
             board: self.board.clone(),

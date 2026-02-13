@@ -8,7 +8,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut ponder_ms = 1000u64;
     let mut user_white = true;
-    let mut use_lazy_smp = false;
+    let mut use_smp = false;
     let mut num_threads = 2usize;
 
     let mut i = 1;
@@ -25,7 +25,7 @@ fn main() {
             }
             i += 1;
         } else if args[i] == "-m" || args[i] == "--smp" {
-            use_lazy_smp = true;
+            use_smp = true;
         } else if (args[i] == "-t" || args[i] == "--threads") && args.get(i + 1).is_some() {
             num_threads = args[i + 1].parse().unwrap_or(2).max(1);
             i += 1;
@@ -39,7 +39,7 @@ fn main() {
     let side = if user_white { "White" } else { "Black" };
     println!("You play as {}.", side);
     println!("Ponder time: {} ms", ponder_ms);
-    if use_lazy_smp {
+    if use_smp {
         println!("Engine: lazy SMP ({} threads)", num_threads);
     } else {
         println!("Engine: single-thread");
@@ -111,8 +111,8 @@ fn main() {
             }
         } else {
             stdout.flush().unwrap();
-            let best = if use_lazy_smp {
-                engine.best_move_lazy_smp(num_threads)
+            let best = if use_smp {
+                engine.best_move_smp(num_threads)
             } else {
                 engine.best_move()
             };
