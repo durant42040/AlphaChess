@@ -48,7 +48,10 @@ impl Engine {
         let pv_str = if pv.is_empty() {
             "-".to_string()
         } else {
-            pv.iter().map(|m| m.to_string()).collect::<Vec<_>>().join(" ")
+            pv.iter()
+                .map(|m| m.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
         };
 
         println!(
