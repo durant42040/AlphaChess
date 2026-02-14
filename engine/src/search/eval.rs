@@ -252,7 +252,7 @@ impl Evaluation for Engine {
             * KING_SHIELD_BONUS;
 
         // semi-open and open file penalties
-        let square = Square::from(white_king);
+        let square: Square = Square::from(white_king);
         let file_mask = Bitboard::from(FILE_MASKS[square.file() as usize]);
         if !white_pawns.intersects(file_mask) {
             score -= SEMI_OPEN_FILE_BONUS;

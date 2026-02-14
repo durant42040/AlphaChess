@@ -15,7 +15,7 @@ pub type SearchResult = (Move, i32, u8, u64);
 
 impl Engine {
     fn print_parallel_search_info(
-        &self,
+        &mut self,
         best_move: Move,
         best_score: i32,
         max_depth: u8,
@@ -44,12 +44,20 @@ impl Engine {
             "\x1b[31m"
         };
 
+        let pv = self.principal_variation_from(best_move, max_depth);
+        let pv_str = if pv.is_empty() {
+            "-".to_string()
+        } else {
+            pv.iter().map(|m| m.to_string()).collect::<Vec<_>>().join(" ")
+        };
+
         println!(
             "\n\x1b[1;32m[Engine]\x1b[0m\n\
              \x1b[90m────────────────────────────────────────────\x1b[0m\n\
              \x1b[1mDepth     \x1b[0m \x1b[33m{}\x1b[0m\n\
              \x1b[1mSearched  \x1b[0m \x1b[32m{}\x1b[0m \x1b[1mnodes\n\
              \x1b[1mBest Move \x1b[0m \x1b[33m{}\x1b[0m\n\
+             \x1b[1mPV        \x1b[0m \x1b[33m{}\x1b[0m\n\
              \x1b[1mEval      \x1b[0m \x1b[1;34m{}\x1b[0m\n\
              \x1b[1mMaterial  \x1b[0m \x1b[1;34m{}\x1b[0m\n\
              \x1b[1mEndgame   \x1b[0m {}{}\x1b[0m\n\
@@ -57,6 +65,7 @@ impl Engine {
             max_depth,
             total_nodes,
             best_move,
+            pv_str,
             eval_str,
             material_str,
             endgame_color,
@@ -102,7 +111,7 @@ impl Engine {
         )
     }
 
-    pub fn vote_best_move(&self, search_results: Vec<SearchResult>) -> Move {
+    pub fn vote_best_move(&mut self, search_results: Vec<SearchResult>) -> Move {
         let min_score = search_results.iter().map(|(_, s, _, _)| *s).min().unwrap();
         let max_score = search_results.iter().map(|(_, s, _, _)| *s).max().unwrap();
 

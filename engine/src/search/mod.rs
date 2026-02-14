@@ -147,18 +147,33 @@ impl Engine {
     }
 
     fn principal_variation(&mut self) -> Vec<Move> {
+        let hash = self.board.position_hash();
+        let first_move = self.search.transposition_table.get_best_move(hash);
+        if first_move.is_none() {
+            return Vec::new();
+        }
+        self.principal_variation_from(first_move, self.search.max_depth_reached)
+    }
+
+    /// Build PV by following the TT, starting with the given first move (for SMP when voted move may differ from TT root).
+    pub fn principal_variation_from(&mut self, first_move: Move, max_plies: u8) -> Vec<Move> {
         let mut pv = Vec::new();
         let original_hash = self.board.position_hash();
 
-        for _ in 0..self.search.max_depth_reached {
+        if first_move.is_none() || !self.is_legal_move(first_move) {
+            return pv;
+        }
+
+        pv.push(first_move);
+        self.act(first_move);
+
+        for _ in 1..max_plies {
             let hash = self.board.position_hash();
             let r#move = self.search.transposition_table.get_best_move(hash);
             if r#move.is_none() || !self.is_legal_move(r#move) {
                 break;
             }
-
             pv.push(r#move);
-            assert!(self.is_legal_move(r#move));
             self.act(r#move);
         }
 
