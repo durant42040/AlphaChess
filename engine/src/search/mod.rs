@@ -326,6 +326,7 @@ impl Engine {
             return 0;
         }
 
+        // Since the tt hash does not count repetitions, the engine may misevaluate a drawing move as a winning move at ply = 0.
         if ply > 0
             && let Some(score) = self
                 .search
@@ -347,8 +348,7 @@ impl Engine {
             && !in_check
             && ply > 0
             // if there are friendly non-pawn pieces
-            && ((self.board.our_pieces() & !self.pieces().pawns() & !self.pieces().kings()).count()
-                > 0)
+            && !((self.board.our_pieces() & !self.pieces().pawns() & !self.pieces().kings()).empty())
         {
             let r = 2;
             let prev_en_passant = self.make_null_move();
@@ -482,25 +482,6 @@ impl Engine {
             if best_score <= alpha || best_score >= beta {
                 best_score = self.alpha_beta_search(depth, 0, -MATE_SCORE, MATE_SCORE);
             }
-
-            // It appears gradual widening window is slower than full window.
-            // loop {
-            //     // if the score is outside the alpha-beta window, research with expanded window and same depth
-            //     // At depth one, it searches the full window. So the loop will only run once.
-            //     let score = self.alpha_beta_search(depth, 0, alpha, beta);
-            //     if score <= alpha {
-            //         alpha -= window;
-            //         window *= 2;
-            //         continue;
-            //     } else if score >= beta {
-            //         beta += window;
-            //         window *= 2;
-            //         continue;
-            //     } else {
-            //         best_score = score;
-            //         break;
-            //     }
-            // }
 
             alpha = best_score - delta;
             beta = best_score + delta;

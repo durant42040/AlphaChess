@@ -1,52 +1,64 @@
+use std::io::{self, BufRead, Write};
+
 use shakmaty::san::San;
 use shakmaty::{Chess, Position, uci::UciMove};
 use stockfish::Stockfish;
 
 use crate::Engine;
-use crate::chess::{GameState, Move};
+use crate::chess::{GameState, Move, Player};
 
-/// Parse standard play options from CLI args: `--ponder`/`-p` (ms), `--games`/`-n` (count), `--depth`/`-d` (Stockfish depth), `--smp`/`-s` (use lazy SMP), `--threads`/`-t` (threads for SMP).
-pub fn parse_args(args: &[String], config: &mut SelfPlayConfig) {
-    let mut ponder_ms = None;
-    let mut num_games = None;
-    let mut stockfish_depth = None;
-    let mut use_smp = None;
-    let mut num_threads: Option<usize> = None;
-    let mut i = 0;
-    while i < args.len() {
-        let a = &args[i];
-        if (a == "--ponder" || a == "-p") && args.get(i + 1).is_some() {
-            ponder_ms = args[i + 1].parse().ok();
-            i += 1;
-        } else if (a == "--games" || a == "-n") && args.get(i + 1).is_some() {
-            num_games = args[i + 1].parse().ok();
-            i += 1;
-        } else if (a == "--depth" || a == "-d") && args.get(i + 1).is_some() {
-            stockfish_depth = args[i + 1].parse().ok();
-            i += 1;
-        } else if a == "--smp" || a == "-s" {
-            use_smp = Some(true);
-        } else if (a == "--threads" || a == "-t") && args.get(i + 1).is_some() {
-            num_threads = args[i + 1].parse().ok();
-            i += 1;
+/// Summary of a completed self-play game.
+pub struct GameSummary {
+    pub result: GameState,
+    pub plies: u32,
+    pub board: String,
+    pub pgn: String,
+}
+
+/// Print overall result summary (white wins, black wins, draws).
+pub fn print_overall_result(summaries: &[GameSummary]) {
+    let white = summaries
+        .iter()
+        .filter(|s| s.result == GameState::WhiteWin)
+        .count();
+    let black = summaries
+        .iter()
+        .filter(|s| s.result == GameState::BlackWin)
+        .count();
+    let draws = summaries
+        .iter()
+        .filter(|s| s.result == GameState::Draw)
+        .count();
+    println!(
+        "\nOverall: {} games — White {}, Black {}, Draw {}",
+        summaries.len(),
+        white,
+        black,
+        draws
+    );
+}
+
+pub fn pgn(moves: &[Move]) -> String {
+    let mut pgn = String::new();
+    let mut pos = Chess::default();
+
+    for (i, r#move) in moves.iter().enumerate() {
+        if i.is_multiple_of(2) {
+            pgn.push_str(&format!("\n{}.", i / 2 + 1));
+        } else {
+            pgn.push(' ');
         }
-        i += 1;
+        let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
+        let uci_move = uci
+            .to_move(&pos)
+            .unwrap_or_else(|_| panic!("illegal move for position: {}", r#move));
+        let san = San::from_move(&pos, uci_move);
+        pgn.push_str(&san.to_string());
+        pos.play_unchecked(uci_move);
+        pgn.push(' ');
     }
-    if let Some(num) = num_games {
-        config.num_games = num;
-    }
-    if let Some(ms) = ponder_ms {
-        config.ponder_time = ms;
-    }
-    if let Some(depth) = stockfish_depth {
-        config.stockfish_depth = depth;
-    }
-    if let Some(smp) = use_smp {
-        config.use_smp = smp;
-    }
-    if let Some(t) = num_threads {
-        config.num_threads = t.max(1);
-    }
+
+    pgn
 }
 
 /// Configuration for a self-play game.
@@ -93,6 +105,68 @@ impl Default for SMPConfig {
     }
 }
 
+/// Configuration for human vs engine play.
+pub struct PlayConfig {
+    pub ponder_time: u64,
+    pub user_white: bool,
+    pub use_smp: bool,
+    pub num_threads: usize,
+}
+
+impl Default for PlayConfig {
+    fn default() -> Self {
+        Self {
+            ponder_time: 1000,
+            user_white: true,
+            use_smp: false,
+            num_threads: 2,
+        }
+    }
+}
+
+pub fn parse_selfplay_args(args: &[String], config: &mut SelfPlayConfig) {
+    let mut ponder_ms = None;
+    let mut num_games = None;
+    let mut stockfish_depth = None;
+    let mut use_smp = None;
+    let mut num_threads: Option<usize> = None;
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if (a == "--ponder" || a == "-p") && args.get(i + 1).is_some() {
+            ponder_ms = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--games" || a == "-n") && args.get(i + 1).is_some() {
+            num_games = args[i + 1].parse().ok();
+            i += 1;
+        } else if (a == "--depth" || a == "-d") && args.get(i + 1).is_some() {
+            stockfish_depth = args[i + 1].parse().ok();
+            i += 1;
+        } else if a == "--smp" || a == "-s" {
+            use_smp = Some(true);
+        } else if (a == "--threads" || a == "-t") && args.get(i + 1).is_some() {
+            num_threads = args[i + 1].parse().ok();
+            i += 1;
+        }
+        i += 1;
+    }
+    if let Some(num) = num_games {
+        config.num_games = num;
+    }
+    if let Some(ms) = ponder_ms {
+        config.ponder_time = ms;
+    }
+    if let Some(depth) = stockfish_depth {
+        config.stockfish_depth = depth;
+    }
+    if let Some(smp) = use_smp {
+        config.use_smp = smp;
+    }
+    if let Some(t) = num_threads {
+        config.num_threads = t.max(1);
+    }
+}
+
 pub fn parse_smp(args: &[String], config: &mut SMPConfig) {
     let mut ponder_ms = None;
     let mut num_games = None;
@@ -130,58 +204,110 @@ pub fn parse_smp(args: &[String], config: &mut SMPConfig) {
     }
 }
 
-pub fn pgn(moves: &[Move]) -> String {
-    let mut pgn = String::new();
-    let mut pos = Chess::default();
-
-    for (i, r#move) in moves.iter().enumerate() {
-        if i.is_multiple_of(2) {
-            pgn.push_str(&format!("\n{}.", i / 2 + 1));
-        } else {
-            pgn.push(' ');
+pub fn parse_play_args(args: &[String], config: &mut PlayConfig) -> Result<(), String> {
+    let mut i = 1;
+    while i < args.len() {
+        if (args[i] == "-p" || args[i] == "--ponder") && args.get(i + 1).is_some() {
+            config.ponder_time = args[i + 1].parse().unwrap_or(1000);
+            i += 1;
+        } else if (args[i] == "-s" || args[i] == "--side") && args.get(i + 1).is_some() {
+            let s = args[i + 1].to_lowercase();
+            if !matches!(s.as_str(), "white" | "w" | "black" | "b") {
+                return Err("Invalid side. Use white/w or black/b.".to_string());
+            }
+            config.user_white = matches!(s.as_str(), "white" | "w");
+            i += 1;
+        } else if args[i] == "-m" || args[i] == "--smp" {
+            config.use_smp = true;
+        } else if (args[i] == "-t" || args[i] == "--threads") && args.get(i + 1).is_some() {
+            config.num_threads = args[i + 1].parse().unwrap_or(2).max(1);
+            i += 1;
         }
-        let uci = r#move.to_string().parse::<UciMove>().expect("bad uci");
-        let uci_move = uci
-            .to_move(&pos)
-            .unwrap_or_else(|_| panic!("illegal move for position: {}", r#move));
-        let san = San::from_move(&pos, uci_move);
-        pgn.push_str(&san.to_string());
-        pos.play_unchecked(uci_move);
-        pgn.push(' ');
+        i += 1;
     }
-
-    pgn
+    Ok(())
 }
 
-/// Summary of a completed self-play game.
-pub struct GameSummary {
-    pub result: GameState,
-    pub plies: u32,
-    pub board: String,
-    pub pgn: String,
-}
+pub fn play(config: &PlayConfig) -> ! {
+    let mut engine = Engine::new();
+    engine.set_ponder_time(config.ponder_time);
 
-/// Print overall result summary (white wins, black wins, draws).
-pub fn print_overall_result(summaries: &[GameSummary]) {
-    let white = summaries
-        .iter()
-        .filter(|s| s.result == GameState::WhiteWin)
-        .count();
-    let black = summaries
-        .iter()
-        .filter(|s| s.result == GameState::BlackWin)
-        .count();
-    let draws = summaries
-        .iter()
-        .filter(|s| s.result == GameState::Draw)
-        .count();
-    println!(
-        "\nOverall: {} games — White {}, Black {}, Draw {}",
-        summaries.len(),
-        white,
-        black,
-        draws
-    );
+    let side = if config.user_white { "White" } else { "Black" };
+    println!("You play as {}.", side);
+    println!("Ponder time: {} ms", config.ponder_time);
+    if config.use_smp {
+        println!("Engine: lazy SMP ({} threads)", config.num_threads);
+    } else {
+        println!("Engine: single-thread");
+    }
+    println!();
+
+    let stdin = io::stdin();
+    let mut stdout = io::stdout();
+
+    loop {
+        println!("{}", engine);
+        let user_turn = (engine.player() == Player::White) == config.user_white;
+
+        if engine.game_state() != GameState::Playing {
+            match engine.game_state() {
+                GameState::WhiteWin => println!("Checkmate. White wins."),
+                GameState::BlackWin => println!("Checkmate. Black wins."),
+                GameState::Draw => println!("Draw."),
+                _ => {}
+            }
+            let moves = engine.board().move_history();
+            if !moves.is_empty() {
+                println!("\nPGN:\n{}", pgn(moves));
+            }
+            std::process::exit(0);
+        }
+
+        if user_turn {
+            print!("Your move: ");
+            stdout.flush().unwrap();
+            let mut line = String::new();
+            stdin.lock().read_line(&mut line).unwrap();
+            let line = line.trim();
+            if !line.is_empty() {
+                if line.eq_ignore_ascii_case("resign") {
+                    let winner = if config.user_white { "Black" } else { "White" };
+                    println!("You resign. {} wins.", winner);
+                    let moves = engine.board().move_history();
+                    if !moves.is_empty() {
+                        println!("\nPGN:\n{}", pgn(moves));
+                    }
+                    std::process::exit(0);
+                }
+                if line.eq_ignore_ascii_case("undo") {
+                    let n = engine.board().move_history().len();
+                    if n == 0 {
+                        println!("Nothing to undo.");
+                    } else {
+                        let to_undo = if n >= 2 { 2 } else { 1 };
+                        for _ in 0..to_undo {
+                            engine.undo();
+                        }
+                        engine.update_game_state();
+                    }
+                } else if let Ok(mv) = line.parse::<Move>() {
+                    if !engine.make_move(mv) {
+                        println!("Illegal move.");
+                    }
+                } else {
+                    println!("Invalid move format. Use UCI (e.g. e2e4, e7e8q).");
+                }
+            }
+        } else {
+            let best = if config.use_smp {
+                engine.best_move_smp(config.num_threads)
+            } else {
+                engine.best_move()
+            };
+            engine.make_move(best);
+            println!("{}\n", best);
+        }
+    }
 }
 
 /// Run a single self-play game where the engine plays both sides.

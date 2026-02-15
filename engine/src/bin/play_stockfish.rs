@@ -1,9 +1,9 @@
-use engine::play::{SelfPlayConfig, parse_args, play_stockfish};
+use engine::play::{SelfPlayConfig, parse_selfplay_args, play_stockfish};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut config = SelfPlayConfig::default();
-    parse_args(&args, &mut config);
+    parse_selfplay_args(&args, &mut config);
 
     let mut results = Vec::with_capacity(config.num_games as usize);
     for game in 1..=config.num_games {

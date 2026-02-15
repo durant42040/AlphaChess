@@ -330,20 +330,12 @@ impl ChessBoard {
 
     #[inline(always)]
     pub fn our_pieces(&self) -> Bitboard {
-        if self.player == Player::White {
-            self.pieces.white_pieces()
-        } else {
-            self.pieces.black_pieces()
-        }
+        self.pieces_of_color(Color::from(self.player))
     }
 
     #[inline(always)]
     pub fn their_pieces(&self) -> Bitboard {
-        if self.player == Player::White {
-            self.pieces.black_pieces()
-        } else {
-            self.pieces.white_pieces()
-        }
+        self.pieces_of_color(Color::from(!self.player))
     }
 
     #[inline(always)]

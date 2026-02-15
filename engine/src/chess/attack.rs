@@ -27,11 +27,7 @@ impl Engine {
     /// returns all attackers to the given square
     pub fn generate_attacks(&self, square: Square, all_pieces: Bitboard, color: Color) -> Bitboard {
         let pieces = self.pieces();
-        let their_pieces = if color == Color::White {
-            pieces.black_pieces()
-        } else {
-            pieces.white_pieces()
-        };
+        let their_pieces = self.board.pieces_of_color(!color);
 
         (self.move_generator.generate_king_moves(square) & (pieces.kings() & their_pieces))
             | (self.move_generator.generate_rook_moves(square, all_pieces)

@@ -164,14 +164,20 @@ impl Engine {
         self.update_attack_state();
     }
 
-    pub fn undo(&mut self) -> bool {
+    pub fn unmake_move(&mut self) -> bool {
         if self.board.move_history().is_empty() {
             return false;
         }
         self.board.undo();
         assert!(!self.attack_states.is_empty());
         self.attack_states.pop();
+        self.update_game_state();
         true
+    }
+
+    pub fn undo(&mut self) {
+        self.board.undo();
+        self.attack_states.pop();
     }
 
     pub fn make_null_move(&mut self) -> Bitboard {

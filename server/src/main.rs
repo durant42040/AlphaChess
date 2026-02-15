@@ -67,13 +67,13 @@ async fn undo_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json
     let mut engine = state.lock().await;
 
     // undo twice to get back to the previous turn
-    if !engine.undo() {
+    if !engine.unmake_move() {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "No moves to undo" })),
         );
     }
-    if !engine.undo() {
+    if !engine.unmake_move() {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "No moves to undo" })),
