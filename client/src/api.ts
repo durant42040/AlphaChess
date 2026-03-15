@@ -18,6 +18,10 @@ export interface GenerateResponse {
   isCheck: boolean;
 }
 
+export interface BestMoveResponse {
+  move: string;
+}
+
 export interface UndoResponse {
   board: string;
   isCheck: boolean;
@@ -40,6 +44,15 @@ export async function act(moveStr: string): Promise<ActResponse> {
   if (resp.status !== 200) {
     const text = await resp.text();
     throw new Error(text || `act failed: status ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function bestMove(): Promise<BestMoveResponse> {
+  const resp = await fetch(apiUrl('/best-move'));
+  if (resp.status !== 200) {
+    const text = await resp.text();
+    throw new Error(text || `best-move failed: status ${resp.status}`);
   }
   return resp.json();
 }

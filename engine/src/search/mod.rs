@@ -41,7 +41,7 @@ impl Search {
             transposition_table: Arc::new(TranspositionTable::new()),
             nodes: 0,
             start_time: Instant::now(),
-            ponder_time: Duration::from_millis(1000),
+            ponder_time: Duration::from_millis(100),
             max_depth_reached: 0,
             killer_moves: vec![[Move::none(); 2]; 4096],
             history: History::new(),
@@ -94,7 +94,7 @@ impl Engine {
         };
 
         // Principal variation
-        let pv = self.principal_variation();
+        let pv = self.principal_variation(best_move, self.search.max_depth_reached);
         let pv_str = if pv.is_empty() {
             "-".to_string()
         } else {
@@ -146,17 +146,8 @@ impl Engine {
         );
     }
 
-    fn principal_variation(&mut self) -> Vec<Move> {
-        let hash = self.board.position_hash();
-        let first_move = self.search.transposition_table.get_best_move(hash);
-        if first_move.is_none() {
-            return Vec::new();
-        }
-        self.principal_variation_from(first_move, self.search.max_depth_reached)
-    }
-
     /// Build PV by following the TT, starting with the given first move (for SMP when voted move may differ from TT root).
-    pub fn principal_variation_from(&mut self, first_move: Move, max_plies: u8) -> Vec<Move> {
+    pub fn principal_variation(&mut self, first_move: Move, max_plies: u8) -> Vec<Move> {
         let mut pv = Vec::new();
         let original_hash = self.board.position_hash();
 
@@ -596,8 +587,8 @@ mod tests {
         let mut engine =
             Engine::from_fen("rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2");
         engine.set_ponder_time(1000);
-        engine.best_move();
-        let pv = engine.principal_variation();
+        let best_move = engine.best_move();
+        let pv = engine.principal_variation(best_move, engine.search.max_depth_reached);
         println!(
             "pv: {}",
             pv.iter()

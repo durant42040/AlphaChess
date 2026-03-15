@@ -44,7 +44,7 @@ impl Engine {
             "\x1b[31m"
         };
 
-        let pv = self.principal_variation_from(best_move, max_depth);
+        let pv = self.principal_variation(best_move, max_depth);
         let pv_str = if pv.is_empty() {
             "-".to_string()
         } else {
@@ -132,6 +132,7 @@ impl Engine {
 
         let mut votes: HashMap<Move, i64> = HashMap::new();
         for (best_move, score, depth, nodes) in &search_results {
+            // Stockfish's voting formula
             let vote = (*score - min_score + 14) as i64 * (*depth as i64);
             *votes.entry(*best_move).or_insert(0) += vote;
 

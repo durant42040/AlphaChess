@@ -18,6 +18,22 @@ struct MoveQuery {
     r#move: String,
 }
 
+async fn best_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json<Value>) {
+    let mut engine = state.lock().await;
+    use engine::chess::GameState;
+    if engine.game_state() != GameState::Playing {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Game is not in progress" })),
+        );
+    }
+    let best = engine.best_move_smp(4);
+    (
+        StatusCode::OK,
+        Json(json!({ "move": best.to_string() })),
+    )
+}
+
 async fn generate_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json<Value>) {
     let mut engine = state.lock().await;
     let best_move = engine.best_move();
@@ -119,6 +135,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/ping", get(ping))
+        .route("/best-move", get(best_move))
         .route("/generate", get(generate_move))
         .route("/act", get(make_move))
         .route("/reset", get(reset))

@@ -34,6 +34,8 @@ export default function App() {
   const [side, setSide] = useState<'w' | 'b'>('w');
   const [game, setGame] = useState<'w' | 'b' | null | 'self'>(null);
   const [gameOver, setGameOver] = useState<GameOver>('No');
+  const [bestMove, setBestMove] = useState<string | null>(null);
+  const [bestMoveLoading, setBestMoveLoading] = useState(false);
 
   const resetBoard = useCallback(() => {
     setBoard(toBoard(STARTING_BOARD_STR));
@@ -41,6 +43,7 @@ export default function App() {
     setPositionTo(null);
     setSide('w');
     setGameOver('No');
+    setBestMove(null);
   }, []);
 
   const pollGame = useCallback(
@@ -65,7 +68,22 @@ export default function App() {
           }
           setGameOver('No');
           // In self-play mode, there is no human side, so always let engine move.
-          if (human !== null && sideNow === human) return;
+          if (human !== null && sideNow === human) {
+            setBestMove(null);
+            setBestMoveLoading(true);
+            api
+              .bestMove()
+              .then((r) => {
+                setBestMove(r.move);
+                setBestMoveLoading(false);
+              })
+              .catch((e) => {
+                console.error('bestMove failed:', e);
+                setBestMoveLoading(false);
+              });
+            return;
+          }
+          setBestMove(null);
           setTimeout(() => {
             const boardBefore =
               boardBeforeEngine ?? board.map((row) => row.map((p) => p));
@@ -86,7 +104,7 @@ export default function App() {
                 else if (wasCapture) play('capture');
                 else play('move');
                 const nextSide: 'w' | 'b' = sideNow === 'w' ? 'b' : 'w';
-                pollGame(toBoard(r.board), nextSide, human);
+                pollGame(toBoard(r.board), nextSide, human ?? undefined);
               })
               .catch((e) => console.error('generate failed:', e));
           }, 100);
@@ -151,6 +169,7 @@ export default function App() {
     const capture = board[to[0]][to[1]] !== null;
     setPositionTo(null);
     setPositionFrom(null);
+    setBestMove(null);
     api
       .act(moveStr)
       .then((r) => {
@@ -196,6 +215,7 @@ export default function App() {
   }, [resetBoard, pollGame, game]);
 
   const handleUndo = useCallback(() => {
+    setBestMove(null);
     api
       .undo()
       .then((r) => {
@@ -248,13 +268,24 @@ export default function App() {
       </div>
       <ChessBoard
         board={board}
-        game={game}
+        game={game === 'self' ? 'w' : game}
         positionFrom={positionFrom}
         onSquareClick={handleSquareClick}
         onDragStart={handleDragStart}
         onDrop={handleDrop}
       />
       <div className="footer">
+        {game !== 'self' && side === game && gameOver === 'No' && (
+          <div className="best-move-hint">
+            {bestMoveLoading ? (
+              <span className="best-move-loading">Engine thinking…</span>
+            ) : bestMove ? (
+              <span className="best-move-text">
+                Best move: <strong>{bestMove}</strong>
+              </span>
+            ) : null}
+          </div>
+        )}
         <button type="button" className="rematch" onClick={handleUndo}>
           ← Undo
         </button>
