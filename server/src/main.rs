@@ -28,10 +28,7 @@ async fn best_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json
         );
     }
     let best = engine.best_move_smp(4);
-    (
-        StatusCode::OK,
-        Json(json!({ "move": best.to_string() })),
-    )
+    (StatusCode::OK, Json(json!({ "move": best.to_string() })))
 }
 
 async fn generate_move(State(state): State<Arc<Mutex<Engine>>>) -> (StatusCode, Json<Value>) {
